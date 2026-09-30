@@ -1,0 +1,112 @@
+# ═══════════════════════════════════════════════════════════
+# FleetFlow TMS (Next.js/React + gRPC rewrite) - Docker Compose
+# Stack: PostgreSQL + Node gRPC backend + Envoy (grpc-web proxy)
+#        + Next.js frontend + Nginx
+#
+# Same data (Postgres/Prisma) as the legacy NestJS/Flutter repo;
+# everything above the DB layer is new. See README.md.
+# ═══════════════════════════════════════════════════════════
+
+services:
+  # ── PostgreSQL Database ──────────────────────────────────
+  database:
+    image: postgres:17-alpine
+    container_name: fleetflow-next-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_use_strong_password}
+      POSTGRES_DB: ${POSTGRES_DB:-fleetflow}
+    ports:
+      - "${DB_PORT:-5433}:5432"
+    volumes:
+      - database_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-fleetflow}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - fleetflow-net
+
+  # ── Backend gRPC service (Node/TS, no NestJS) ───────────
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: fleetflow-next-api
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      GRPC_PORT: 50051
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme_use_strong_password}@database:5432/${POSTGRES_DB:-fleetflow}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-fleetflow-jwt-secret-change-in-production-2024}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
+    expose:
+      - "50051"
+    networks:
+      - fleetflow-net
+
+  # ── Envoy: grpc-web <-> native gRPC bridge ──────────────
+  # Browsers can't speak raw gRPC, so the frontend calls Envoy
+  # (grpc-web over HTTP/1.1 or HTTP/2) and Envoy forwards to `backend`
+  # over native gRPC. See envoy/envoy.yaml.
+  envoy:
+    image: envoyproxy/envoy:v1.31-latest
+    container_name: fleetflow-next-envoy
+    restart: unless-stopped
+    depends_on:
+      - backend
+    volumes:
+      - ./envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
+    expose:
+      - "8080"
+    networks:
+      - fleetflow-net
+
+  # ── Frontend (Next.js) ──────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Browser-side code talks to Envoy through the nginx reverse
+        # proxy's public path, not the internal docker-network name.
+        NEXT_PUBLIC_GRPC_WEB_URL: ${PUBLIC_GRPC_WEB_URL:-/grpc}
+    container_name: fleetflow-next-web
+    restart: unless-stopped
+    depends_on:
+      - envoy
+    expose:
+      - "3000"
+    networks:
+      - fleetflow-net
+
+  # ── Nginx reverse proxy ──────────────────────────────────
+  # Routes /grpc/* to Envoy (grpc-web) and everything else to Next.js,
+  # so the browser only ever talks to one origin.
+  nginx:
+    image: nginx:alpine
+    container_name: fleetflow-next-proxy
+    restart: unless-stopped
+    depends_on:
+      - frontend
+      - envoy
+    ports:
+      - "${HTTP_PORT:-8889}:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - fleetflow-net
+
+volumes:
+  database_data:
+    driver: local
+
+networks:
+  fleetflow-net:
+    driver: bridge

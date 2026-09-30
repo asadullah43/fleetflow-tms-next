@@ -1,0 +1,777 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Truck {
+  id          Int      @id @default(autoincrement())
+  truckNumber String   @unique
+  truckType   String?
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  trips                Trip[]
+  assignments          TruckDriverAssignment[]
+  workOrders           WorkOrder[]
+  maintenanceSchedules MaintenanceSchedule[]
+  inspections          VehicleInspection[]
+  expenses             WorkshopExpense[]
+
+  @@index([status])
+}
+
+model TruckDriverAssignment {
+  id        Int       @id @default(autoincrement())
+  truckId   Int
+  driverId  Int
+  startDate DateTime
+  endDate   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  truck  Truck  @relation(fields: [truckId], references: [id], onDelete: Cascade)
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Restrict)
+
+  @@index([truckId, startDate])
+  @@index([driverId, startDate])
+}
+
+model Driver {
+  id        Int      @id @default(autoincrement())
+  name      String
+  nameAr    String?
+  phone     String?
+  licenseNo String?  @unique
+  idNumber  String?  @unique
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  trips       Trip[]
+  assignments TruckDriverAssignment[]
+  workOrders  WorkOrder[]
+  employee    Employee?
+
+  @@index([status])
+}
+
+model Supplier {
+  id            Int      @id @default(autoincrement())
+  name          String
+  nameAr        String?
+  contactPerson String?
+  phone         String?
+  email         String?
+  status        String   @default("ACTIVE")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  trips      Trip[]
+  payments   SupplierPayment[]
+  workOrders WorkOrder[]
+  spareParts SparePart[]
+
+  @@index([status])
+}
+
+model Customer {
+  id            Int      @id @default(autoincrement())
+  name          String
+  nameAr        String?
+  contactPerson String?
+  phone         String?
+  email         String?
+  address       String?
+  vatNumber     String?
+  crNumber      String?
+  streetName    String?
+  buildingNumber String?
+  postalCode    String?
+  city          String?
+  country       String?  @default("SA")
+  status        String   @default("ACTIVE")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  trips         Trip[]
+  rateContracts RateContract[]
+  invoices      Invoice[]
+  loadingOrders LoadingOrder[]
+
+  @@index([status])
+}
+
+model Location {
+  id            Int      @id @default(autoincrement())
+  name          String
+  nameAr        String?
+  description   String?
+  descriptionAr String?
+  status        String   @default("ACTIVE")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  pickupTrips   Trip[] @relation("PickupLocation")
+  deliveryTrips Trip[] @relation("DeliveryLocation")
+
+  rateContractsAsPickup   RateContract[] @relation("RateContractPickup")
+  rateContractsAsDelivery RateContract[] @relation("RateContractDelivery")
+
+  loadingOrdersAsPickup   LoadingOrder[] @relation("LoadingOrderPickup")
+  loadingOrdersAsDelivery LoadingOrder[] @relation("LoadingOrderDelivery")
+}
+
+model CargoType {
+  id            Int      @id @default(autoincrement())
+  name          String   @unique
+  nameAr        String?
+  description   String?
+  descriptionAr String?
+  status        String   @default("ACTIVE")
+  pricingMode   String   @default("PER_MT")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  trips            Trip[]
+  rateContracts    RateContract[]
+  loadingOrders    LoadingOrder[]
+}
+
+model Trip {
+  id                Int    @id @default(autoincrement())
+  transactionNumber String @unique
+
+  supplierId Int?
+  customerId Int?
+
+  pickupLocationId   Int
+  deliveryLocationId Int
+
+  cargoTypeId Int
+  quantity    Decimal @db.Decimal(12, 3)
+
+  tripDate DateTime
+  truckId  Int
+  driverId Int?
+
+  invoiceId Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  supplier         Supplier? @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  customer         Customer? @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  pickupLocation   Location  @relation("PickupLocation", fields: [pickupLocationId], references: [id])
+  deliveryLocation Location  @relation("DeliveryLocation", fields: [deliveryLocationId], references: [id])
+  cargoType        CargoType @relation(fields: [cargoTypeId], references: [id])
+  truck            Truck     @relation(fields: [truckId], references: [id])
+  driver           Driver?   @relation(fields: [driverId], references: [id], onDelete: Restrict)
+  invoice          Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+
+  @@index([tripDate])
+  @@index([truckId])
+  @@index([driverId])
+  @@index([customerId])
+  @@index([supplierId])
+  @@index([cargoTypeId])
+  @@index([pickupLocationId])
+  @@index([deliveryLocationId])
+  @@index([invoiceId])
+}
+
+model RateContract {
+  id                 Int      @id @default(autoincrement())
+  customerId         Int
+  pickupLocationId   Int
+  deliveryLocationId Int
+  cargoTypeId        Int
+  rate               Decimal  @db.Decimal(12, 2)
+  currency           String   @default("SAR")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  customer         Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  pickupLocation   Location  @relation("RateContractPickup", fields: [pickupLocationId], references: [id], onDelete: Restrict)
+  deliveryLocation Location  @relation("RateContractDelivery", fields: [deliveryLocationId], references: [id], onDelete: Restrict)
+  cargoType        CargoType @relation(fields: [cargoTypeId], references: [id], onDelete: Restrict)
+
+  @@unique([customerId, pickupLocationId, deliveryLocationId, cargoTypeId])
+}
+
+model Invoice {
+  id            Int       @id @default(autoincrement())
+  invoiceNumber String    @unique
+  customerId    Int
+  issueDate     DateTime  @default(now())
+  issueTime     DateTime  @default(now())
+  dueDate       DateTime
+  fromDate      DateTime
+  toDate        DateTime
+  currency      String    @default("SAR")
+  invoiceType   String    @default("STANDARD") // STANDARD | SIMPLIFIED | CREDIT_NOTE | DEBIT_NOTE
+  paymentMeans  String    @default("CASH")     // CASH | BANK_TRANSFER | CARD | CHEQUE
+  vatEnabled    Boolean   @default(false)
+  vatPercent    Decimal   @default(0) @db.Decimal(5, 2)
+  subtotal      Decimal   @db.Decimal(12, 2)
+  vatAmount     Decimal   @db.Decimal(12, 2)
+  total         Decimal   @db.Decimal(12, 2)
+  status        String    @default("UNPAID")
+  paidAt        DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  customer  Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  lineItems InvoiceLineItem[]
+  trips     Trip[]
+
+  /**
+   * -------- ZATCA e-invoicing metadata (Saudi FATURA phase-2) --------
+   */
+  invoiceUuid         String?              @unique // ZATCA-assigned invoice UUID
+  zatcaInvoiceCounter Int? // sequential per-company counter (ZATCA numbering req.)
+  invoiceHash         String?              @db.Text // SHA-256 of canonicalized invoice XML
+  previousInvoiceHash String?              @db.Text // PIH of immediately preceding invoice (chain)
+  cryptographicStamp  String?              @db.Text // base64 ECDSA-P256 signature of invoice hash
+  signedC14nXml       String?              @db.Text // canonicalized, signed UBL 2.1 XML (reuse for view / verify)
+  qrCode              String?              @db.Text // base64 ZATCA TLV QR payload
+  zatcaStatus         String?              @default("PENDING_SIGN") // PENDING_SIGN | SIGNED | REPORTED | CLEARED | REJECTED | FAILED
+  zatcaSubmittedAt    DateTime?
+  zatcaClearedAt      DateTime?
+  createdByCompanyId  Int? // company owning this invoice (multi-tenant isolation)
+  zatcaSubmissionLogs ZatcaSubmissionLog[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([issueDate])
+  @@index([dueDate])
+  @@index([zatcaStatus])
+}
+
+model InvoiceLineItem {
+  id          Int      @id @default(autoincrement())
+  invoiceId   Int
+  description String
+  quantity    Decimal  @db.Decimal(12, 3)
+  rate        Decimal  @db.Decimal(12, 2)
+  amount      Decimal  @db.Decimal(12, 2)
+  taxCategory String   @default("S")
+  taxPercent  Decimal  @default(15) @db.Decimal(5, 2)
+  taxAmount   Decimal  @default(0)  @db.Decimal(12, 2)
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+}
+
+model CompanySettings {
+  id          Int      @id @default(autoincrement())
+  companyName String
+  logoUrl     String?
+  vatNumber   String? // 15-digit Saudi VAT number (includes leading '3')
+  /** -------- ZATCA Company Information (Phase-2 onboarding) -------- */
+  crNumber          String? // CRN / commercial registration number
+  branchName        String? // registered branch name
+  industryCategory  String? // business industry/category
+  city              String? // registered branch city
+  country           String  @default("SA") // ISO 3166-1 alpha-2 (SA for Saudi Arabia)
+  address           String?
+  streetName        String?
+  buildingNumber    String?
+  postalCode        String?
+  bankName          String?
+  bankAccount       String?
+  phone             String?
+  email             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  /**
+   * =====================================================================
+   * ZATCA e-invoicing onboarding vault (Saudi e-invoicing / phase-2)
+   * ---------------------------------------------------------------------
+   * - SECRETS in this vault are AES-256-GCM encrypted at rest (key from
+   * ZATCA_MASTER_KEY env) and are NEVER returned by any API surface.
+   * - The ZATCA hash-chain COUNTERS live ONLY here + on Invoice records,
+   * both in PostgreSQL ΓÇö PostgreSQL is the authoritative source of truth.
+   * Redis (when wired later) will be a non-authoritative cache ONLY.
+   * =====================================================================
+   */
+  zatcaEnvironment           String    @default("SANDBOX") // SANDBOX | PRODUCTION
+  zatcaOnboardStage          String    @default("NOT_STARTED") // NOT_STARTED | CSR_GENERATED | COMPLIANCE_CSID_PENDING | COMPLIANT | PRODUCTION_CSID | READY
+  zatcaInvoiceCounter        Int       @default(0) // sequential ZATCA numbering counter
+  zatcaLastInvoiceHash       String?   @db.Text // previous invoice hash -> PIH chaining
+  /**
+   * -------- encrypted secrets vault (protection: 'zatca-vault' permission) --------
+   */
+  zatcaCsrPemEnc             String?   @db.Text // encrypted CSR PEM
+  zatcaCsrPrivateKeyPemEnc   String?   @db.Text // encrypted ECDSA P-256 private key (signer)
+  zatcaComplianceCsidCertEnc String?   @db.Text // encrypted compliance CSID cert PEM + private key
+  zatcaComplianceSecretEnc   String?   @db.Text // encrypted compliance invoice-signing secret
+  zatcaProductionCsidCertEnc String?   @db.Text // encrypted production CSID cert PEM + private key
+  zatcaProductionSecretEnc   String?   @db.Text // encrypted production invoice-signing secret
+  /**
+   * -------- attestation status --------
+   */
+  zatcaComplianceStatus      String? // COMPLIANT | REJECTED | EXPIRED
+  zatcaLastOnboardError      String?   @db.Text
+  zatcaLastOnboardedAt       DateTime?
+  zatcaLastSubmittedAt       DateTime?
+  zatcaLastSubmissionStatus  String?   @db.Text // http status from last invoice submission
+}
+
+model ZatcaSubmissionLog {
+  id           Int       @id @default(autoincrement())
+  invoiceId    Int
+  operation    String // SUBMIT | CLEARANCE_STATUS | CSID_ONBOARD
+  status       String    @default("PENDING") // PENDING | SUCCESS | FAILED | RETRY
+  attempt      Int       @default(1)
+  invoiceHash  String?   @db.Text
+  requestBody  String?   @db.Text
+  responseBody String?   @db.Text
+  httpStatus   Int?
+  zatcaStatus  String? // REPORTED | CLEARED | REJECTED | SUBMITTED
+  responseUuid String?
+  errorCode    String?
+  errorMessage String?   @db.Text
+  requestAt    DateTime  @default(now())
+  responseAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId, operation])
+  @@index([status])
+}
+
+model SupplierPayment {
+  id          Int      @id @default(autoincrement())
+  supplierId  Int
+  amount      Decimal  @db.Decimal(12, 2)
+  currency    String   @default("SAR")
+  paymentDate DateTime @default(now())
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+
+  @@index([supplierId])
+  @@index([paymentDate])
+}
+
+model LoadingOrder {
+  id                 Int      @id @default(autoincrement())
+  serialNumber       String   @unique
+  batchId            Int
+  pickupLocationId   Int
+  deliveryLocationId Int
+  customerId         Int
+  cargoTypeId        Int
+  createdAt          DateTime @default(now())
+
+  pickupLocation   Location  @relation("LoadingOrderPickup", fields: [pickupLocationId], references: [id], onDelete: Restrict)
+  deliveryLocation Location  @relation("LoadingOrderDelivery", fields: [deliveryLocationId], references: [id], onDelete: Restrict)
+  customer         Customer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  cargoType        CargoType @relation(fields: [cargoTypeId], references: [id], onDelete: Restrict)
+
+  @@index([customerId])
+  @@index([batchId])
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  username     String?  @unique
+  passwordHash String
+  role         String   @default("DISPATCHER")
+  roleId       Int?
+  language     String   @default("en")
+  status       String   @default("ACTIVE")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  roleRef Role? @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  inspections VehicleInspection[]
+
+  @@index([roleId])
+  @@index([status])
+}
+
+model Role {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  permissions Permission[]
+  users       User[]
+
+  @@index([name])
+}
+
+model Permission {
+  id        Int     @id @default(autoincrement())
+  roleId    Int
+  module    String
+  canView   Boolean @default(false)
+  canAdd    Boolean @default(false)
+  canEdit   Boolean @default(false)
+  canDelete Boolean @default(false)
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, module])
+}
+
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// WORKSHOP MODULE
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+model WorkOrder {
+  id             Int       @id @default(autoincrement())
+  orderNumber    String    @unique
+  truckId        Int
+  driverId       Int?
+  supplierId     Int?
+  issue          String
+  diagnosis      String?
+  description    String?
+  priority       String    @default("MEDIUM")
+  status         String    @default("OPEN")
+  startDate      DateTime?
+  completionDate DateTime?
+  odometer       Decimal?  @db.Decimal(12, 1)
+  laborCost      Decimal   @default(0) @db.Decimal(12, 2)
+  partsCost      Decimal   @default(0) @db.Decimal(12, 2)
+  otherCost      Decimal   @default(0) @db.Decimal(12, 2)
+  totalCost      Decimal   @default(0) @db.Decimal(12, 2)
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  truck           Truck             @relation(fields: [truckId], references: [id], onDelete: Restrict)
+  driver          Driver?           @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  supplier        Supplier?         @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  parts           WorkOrderPart[]
+  inspectionItems InspectionItem[]
+  expenses        WorkshopExpense[]
+
+  @@index([truckId])
+  @@index([driverId])
+  @@index([supplierId])
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
+}
+
+model WorkOrderPart {
+  id          Int      @id @default(autoincrement())
+  workOrderId Int
+  sparePartId Int
+  quantity    Int      @default(1)
+  unitCost    Decimal  @default(0) @db.Decimal(12, 2)
+  totalCost   Decimal  @default(0) @db.Decimal(12, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  sparePart SparePart @relation(fields: [sparePartId], references: [id], onDelete: Restrict)
+
+  @@index([workOrderId])
+  @@index([sparePartId])
+}
+
+model MaintenanceSchedule {
+  id              Int       @id @default(autoincrement())
+  truckId         Int
+  maintenanceType String
+  description     String?
+  mileageInterval Decimal?  @db.Decimal(12, 1)
+  dayInterval     Int?
+  lastService     DateTime?
+  nextService     DateTime?
+  status          String    @default("ACTIVE")
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  truck Truck @relation(fields: [truckId], references: [id], onDelete: Restrict)
+
+  @@index([truckId])
+  @@index([nextService])
+  @@index([status])
+}
+
+model VehicleInspection {
+  id          Int      @id @default(autoincrement())
+  truckId     Int
+  inspectorId Int
+  inspectDate DateTime
+  odometer    Decimal? @db.Decimal(12, 1)
+  notes       String?
+  result      String   @default("PASS")
+  attachments String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  truck     Truck            @relation(fields: [truckId], references: [id], onDelete: Restrict)
+  inspector User             @relation(fields: [inspectorId], references: [id], onDelete: Restrict)
+  items     InspectionItem[]
+
+  @@index([truckId])
+  @@index([inspectorId])
+  @@index([inspectDate])
+}
+
+model InspectionItem {
+  id            Int      @id @default(autoincrement())
+  inspectionId  Int
+  workOrderId   Int?
+  checklistItem String
+  status        String   @default("PASS")
+  defect        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  inspection VehicleInspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  workOrder  WorkOrder?        @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+
+  @@index([inspectionId])
+  @@index([workOrderId])
+}
+
+model SparePart {
+  id           Int      @id @default(autoincrement())
+  name         String
+  nameAr       String?
+  partNumber   String?  @unique
+  category     String?
+  quantity     Int      @default(0)
+  minimumStock Int      @default(0)
+  unitCost     Decimal  @default(0) @db.Decimal(12, 2)
+  supplierId   Int?
+  status       String   @default("ACTIVE")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  supplier       Supplier?              @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  workOrderParts WorkOrderPart[]
+  transactions   SparePartTransaction[]
+
+  @@index([supplierId])
+  @@index([category])
+  @@index([status])
+  @@index([partNumber])
+}
+
+model SparePartTransaction {
+  id              Int      @id @default(autoincrement())
+  sparePartId     Int
+  transactionType String
+  quantity        Int
+  referenceNote   String?
+  createdAt       DateTime @default(now())
+
+  sparePart SparePart @relation(fields: [sparePartId], references: [id], onDelete: Restrict)
+
+  @@index([sparePartId])
+  @@index([createdAt])
+}
+
+model WorkshopExpense {
+  id          Int      @id @default(autoincrement())
+  truckId     Int
+  workOrderId Int?
+  category    String
+  amount      Decimal  @db.Decimal(12, 2)
+  description String?
+  expenseDate DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  truck     Truck      @relation(fields: [truckId], references: [id], onDelete: Restrict)
+  workOrder WorkOrder? @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+
+  @@index([truckId])
+  @@index([workOrderId])
+  @@index([expenseDate])
+  @@index([category])
+}
+
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// HR MODULE
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+model Department {
+  id          Int      @id @default(autoincrement())
+  name        String
+  nameAr      String?
+  description String?
+  managerId   Int?
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  designations Designation[]
+  employees    Employee[]
+
+  @@index([status])
+}
+
+model Designation {
+  id           Int      @id @default(autoincrement())
+  name         String
+  nameAr       String?
+  description  String?
+  departmentId Int
+  level        String?
+  status       String   @default("ACTIVE")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  employees  Employee[]
+
+  @@index([departmentId])
+  @@index([status])
+}
+
+model Employee {
+  id               Int      @id @default(autoincrement())
+  employeeNumber   String   @unique
+  name             String
+  nameAr           String?
+  email            String?  @unique
+  phone            String?
+  idNumber         String?
+  joiningDate      DateTime
+  employmentType   String   @default("FULL_TIME")
+  employmentStatus String   @default("ACTIVE")
+  departmentId     Int
+  designationId    Int?
+  managerId        Int?
+  salary           Decimal? @db.Decimal(12, 2)
+  address          String?
+  emergencyContact String?
+  emergencyPhone   String?
+  profilePhoto     String?
+  notes            String?
+  driverId         Int?     @unique
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  department    Department           @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  designation   Designation?         @relation(fields: [designationId], references: [id], onDelete: SetNull)
+  driver        Driver?              @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  attendance    Attendance[]
+  leaveRequests LeaveRequest[]
+  documents     EmployeeDocument[]
+  contracts     EmploymentContract[]
+
+  @@index([departmentId])
+  @@index([designationId])
+  @@index([employmentStatus])
+  @@index([joiningDate])
+}
+
+model Attendance {
+  id          Int       @id @default(autoincrement())
+  employeeId  Int
+  attendDate  DateTime
+  checkIn     DateTime?
+  checkOut    DateTime?
+  status      String    @default("PRESENT")
+  hoursWorked Decimal?  @db.Decimal(5, 2)
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+
+  @@unique([employeeId, attendDate])
+  @@index([employeeId])
+  @@index([attendDate])
+  @@index([status])
+}
+
+model LeaveRequest {
+  id         Int      @id @default(autoincrement())
+  employeeId Int
+  leaveType  String
+  startDate  DateTime
+  endDate    DateTime
+  days       Int
+  reason     String?
+  status     String   @default("PENDING")
+  approverId Int?
+  comments   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+}
+
+model EmployeeDocument {
+  id             Int       @id @default(autoincrement())
+  employeeId     Int
+  documentType   String
+  documentNumber String?
+  issueDate      DateTime?
+  expiryDate     DateTime?
+  fileUrl        String?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+
+  @@index([employeeId])
+  @@index([documentType])
+  @@index([expiryDate])
+}
+
+model EmploymentContract {
+  id             Int       @id @default(autoincrement())
+  employeeId     Int
+  contractNumber String
+  contractType   String    @default("FIXED_TERM")
+  startDate      DateTime
+  endDate        DateTime?
+  salary         Decimal?  @db.Decimal(12, 2)
+  currency       String?
+  terms          String?
+  status         String    @default("ACTIVE")
+  documentUrl    String?
+  title          String?
+  documentUploadedAt DateTime?
+  documentUploadedBy String?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+}

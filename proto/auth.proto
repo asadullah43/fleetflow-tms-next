@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package fleetflow.auth;
+
+// Mirrors legacy REST: POST /auth/login, GET /auth/me,
+// PATCH /auth/me/language, GET /auth/me/permissions
+service AuthService {
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc GetMe(GetMeRequest) returns (UserProfile);
+  rpc UpdateLanguage(UpdateLanguageRequest) returns (UserProfile);
+  rpc GetMyPermissions(GetMeRequest) returns (PermissionList);
+}
+
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+  optional string language = 3;
+}
+
+message LoginResponse {
+  string access_token = 1;
+  UserProfile user = 2;
+}
+
+// GetMe / GetMyPermissions take no body fields — the caller identity comes
+// from the "authorization: Bearer <jwt>" gRPC metadata, same as the old
+// JwtAuthGuard reading the Authorization header.
+message GetMeRequest {}
+
+message UpdateLanguageRequest {
+  string language = 1;
+}
+
+message UserProfile {
+  int32 id = 1;
+  string name = 2;
+  string email = 3;
+  optional string role = 4;
+  optional int32 role_id = 5;
+  string language = 6;
+}
+
+message Permission {
+  string module = 1;
+  bool can_view = 2;
+  bool can_add = 3;
+  bool can_edit = 4;
+  bool can_delete = 5;
+}
+
+message PermissionList {
+  repeated Permission permissions = 1;
+}

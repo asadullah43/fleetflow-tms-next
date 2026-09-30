@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package fleetflow.common;
+
+// Shared error shape, mirrors the old REST API's AppError envelope
+// (backend/src/common/errors/app-error.ts in the legacy NestJS app)
+message AppError {
+  string error_code = 1;
+  string error_filter = 2;
+  string error_description = 3;
+  int32 status_code = 4;
+}
+
+message Empty {}

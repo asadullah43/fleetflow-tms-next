@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# Backend build output & generated Prisma client
+backend/dist/
+backend/src/generated/
+
+# Frontend build output & generated proto client
+frontend/.next/
+frontend/lib/generated/
+frontend/next-env.d.ts
+frontend/tsconfig.tsbuildinfo
+
+# Proto codegen output that isn't backend/frontend-specific
+proto/**/*.js
+proto/**/*.d.ts
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
