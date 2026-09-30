@@ -3,7 +3,7 @@
   "private": true,
   "description": "FleetFlow-TMS rewrite: Next.js/React frontend + Node gRPC backend (grpc-web via Envoy), same Postgres/Prisma data model as the legacy NestJS/Flutter app.",
   "scripts": {
-    "proto:gen": "bash scripts/gen-proto.sh",
+    "proto:gen": "node scripts/gen-proto.mjs",
     "dev:backend": "npm --prefix backend run dev",
     "dev:frontend": "npm --prefix frontend run dev"
   },
