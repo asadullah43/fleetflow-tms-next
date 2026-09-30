@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package fleetflow.trucks;
+
+service TrucksService {
+  rpc List(ListRequest) returns (TruckList);
+  rpc Get(IdRequest) returns (Truck);
+  rpc Create(CreateTruckRequest) returns (Truck);
+  rpc Update(UpdateTruckRequest) returns (Truck);
+  rpc Delete(IdRequest) returns (DeleteResponse);
+}
+
+message ListRequest {}
+message IdRequest { int32 id = 1; }
+message DeleteResponse {}
+
+message Truck {
+  int32 id = 1;
+  string truck_number = 2;
+  optional string truck_type = 3;
+  string status = 4;
+}
+
+message TruckList { repeated Truck items = 1; }
+
+message CreateTruckRequest {
+  string truck_number = 1;
+  optional string truck_type = 2;
+  optional string status = 3;
+}
+
+message UpdateTruckRequest {
+  int32 id = 1;
+  optional string truck_number = 2;
+  optional string truck_type = 3;
+  optional string status = 4;
+}

@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package fleetflow.dashboard;
+
+service DashboardService {
+  rpc GetSummary(SummaryRequest) returns (SummaryResponse);
+}
+
+message SummaryRequest {}
+
+message SummaryResponse {
+  int32 active_trucks = 1;
+  int32 active_drivers = 2;
+  int32 trips_this_month = 3;
+  int32 open_work_orders = 4;
+  string unpaid_invoices_total = 5;
+  int32 unpaid_invoices_count = 6;
+  int32 pending_leave_requests = 7;
+  int32 low_stock_spare_parts = 8;
+}

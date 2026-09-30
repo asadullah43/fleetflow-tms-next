@@ -11,8 +11,7 @@ export interface ColumnDef<T> {
   align?: 'left' | 'right';
 }
 
-interface CrudPageProps<T extends { id: number }> {
-  title: string;
+interface CrudPanelProps<T extends { id: number }> {
   columns: ColumnDef<T>[];
   fetchAll: () => Promise<T[]>;
   onCreate: (values: Record<string, string>) => Promise<T>;
@@ -25,6 +24,10 @@ interface CrudPageProps<T extends { id: number }> {
   addLabel?: string;
 }
 
+interface CrudPageProps<T extends { id: number }> extends CrudPanelProps<T> {
+  title: string;
+}
+
 export interface FormFieldDef {
   name: string;
   label: string;
@@ -34,13 +37,12 @@ export interface FormFieldDef {
 }
 
 /**
- * Generic list+create+edit+delete page shared by every simple lookup/CRUD
- * module (Locations, Cargo Types, Customers, Suppliers, ...). Modules with
- * real extra behavior (Trucks' assignments, Invoices' ZATCA flow, HR's
- * multi-tab layout) build their own page instead of using this.
+ * The list+create+edit+delete UI itself, with no page shell — used
+ * directly inside a tabbed page (HR, Workshop) that already has its own
+ * AppShell. `CrudPage` below is this same panel wrapped in AppShell for a
+ * standalone module page.
  */
-export function CrudPage<T extends { id: number }>({
-  title,
+export function CrudPanel<T extends { id: number }>({
   columns,
   fetchAll,
   onCreate,
@@ -51,7 +53,7 @@ export function CrudPage<T extends { id: number }>({
   toFormValues,
   emptyLabel = 'No records yet.',
   addLabel = 'Add',
-}: CrudPageProps<T>) {
+}: CrudPanelProps<T>) {
   const [rows, setRows] = useState<T[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [modal, setModal] = useState<{ mode: 'create' | 'edit'; row?: T } | null>(null);
@@ -111,7 +113,7 @@ export function CrudPage<T extends { id: number }>({
   }
 
   return (
-    <AppShell title={title}>
+    <>
       {error && <div className="error-banner">{error}</div>}
 
       <div className="toolbar">
@@ -217,6 +219,21 @@ export function CrudPage<T extends { id: number }>({
           ))}
         </Modal>
       )}
+    </>
+  );
+}
+
+/**
+ * Standalone page for a simple lookup/CRUD module (Locations, Cargo
+ * Types, Customers, Suppliers, ...): CrudPanel wrapped in AppShell.
+ * Modules with real extra behavior (Trucks' assignments, Invoices' ZATCA
+ * flow, HR's multi-tab layout) build their own page, using CrudPanel
+ * directly inside their own AppShell instead of this.
+ */
+export function CrudPage<T extends { id: number }>({ title, ...panelProps }: CrudPageProps<T>) {
+  return (
+    <AppShell title={title}>
+      <CrudPanel<T> {...panelProps} />
     </AppShell>
   );
 }

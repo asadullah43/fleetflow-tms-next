@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package fleetflow.companysettings;
+
+// Singleton settings record — get-or-create, no list/delete.
+service CompanySettingsService {
+  rpc Get(GetRequest) returns (CompanySettings);
+  rpc Update(UpdateCompanySettingsRequest) returns (CompanySettings);
+}
+
+message GetRequest {}
+
+message CompanySettings {
+  int32 id = 1;
+  string company_name = 2;
+  optional string logo_url = 3;
+  optional string vat_number = 4;
+  optional string cr_number = 5;
+  optional string branch_name = 6;
+  optional string industry_category = 7;
+  optional string city = 8;
+  string country = 9;
+  optional string address = 10;
+  optional string street_name = 11;
+  optional string building_number = 12;
+  optional string postal_code = 13;
+  optional string bank_name = 14;
+  optional string bank_account = 15;
+  optional string phone = 16;
+  optional string email = 17;
+}
+
+message UpdateCompanySettingsRequest {
+  optional string company_name = 1;
+  optional string logo_url = 2;
+  optional string vat_number = 3;
+  optional string cr_number = 4;
+  optional string branch_name = 5;
+  optional string industry_category = 6;
+  optional string city = 7;
+  optional string country = 8;
+  optional string address = 9;
+  optional string street_name = 10;
+  optional string building_number = 11;
+  optional string postal_code = 12;
+  optional string bank_name = 13;
+  optional string bank_account = 14;
+  optional string phone = 15;
+  optional string email = 16;
+}

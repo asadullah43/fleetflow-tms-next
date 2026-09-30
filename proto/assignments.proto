@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package fleetflow.assignments;
+
+// Truck <-> Driver assignments (which driver is currently running which truck).
+service AssignmentsService {
+  rpc List(ListRequest) returns (AssignmentList);
+  rpc Get(IdRequest) returns (Assignment);
+  rpc Create(CreateAssignmentRequest) returns (Assignment);
+  rpc Update(UpdateAssignmentRequest) returns (Assignment);
+  rpc Delete(IdRequest) returns (DeleteResponse);
+}
+
+message ListRequest {}
+message IdRequest { int32 id = 1; }
+message DeleteResponse {}
+
+message Assignment {
+  int32 id = 1;
+  int32 truck_id = 2;
+  int32 driver_id = 3;
+  string start_date = 4;
+  optional string end_date = 5;
+  optional string truck_number = 6; // denormalized for display
+  optional string driver_name = 7;  // denormalized for display
+}
+
+message AssignmentList { repeated Assignment items = 1; }
+
+message CreateAssignmentRequest {
+  int32 truck_id = 1;
+  int32 driver_id = 2;
+  string start_date = 3;
+  optional string end_date = 4;
+}
+
+message UpdateAssignmentRequest {
+  int32 id = 1;
+  optional int32 truck_id = 2;
+  optional int32 driver_id = 3;
+  optional string start_date = 4;
+  optional string end_date = 5;
+}

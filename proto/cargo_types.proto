@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package fleetflow.cargotypes;
+
+service CargoTypesService {
+  rpc List(ListRequest) returns (CargoTypeList);
+  rpc Get(IdRequest) returns (CargoType);
+  rpc Create(CreateCargoTypeRequest) returns (CargoType);
+  rpc Update(UpdateCargoTypeRequest) returns (CargoType);
+  rpc Delete(IdRequest) returns (DeleteResponse);
+}
+
+message ListRequest {}
+message IdRequest { int32 id = 1; }
+message DeleteResponse {}
+
+message CargoType {
+  int32 id = 1;
+  string name = 2;
+  optional string name_ar = 3;
+  optional string description = 4;
+  optional string description_ar = 5;
+  string status = 6;
+  string pricing_mode = 7; // PER_MT | PER_TRIP
+}
+
+message CargoTypeList { repeated CargoType items = 1; }
+
+message CreateCargoTypeRequest {
+  string name = 1;
+  optional string language = 2;
+  optional string description = 3;
+  optional string status = 4;
+  optional string pricing_mode = 5;
+}
+
+message UpdateCargoTypeRequest {
+  int32 id = 1;
+  optional string name = 2;
+  optional string language = 3;
+  optional string description = 4;
+  optional string status = 5;
+  optional string pricing_mode = 6;
+}

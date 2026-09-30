@@ -1,0 +1,332 @@
+syntax = "proto3";
+
+package fleetflow.workshop;
+
+message ListRequest {}
+message IdRequest { int32 id = 1; }
+message DeleteResponse {}
+
+// ---- Work orders ----
+service WorkOrdersService {
+  rpc List(ListRequest) returns (WorkOrderList);
+  rpc Get(IdRequest) returns (WorkOrder);
+  rpc Create(CreateWorkOrderRequest) returns (WorkOrder);
+  rpc Update(UpdateWorkOrderRequest) returns (WorkOrder);
+  rpc Delete(IdRequest) returns (DeleteResponse);
+}
+
+message WorkOrder {
+  int32 id = 1;
+  string order_number = 2;
+  int32 truck_id = 3;
+  optional int32 driver_id = 4;
+  optional int32 supplier_id = 5;
+  string issue = 6;
+  optional string diagnosis = 7;
+  optional string description = 8;
+  string priority = 9;
+  string status = 10;
+  optional string start_date = 11;
+  optional string completion_date = 12;
+  optional string odometer = 13;
+  string labor_cost = 14;
+  string parts_cost = 15;
+  string other_cost = 16;
+  string total_cost = 17;
+  optional string notes = 18;
+  optional string truck_number = 19;
+  optional string driver_name = 20;
+}
+message WorkOrderList { repeated WorkOrder items = 1; }
+message CreateWorkOrderRequest {
+  int32 truck_id = 1;
+  optional int32 driver_id = 2;
+  optional int32 supplier_id = 3;
+  string issue = 4;
+  optional string diagnosis = 5;
+  optional string description = 6;
+  optional string priority = 7;
+  optional string status = 8;
+  optional string start_date = 9;
+  optional string completion_date = 10;
+  optional string odometer = 11;
+  optional string labor_cost = 12;
+  optional string parts_cost = 13;
+  optional string other_cost = 14;
+  optional string notes = 15;
+}
+message UpdateWorkOrderRequest {
+  int32 id = 1;
+  optional int32 truck_id = 2;
+  optional int32 driver_id = 3;
+  optional int32 supplier_id = 4;
+  optional string issue = 5;
+  optional string diagnosis = 6;
+  optional string description = 7;
+  optional string priority = 8;
+  optional string status = 9;
+  optional string start_date = 10;
+  optional string completion_date = 11;
+  optional string odometer = 12;
+  optional string labor_cost = 13;
+  optional string parts_cost = 14;
+  optional string other_cost = 15;
+  optional string notes = 16;
+}
+
+// ---- Maintenance schedules ----
+service MaintenanceSchedulesService {
+  rpc List(ListRequest) returns (MaintenanceScheduleList);
+  rpc Get(IdRequest) returns (MaintenanceSchedule);
+  rpc Create(CreateMaintenanceScheduleRequest) returns (MaintenanceSchedule);
+  rpc Update(UpdateMaintenanceScheduleRequest) returns (MaintenanceSchedule);
+  rpc Delete(IdRequest) returns (DeleteResponse);
+}
+
+message MaintenanceSchedule {
+  int32 id = 1;
+  int32 truck_id = 2;
+  string maintenance_type = 3;
+  optional string description = 4;
+  optional string mileage_interval = 5;
+  optional int32 day_interval = 6;
+  optional string last_service = 7;
+  optional string next_service = 8;
+  string status = 9;
+  optional string notes = 10;
+  optional string truck_number = 11;
+}
+message MaintenanceScheduleList { repeated MaintenanceSchedule items = 1; }
+message CreateMaintenanceScheduleRequest {
+  int32 truck_id = 1;
+  string maintenance_type = 2;
+  optional string description = 3;
+  optional string mileage_interval = 4;
+  optional int32 day_interval = 5;
+  optional string last_service = 6;
+  optional string next_service = 7;
+  optional string status = 8;
+  optional string notes = 9;
+}
+message UpdateMaintenanceScheduleRequest {
+  int32 id = 1;
+  optional int32 truck_id = 2;
+  optional string maintenance_type = 3;
+  optional string description = 4;
+  optional string mileage_interval = 5;
+  optional int32 day_interval = 6;
+  optional string last_service = 7;
+  optional string next_service = 8;
+  optional string status = 9;
+  optional string notes = 10;
+}
+
+// ---- Vehicle inspections ----
+service VehicleInspectionsService {
+  rpc List(ListRequest) returns (VehicleInspectionList);
+  rpc Get(IdRequest) returns (VehicleInspection);
+  rpc Create(CreateVehicleInspectionRequest) returns (VehicleInspection);
+  rpc Update(UpdateVehicleInspectionRequest) returns (VehicleInspection);
+  rpc Delete(IdRequest) returns (DeleteResponse);
+}
+
+message VehicleInspection {
+  int32 id = 1;
+  int32 truck_id = 2;
+  int32 inspector_id = 3;
+  string inspect_date = 4;
+  optional string odometer = 5;
+  optional string notes = 6;
+  string result = 7;
+  optional string attachments = 8;
+  optional string truck_number = 9;
+  optional string inspector_name = 10;
+}
+message VehicleInspectionList { repeated VehicleInspection items = 1; }
+message CreateVehicleInspectionRequest {
+  int32 truck_id = 1;
+  int32 inspector_id = 2;
+  string inspect_date = 3;
+  optional string odometer = 4;
+  optional string notes = 5;
+  optional string result = 6;
+  optional string attachments = 7;
+}
+message UpdateVehicleInspectionRequest {
+  int32 id = 1;
+  optional int32 truck_id = 2;
+  optional int32 inspector_id = 3;
+  optional string inspect_date = 4;
+  optional string odometer = 5;
+  optional string notes = 6;
+  optional string result = 7;
+  optional string attachments = 8;
+}
+
+// ---- Spare parts ----
+service SparePartsService {
+  rpc List(ListRequest) returns (SparePartList);
+  rpc Get(IdRequest) returns (SparePart);
+  rpc Create(CreateSparePartRequest) returns (SparePart);
+  rpc Update(UpdateSparePartRequest) returns (SparePart);
+  rpc Delete(IdRequest) returns (DeleteResponse);
+}
+
+message SparePart {
+  int32 id = 1;
+  string name = 2;
+  optional string name_ar = 3;
+  optional string part_number = 4;
+  optional string category = 5;
+  int32 quantity = 6;
+  int32 minimum_stock = 7;
+  string unit_cost = 8;
+  optional int32 supplier_id = 9;
+  string status = 10;
+  optional string supplier_name = 11;
+}
+message SparePartList { repeated SparePart items = 1; }
+message CreateSparePartRequest {
+  string name = 1;
+  optional string language = 2;
+  optional string part_number = 3;
+  optional string category = 4;
+  optional int32 quantity = 5;
+  optional int32 minimum_stock = 6;
+  optional string unit_cost = 7;
+  optional int32 supplier_id = 8;
+  optional string status = 9;
+}
+message UpdateSparePartRequest {
+  int32 id = 1;
+  optional string name = 2;
+  optional string language = 3;
+  optional string part_number = 4;
+  optional string category = 5;
+  optional int32 quantity = 6;
+  optional int32 minimum_stock = 7;
+  optional string unit_cost = 8;
+  optional int32 supplier_id = 9;
+  optional string status = 10;
+}
+
+// ---- Workshop expenses ----
+service WorkshopExpensesService {
+  rpc List(ListRequest) returns (WorkshopExpenseList);
+  rpc Get(IdRequest) returns (WorkshopExpense);
+  rpc Create(CreateWorkshopExpenseRequest) returns (WorkshopExpense);
+  rpc Update(UpdateWorkshopExpenseRequest) returns (WorkshopExpense);
+  rpc Delete(IdRequest) returns (DeleteResponse);
+}
+
+message WorkshopExpense {
+  int32 id = 1;
+  int32 truck_id = 2;
+  optional int32 work_order_id = 3;
+  string category = 4;
+  string amount = 5;
+  optional string description = 6;
+  string expense_date = 7;
+  optional string truck_number = 8;
+}
+message WorkshopExpenseList { repeated WorkshopExpense items = 1; }
+message CreateWorkshopExpenseRequest {
+  int32 truck_id = 1;
+  optional int32 work_order_id = 2;
+  string category = 3;
+  string amount = 4;
+  optional string description = 5;
+  optional string expense_date = 6;
+}
+message UpdateWorkshopExpenseRequest {
+  int32 id = 1;
+  optional int32 truck_id = 2;
+  optional int32 work_order_id = 3;
+  optional string category = 4;
+  optional string amount = 5;
+  optional string description = 6;
+  optional string expense_date = 7;
+}
+
+// ---- Work order parts (line items on a WorkOrder) ----
+service WorkOrderPartsService {
+  rpc List(ListRequest) returns (WorkOrderPartList);
+  rpc Create(CreateWorkOrderPartRequest) returns (WorkOrderPart);
+  rpc Update(UpdateWorkOrderPartRequest) returns (WorkOrderPart);
+  rpc Delete(IdRequest) returns (DeleteResponse);
+}
+
+message WorkOrderPart {
+  int32 id = 1;
+  int32 work_order_id = 2;
+  int32 spare_part_id = 3;
+  int32 quantity = 4;
+  string unit_cost = 5;
+  string total_cost = 6;
+  optional string spare_part_name = 7;
+}
+message WorkOrderPartList { repeated WorkOrderPart items = 1; }
+message CreateWorkOrderPartRequest {
+  int32 work_order_id = 1;
+  int32 spare_part_id = 2;
+  int32 quantity = 3;
+  string unit_cost = 4;
+}
+message UpdateWorkOrderPartRequest {
+  int32 id = 1;
+  optional int32 quantity = 2;
+  optional string unit_cost = 3;
+}
+
+// ---- Inspection checklist items ----
+service InspectionItemsService {
+  rpc List(ListRequest) returns (InspectionItemList);
+  rpc Create(CreateInspectionItemRequest) returns (InspectionItem);
+  rpc Update(UpdateInspectionItemRequest) returns (InspectionItem);
+  rpc Delete(IdRequest) returns (DeleteResponse);
+}
+
+message InspectionItem {
+  int32 id = 1;
+  int32 inspection_id = 2;
+  optional int32 work_order_id = 3;
+  string checklist_item = 4;
+  string status = 5;
+  optional string defect = 6;
+}
+message InspectionItemList { repeated InspectionItem items = 1; }
+message CreateInspectionItemRequest {
+  int32 inspection_id = 1;
+  optional int32 work_order_id = 2;
+  string checklist_item = 3;
+  optional string status = 4;
+  optional string defect = 5;
+}
+message UpdateInspectionItemRequest {
+  int32 id = 1;
+  optional string status = 2;
+  optional string defect = 3;
+}
+
+// ---- Spare part stock transactions ----
+service SparePartTransactionsService {
+  rpc List(ListRequest) returns (SparePartTransactionList);
+  rpc Create(CreateSparePartTransactionRequest) returns (SparePartTransaction);
+  rpc Delete(IdRequest) returns (DeleteResponse);
+}
+
+message SparePartTransaction {
+  int32 id = 1;
+  int32 spare_part_id = 2;
+  string transaction_type = 3; // IN | OUT | ADJUSTMENT
+  int32 quantity = 4;
+  optional string reference_note = 5;
+  optional string spare_part_name = 6;
+}
+message SparePartTransactionList { repeated SparePartTransaction items = 1; }
+message CreateSparePartTransactionRequest {
+  int32 spare_part_id = 1;
+  string transaction_type = 2;
+  int32 quantity = 3;
+  optional string reference_note = 4;
+}

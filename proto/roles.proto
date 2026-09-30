@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package fleetflow.roles;
+
+service RolesService {
+  rpc List(ListRequest) returns (RoleList);
+  rpc Get(IdRequest) returns (Role);
+  rpc Create(CreateRoleRequest) returns (Role);
+  rpc Update(UpdateRoleRequest) returns (Role);
+  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc GetPermissionModules(ListRequest) returns (ModuleList);
+}
+
+message ListRequest {}
+message IdRequest { int32 id = 1; }
+message DeleteResponse {}
+
+message Permission {
+  string module = 1;
+  bool can_view = 2;
+  bool can_add = 3;
+  bool can_edit = 4;
+  bool can_delete = 5;
+}
+
+message Role {
+  int32 id = 1;
+  string name = 2;
+  optional string description = 3;
+  repeated Permission permissions = 4;
+}
+
+message RoleList { repeated Role items = 1; }
+
+message ModuleList { repeated string modules = 1; }
+
+message CreateRoleRequest {
+  string name = 1;
+  optional string description = 2;
+  repeated Permission permissions = 3;
+}
+
+message UpdateRoleRequest {
+  int32 id = 1;
+  optional string name = 2;
+  optional string description = 3;
+  repeated Permission permissions = 4;
+}

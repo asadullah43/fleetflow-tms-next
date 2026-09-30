@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package fleetflow.drivers;
+
+service DriversService {
+  rpc List(ListRequest) returns (DriverList);
+  rpc Get(IdRequest) returns (Driver);
+  rpc Create(CreateDriverRequest) returns (Driver);
+  rpc Update(UpdateDriverRequest) returns (Driver);
+  rpc Delete(IdRequest) returns (DeleteResponse);
+}
+
+message ListRequest {}
+message IdRequest { int32 id = 1; }
+message DeleteResponse {}
+
+message Driver {
+  int32 id = 1;
+  string name = 2;
+  optional string name_ar = 3;
+  optional string phone = 4;
+  optional string license_no = 5;
+  optional string id_number = 6;
+  string status = 7;
+}
+
+message DriverList { repeated Driver items = 1; }
+
+message CreateDriverRequest {
+  string name = 1;
+  optional string language = 2;
+  optional string phone = 3;
+  optional string license_no = 4;
+  optional string id_number = 5;
+  optional string status = 6;
+}
+
+message UpdateDriverRequest {
+  int32 id = 1;
+  optional string name = 2;
+  optional string language = 3;
+  optional string phone = 4;
+  optional string license_no = 5;
+  optional string id_number = 6;
+  optional string status = 7;
+}

@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package fleetflow.ratecontracts;
+
+service RateContractsService {
+  rpc List(ListRequest) returns (RateContractList);
+  rpc Get(IdRequest) returns (RateContract);
+  rpc Create(CreateRateContractRequest) returns (RateContract);
+  rpc Update(UpdateRateContractRequest) returns (RateContract);
+  rpc Delete(IdRequest) returns (DeleteResponse);
+}
+
+message ListRequest {}
+message IdRequest { int32 id = 1; }
+message DeleteResponse {}
+
+message RateContract {
+  int32 id = 1;
+  int32 customer_id = 2;
+  int32 pickup_location_id = 3;
+  int32 delivery_location_id = 4;
+  int32 cargo_type_id = 5;
+  string rate = 6;
+  string currency = 7;
+
+  optional string customer_name = 20;
+  optional string pickup_location_name = 21;
+  optional string delivery_location_name = 22;
+  optional string cargo_type_name = 23;
+}
+
+message RateContractList { repeated RateContract items = 1; }
+
+message CreateRateContractRequest {
+  int32 customer_id = 1;
+  int32 pickup_location_id = 2;
+  int32 delivery_location_id = 3;
+  int32 cargo_type_id = 4;
+  string rate = 5;
+  optional string currency = 6;
+}
+
+message UpdateRateContractRequest {
+  int32 id = 1;
+  optional int32 customer_id = 2;
+  optional int32 pickup_location_id = 3;
+  optional int32 delivery_location_id = 4;
+  optional int32 cargo_type_id = 5;
+  optional string rate = 6;
+  optional string currency = 7;
+}

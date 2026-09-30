@@ -19,13 +19,35 @@ so the browser never needs to know they're separate services.
 
 ## Status
 
-Scaffolded and building the **Auth module end-to-end** as proof of the
-stack (login, get current user, update language, get role permissions —
-a direct port of the legacy `AuthController`/`AuthService`). The other 19
-modules (Trucks, Drivers, Trips, Loading Orders, Rate Contracts,
-Customers, Suppliers, Supplier Payments, Cargo Types, Locations,
-Invoices + ZATCA e-invoicing, HR, Workshop, Company Settings, Roles,
-Users, Dashboard, Uploads, Health) are ported the same way, one at a time.
+All 20 legacy modules are ported, backend and frontend, with a shared
+design system (sidebar app shell, dense-data theme):
+
+Auth, Locations, Cargo Types, Customers, Suppliers, Trucks, Drivers,
+Truck-Driver Assignments, Trips, Rate Contracts, Loading Orders, Supplier
+Payments, Company Settings, Roles (permission matrix), Users, Invoices
+(with line items and totals), HR (Departments/Designations/Employees/
+Attendance/Leave Requests/Documents/Contracts), Workshop (Work Orders/
+Maintenance Schedules/Inspections/Spare Parts/Expenses/nested line
+items), and Dashboard (real summary stats).
+
+Known gaps/simplifications, called out so they're not mistaken for bugs:
+
+- **ZATCA e-invoicing** — Phase-1 QR codes are a real implementation
+  (`backend/src/modules/invoices/zatca-qr.ts`, TLV-encoded seller/VAT/
+  timestamp/total/VAT amount). Phase-2 (cryptographic invoice stamping,
+  live clearance/reporting against ZATCA's API) needs a government-issued
+  CSR and CSID certificate for a real CR number, which this environment
+  has no way to request or test against — `CompanySettings`' `zatca_*`
+  onboarding columns are already in the schema for when real certificates
+  are available.
+- A few loading-order and work-order-part error codes reuse a
+  neighboring `ErrorCode` entry where the legacy table didn't have an
+  exact match (e.g. no `LDO_UPDATE_FAILED` code existed) — cosmetic only,
+  doesn't affect behavior.
+- `backend/src/generated/prisma/` (the Prisma Client) isn't checked in —
+  run `npx prisma generate` after `npm install` (needs network access to
+  `binaries.prisma.sh`, which some sandboxes block; works fine on a normal
+  machine or in the Docker build).
 
 ## Repo layout
 

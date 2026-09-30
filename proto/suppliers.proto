@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package fleetflow.suppliers;
+
+service SuppliersService {
+  rpc List(ListRequest) returns (SupplierList);
+  rpc Get(IdRequest) returns (Supplier);
+  rpc Create(CreateSupplierRequest) returns (Supplier);
+  rpc Update(UpdateSupplierRequest) returns (Supplier);
+  rpc Delete(IdRequest) returns (DeleteResponse);
+}
+
+message ListRequest {}
+message IdRequest { int32 id = 1; }
+message DeleteResponse {}
+
+message Supplier {
+  int32 id = 1;
+  string name = 2;
+  optional string name_ar = 3;
+  optional string contact_person = 4;
+  optional string phone = 5;
+  optional string email = 6;
+  string status = 7;
+}
+
+message SupplierList { repeated Supplier items = 1; }
+
+message CreateSupplierRequest {
+  string name = 1;
+  optional string language = 2;
+  optional string contact_person = 3;
+  optional string phone = 4;
+  optional string email = 5;
+  optional string status = 6;
+}
+
+message UpdateSupplierRequest {
+  int32 id = 1;
+  optional string name = 2;
+  optional string language = 3;
+  optional string contact_person = 4;
+  optional string phone = 5;
+  optional string email = 6;
+  optional string status = 7;
+}

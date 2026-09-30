@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package fleetflow.trips;
+
+service TripsService {
+  rpc List(ListRequest) returns (TripList);
+  rpc Get(IdRequest) returns (Trip);
+  rpc Create(CreateTripRequest) returns (Trip);
+  rpc Update(UpdateTripRequest) returns (Trip);
+  rpc Delete(IdRequest) returns (DeleteResponse);
+}
+
+message ListRequest {}
+message IdRequest { int32 id = 1; }
+message DeleteResponse {}
+
+message Trip {
+  int32 id = 1;
+  string transaction_number = 2;
+  optional int32 supplier_id = 3;
+  optional int32 customer_id = 4;
+  int32 pickup_location_id = 5;
+  int32 delivery_location_id = 6;
+  int32 cargo_type_id = 7;
+  string quantity = 8;
+  string trip_date = 9;
+  int32 truck_id = 10;
+  optional int32 driver_id = 11;
+  optional int32 invoice_id = 12;
+
+  // Denormalized for display, resolved server-side via Prisma include.
+  optional string supplier_name = 20;
+  optional string customer_name = 21;
+  optional string pickup_location_name = 22;
+  optional string delivery_location_name = 23;
+  optional string cargo_type_name = 24;
+  optional string truck_number = 25;
+  optional string driver_name = 26;
+}
+
+message TripList { repeated Trip items = 1; }
+
+message CreateTripRequest {
+  optional int32 supplier_id = 1;
+  optional int32 customer_id = 2;
+  int32 pickup_location_id = 3;
+  int32 delivery_location_id = 4;
+  int32 cargo_type_id = 5;
+  string quantity = 6;
+  string trip_date = 7;
+  int32 truck_id = 8;
+  optional int32 driver_id = 9;
+}
+
+message UpdateTripRequest {
+  int32 id = 1;
+  optional int32 supplier_id = 2;
+  optional int32 customer_id = 3;
+  optional int32 pickup_location_id = 4;
+  optional int32 delivery_location_id = 5;
+  optional int32 cargo_type_id = 6;
+  optional string quantity = 7;
+  optional string trip_date = 8;
+  optional int32 truck_id = 9;
+  optional int32 driver_id = 10;
+}

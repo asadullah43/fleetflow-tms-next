@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package fleetflow.loadingorders;
+
+service LoadingOrdersService {
+  rpc List(ListRequest) returns (LoadingOrderList);
+  rpc Get(IdRequest) returns (LoadingOrder);
+  rpc Create(CreateLoadingOrderRequest) returns (LoadingOrder);
+  rpc Update(UpdateLoadingOrderRequest) returns (LoadingOrder);
+  rpc Delete(IdRequest) returns (DeleteResponse);
+}
+
+message ListRequest {}
+message IdRequest { int32 id = 1; }
+message DeleteResponse {}
+
+message LoadingOrder {
+  int32 id = 1;
+  string serial_number = 2;
+  int32 batch_id = 3;
+  int32 pickup_location_id = 4;
+  int32 delivery_location_id = 5;
+  int32 customer_id = 6;
+  int32 cargo_type_id = 7;
+
+  optional string pickup_location_name = 20;
+  optional string delivery_location_name = 21;
+  optional string customer_name = 22;
+  optional string cargo_type_name = 23;
+}
+
+message LoadingOrderList { repeated LoadingOrder items = 1; }
+
+message CreateLoadingOrderRequest {
+  int32 batch_id = 1;
+  int32 pickup_location_id = 2;
+  int32 delivery_location_id = 3;
+  int32 customer_id = 4;
+  int32 cargo_type_id = 5;
+}
+
+message UpdateLoadingOrderRequest {
+  int32 id = 1;
+  optional int32 batch_id = 2;
+  optional int32 pickup_location_id = 3;
+  optional int32 delivery_location_id = 4;
+  optional int32 customer_id = 5;
+  optional int32 cargo_type_id = 6;
+}

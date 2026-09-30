@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package fleetflow.invoices;
+
+service InvoicesService {
+  rpc List(ListRequest) returns (InvoiceList);
+  rpc Get(IdRequest) returns (Invoice);
+  rpc Create(CreateInvoiceRequest) returns (Invoice);
+  rpc Update(UpdateInvoiceRequest) returns (Invoice);
+  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc MarkPaid(IdRequest) returns (Invoice);
+  // Generates the ZATCA Phase-1 QR (seller/VAT/timestamp/total/VAT TLV,
+  // base64) and moves the invoice to SIGNED. Full Phase-2 cryptographic
+  // stamping (CSR / compliance CSID / production CSID against ZATCA's
+  // real API) needs live government-issued certificates this environment
+  // has no way to obtain or test against, so it isn't wired up — see
+  // CompanySettings' zatca_* onboarding fields for where that plugs in.
+  rpc SubmitToZatca(IdRequest) returns (Invoice);
+}
+
+message ListRequest {}
+message IdRequest { int32 id = 1; }
+message DeleteResponse {}
+
+message InvoiceLineItemInput {
+  string description = 1;
+  string quantity = 2;
+  string rate = 3;
+  optional string tax_category = 4;
+  optional string tax_percent = 5;
+}
+
+message InvoiceLineItem {
+  int32 id = 1;
+  string description = 2;
+  string quantity = 3;
+  string rate = 4;
+  string amount = 5;
+  string tax_category = 6;
+  string tax_percent = 7;
+  string tax_amount = 8;
+}
+
+message Invoice {
+  int32 id = 1;
+  string invoice_number = 2;
+  int32 customer_id = 3;
+  string issue_date = 4;
+  string due_date = 5;
+  string from_date = 6;
+  string to_date = 7;
+  string currency = 8;
+  string invoice_type = 9;
+  string payment_means = 10;
+  bool vat_enabled = 11;
+  string vat_percent = 12;
+  string subtotal = 13;
+  string vat_amount = 14;
+  string total = 15;
+  string status = 16;
+  optional string paid_at = 17;
+  repeated InvoiceLineItem line_items = 18;
+  optional string customer_name = 19;
+
+  optional string zatca_status = 30;
+  optional string qr_code = 31;
+  optional string invoice_uuid = 32;
+}
+
+message InvoiceList { repeated Invoice items = 1; }
+
+message CreateInvoiceRequest {
+  int32 customer_id = 1;
+  string due_date = 2;
+  string from_date = 3;
+  string to_date = 4;
+  optional string currency = 5;
+  optional string invoice_type = 6;
+  optional string payment_means = 7;
+  optional bool vat_enabled = 8;
+  optional string vat_percent = 9;
+  repeated InvoiceLineItemInput line_items = 10;
+}
+
+message UpdateInvoiceRequest {
+  int32 id = 1;
+  optional int32 customer_id = 2;
+  optional string due_date = 3;
+  optional string from_date = 4;
+  optional string to_date = 5;
+  optional string currency = 6;
+  optional string invoice_type = 7;
+  optional string payment_means = 8;
+  optional bool vat_enabled = 9;
+  optional string vat_percent = 10;
+  optional string status = 11;
+  repeated InvoiceLineItemInput line_items = 12;
+}

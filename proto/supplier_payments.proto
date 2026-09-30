@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package fleetflow.supplierpayments;
+
+service SupplierPaymentsService {
+  rpc List(ListRequest) returns (SupplierPaymentList);
+  rpc Get(IdRequest) returns (SupplierPayment);
+  rpc Create(CreateSupplierPaymentRequest) returns (SupplierPayment);
+  rpc Update(UpdateSupplierPaymentRequest) returns (SupplierPayment);
+  rpc Delete(IdRequest) returns (DeleteResponse);
+}
+
+message ListRequest {}
+message IdRequest { int32 id = 1; }
+message DeleteResponse {}
+
+message SupplierPayment {
+  int32 id = 1;
+  int32 supplier_id = 2;
+  string amount = 3;
+  string currency = 4;
+  string payment_date = 5;
+  optional string description = 6;
+
+  optional string supplier_name = 20;
+}
+
+message SupplierPaymentList { repeated SupplierPayment items = 1; }
+
+message CreateSupplierPaymentRequest {
+  int32 supplier_id = 1;
+  string amount = 2;
+  optional string currency = 3;
+  optional string payment_date = 4;
+  optional string description = 5;
+}
+
+message UpdateSupplierPaymentRequest {
+  int32 id = 1;
+  optional int32 supplier_id = 2;
+  optional string amount = 3;
+  optional string currency = 4;
+  optional string payment_date = 5;
+  optional string description = 6;
+}
