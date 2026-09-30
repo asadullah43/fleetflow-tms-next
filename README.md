@@ -93,9 +93,18 @@ docker compose up envoy # grpc-web bridge on :8080, needed even in local dev
 
 ## Docker
 
+`npm run proto:gen` must be run **before** `docker compose build` — the
+frontend image's `COPY . .` picks up whatever is on disk, including the
+generated proto client code, and it isn't regenerated inside the Docker
+build itself. Skipping this after pulling new/changed `.proto` files
+gives a frontend build error about a missing `generated/proto/messages`
+module or missing exports on `fleetflow.<module>`.
+
 ```bash
-docker compose build
-docker compose up -d
+npm install                 # once, if you haven't
+npm run proto:gen           # regenerate proto client code (do this after every pull)
+docker compose down         # stop anything already running (old containers, old ports)
+docker compose up -d --build
 ```
 
 Mirrors the legacy repo's deployment shape (Postgres + backend + frontend
