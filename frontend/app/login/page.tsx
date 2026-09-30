@@ -30,9 +30,12 @@ export default function LoginPage() {
 
   return (
     <div className="centered-screen">
-      <form className="card" onSubmit={onSubmit}>
-        <h1>FleetFlow TMS</h1>
-        {error && <p className="error-text">{error}</p>}
+      <form className="auth-card" onSubmit={onSubmit}>
+        <h1>
+          Fleet<span style={{ color: 'var(--accent)' }}>Flow</span>
+        </h1>
+        <p className="subtitle">Sign in to your dispatch console</p>
+        {error && <div className="error-banner">{error}</div>}
         <div className="field">
           <label htmlFor="username">Username</label>
           <input
@@ -54,7 +57,7 @@ export default function LoginPage() {
             required
           />
         </div>
-        <button className="primary" type="submit" disabled={submitting}>
+        <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} type="submit" disabled={submitting}>
           {submitting ? 'Signing in...' : 'Sign in'}
         </button>
       </form>
