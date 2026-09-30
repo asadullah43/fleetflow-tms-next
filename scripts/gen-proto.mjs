@@ -1,21 +1,26 @@
 #!/usr/bin/env node
-// Cross-platform (Windows/Mac/Linux) replacement for the old bash script:
-// generates JS + TypeScript message code from proto/*.proto using
-// protobufjs (pure-JS, no protoc/native binary, no shell dependency).
+// Cross-platform (Windows/Mac/Linux) generator for JS + TypeScript message
+// code from proto/*.proto, using protobufjs-cli's programmatic API directly
+// (pbjs.main / pbts.main) rather than spawning the pbjs/pbts CLI binaries.
+//
+// Spawning .cmd binaries via child_process on Windows is unreliable when
+// the path contains spaces (a long-standing Node issue) — calling the
+// library functions in-process sidesteps that entirely, and works
+// identically on Windows, macOS, and Linux.
 //
 // Run from repo root: npm run proto:gen
-import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const pbjs = require('protobufjs-cli/pbjs.js');
+const pbts = require('protobufjs-cli/pbts.js');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
 const PROTO_DIR = path.join(ROOT_DIR, 'proto');
-
-const binExt = process.platform === 'win32' ? '.cmd' : '';
-const PBJS = path.join(ROOT_DIR, 'node_modules', '.bin', `pbjs${binExt}`);
-const PBTS = path.join(ROOT_DIR, 'node_modules', '.bin', `pbts${binExt}`);
 
 const OUT_DIRS = [
   path.join(ROOT_DIR, 'backend', 'src', 'generated', 'proto'),
@@ -31,19 +36,37 @@ if (protoFiles.length === 0) {
   process.exit(1);
 }
 
-for (const outDir of OUT_DIRS) {
-  if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
-
-  const messagesJs = path.join(outDir, 'messages.js');
-  const messagesDts = path.join(outDir, 'messages.d.ts');
-
-  console.log(`Generating ${messagesJs} ...`);
-  execFileSync(PBJS, ['-t', 'static-module', '-w', 'commonjs', '-o', messagesJs, ...protoFiles], {
-    stdio: 'inherit',
+function run(fn, args, label) {
+  return new Promise((resolve, reject) => {
+    fn(args, (err, output) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      console.log(`${label} done.`);
+      resolve(output);
+    });
   });
-
-  console.log(`Generating ${messagesDts} ...`);
-  execFileSync(PBTS, ['-o', messagesDts, messagesJs], { stdio: 'inherit' });
 }
 
-console.log('Done.');
+async function main() {
+  for (const outDir of OUT_DIRS) {
+    if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
+
+    const messagesJs = path.join(outDir, 'messages.js');
+    const messagesDts = path.join(outDir, 'messages.d.ts');
+
+    console.log(`Generating ${messagesJs} ...`);
+    await run(pbjs.main, ['-t', 'static-module', '-w', 'commonjs', '-o', messagesJs, ...protoFiles], 'pbjs');
+
+    console.log(`Generating ${messagesDts} ...`);
+    await run(pbts.main, ['-o', messagesDts, messagesJs], 'pbts');
+  }
+
+  console.log('Done.');
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
