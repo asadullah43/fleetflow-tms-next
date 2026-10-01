@@ -56,8 +56,10 @@ proto/              .proto files — one message/service set per module
 backend/             Node.js gRPC server (TypeScript)
   src/modules/<name>/   <name>.service.ts (business logic) + <name>.grpc.ts (RPC handlers)
   src/common/errors/    Same AppError/ErrorCode pattern as the legacy backend, adapted for gRPC
-  src/lib/               Prisma client, JWT helpers, gRPC auth middleware
-  prisma/schema.prisma   Copied from the legacy repo, unchanged
+  src/lib/               Prisma client, JWT, authorize() + rpc() handler wrapper, error mapping
+  src/common/auth/       Permission modules and the allow/deny decision
+  prisma/schema.prisma   Carried over from the legacy repo (data model unchanged)
+  test/                  Unit tests; test/integration/ runs against a live backend
 frontend/             Next.js app (TypeScript)
   app/                   Routes (App Router) — one per legacy Flutter screen
   lib/grpc/              grpc-web client wiring, one file per module
@@ -101,11 +103,17 @@ gives a frontend build error about a missing `generated/proto/messages`
 module or missing exports on `fleetflow.<module>`.
 
 ```bash
+cp .env.example .env        # once: set JWT_SECRET (required) and POSTGRES_PASSWORD
 npm install                 # once, if you haven't
 npm run proto:gen           # regenerate proto client code (do this after every pull)
 docker compose down         # stop anything already running (old containers, old ports)
 docker compose up -d --build
 ```
+
+`JWT_SECRET` has no default: `docker compose` refuses to start without it.
+It signs every login token, so anyone who knows it can impersonate any
+user — generate one with `openssl rand -base64 48`. Postgres is published
+on `127.0.0.1` only.
 
 Mirrors the legacy repo's deployment shape (Postgres + backend + frontend
 + nginx), with an added `envoy` service for the grpc-web bridge.
@@ -128,10 +136,54 @@ $env:DATABASE_URL="postgresql://postgres:changeme_use_strong_password@localhost:
 export DATABASE_URL="postgresql://postgres:changeme_use_strong_password@localhost:5433/fleetflow?schema=public"
 
 npx prisma db push          # creates all tables from schema.prisma
-npm run seed                # creates the admin login (admin / Admin123!)
+npm run seed                # creates the admin login (admin / Admin123!,
+                            # or set SEED_ADMIN_PASSWORD first)
 ```
 
 Only needed again if you reset the `database_data` volume (`docker
 compose down -v`) or change `schema.prisma`. The app is then reachable
 at `http://localhost:8889` (nginx's published port) — log in with
 `admin` / `Admin123!` and change the password after.
+
+## Roles and permissions
+
+Every RPC is checked on the server against the caller's role (Roles page →
+permission matrix: View / Add / Edit / Delete per module):
+
+- The built-in **ADMIN** role has full access regardless of its matrix, and
+  can't be renamed or deleted. Users can't deactivate or delete themselves.
+- List/Get needs **View**; Create needs **Add**; Update (and Mark Paid /
+  Submit to ZATCA) needs **Edit**; Delete needs **Delete**.
+- Shared lookup lists — trucks, drivers, customers, suppliers, locations,
+  cargo types, truck-driver assignments — are readable by any signed-in
+  user, because other modules' forms pick from them. Writing them still
+  needs the module permission.
+- HR (incl. salaries), Workshop (incl. Inventory), Invoices, Supplier
+  Payments, Users, Roles, Dashboard and Settings reads need **View**.
+- `users` and `roles` permissions are effectively administrator rights
+  (whoever has them can grant themselves more) — give them out accordingly.
+- Deactivating a user or changing their role takes effect on their next
+  request, not when their token expires.
+
+The UI mirrors this: the sidebar only lists pages the role can view, and
+Add / Edit / Delete buttons only appear with the matching permission.
+
+## Checks and tests
+
+```bash
+cd backend
+npm run typecheck           # src + tests
+npm test                    # unit tests (node:test via tsx)
+# integration tests against a running backend + database (a dev DB — they create records):
+INTEGRATION_GRPC_ADDR=127.0.0.1:50051 npm run test:integration
+
+cd ../frontend
+npm run typecheck
+npm run lint                # ESLint 9 + eslint-config-next
+npm test                    # unit tests, incl. "every translated string has an Arabic entry"
+npm run build
+```
+
+The integration suite logs in as `admin` / `Admin123!` by default
+(override with `INTEGRATION_ADMIN_USER` / `INTEGRATION_ADMIN_PASSWORD`).
+
