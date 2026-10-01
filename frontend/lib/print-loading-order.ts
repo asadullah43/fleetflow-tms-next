@@ -1,3 +1,5 @@
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import type { LoadingOrderDto } from './grpc/loading-orders';
 import type { CompanySettingsDto } from './grpc/company-settings';
 
@@ -60,202 +62,170 @@ function slip(order: LoadingOrderDto, company: CompanySettingsDto, copyLabel: st
   `;
 }
 
+const PAGE_STYLE = `
+  * { box-sizing: border-box; }
+  .pdf-page {
+    width: 210mm;
+    height: 297mm;
+    padding: 10mm;
+    background: #ffffff;
+    font-family: 'Segoe UI', -apple-system, system-ui, Roboto, sans-serif;
+    color: #171b26;
+    display: flex;
+    flex-direction: column;
+  }
+  .slip {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    border: 1.4px solid #d8dbe3;
+    border-radius: 10px;
+    padding: 9mm 10mm;
+    position: relative;
+    overflow: hidden;
+  }
+  .slip::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 5px;
+    background: #e8743d;
+  }
+  .slip-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding-top: 4px;
+    border-bottom: 1.5px solid #171b26;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo { width: 48px; height: 48px; object-fit: contain; border-radius: 8px; }
+  .logo-placeholder { background: #f1f0eb; border: 1px solid #e3e1d8; }
+  .brand-text { display: flex; flex-direction: column; gap: 3px; }
+  .company-name { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+  .company-contact { font-size: 10px; color: #6b7180; }
+  .doc-id { text-align: right; flex-shrink: 0; }
+  .doc-type { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #e8743d; margin-bottom: 4px; }
+  .serial { font-family: 'Courier New', monospace; font-size: 20px; font-weight: 700; letter-spacing: 0.02em; }
+  .doc-date { font-size: 10px; color: #6b7180; margin-top: 2px; }
+  .copy-chip {
+    align-self: flex-start;
+    background: #171b26;
+    color: #fff;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 14px;
+  }
+  .fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; margin-bottom: 14px; }
+  .field { border: 1px solid #e3e1d8; border-radius: 8px; padding: 9px 12px; background: #faf8f4; }
+  .field-label { font-size: 9px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #8a8f9c; margin-bottom: 4px; }
+  .field-value { font-size: 14px; font-weight: 700; }
+  .fillins { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: auto; padding-top: 14px; }
+  .fillin .field-label { margin-bottom: 6px; }
+  .fillin-box { height: 30px; border: 1.5px dashed #b7bcc8; border-radius: 6px; }
+  .slip-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid #ece8de;
+    font-size: 8.5px;
+    color: #9ba0ad;
+  }
+  .cut-line {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 5mm 0;
+    height: 1px;
+    background: repeating-linear-gradient(to right, #b0b0b0 0, #b0b0b0 5px, transparent 5px, transparent 10px);
+    position: relative;
+  }
+  .cut-line span {
+    position: absolute;
+    background: #fff;
+    padding: 0 10px;
+    font-size: 9px;
+    color: #9ba0ad;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+`;
+
+function pageHtml(order: LoadingOrderDto, company: CompanySettingsDto): string {
+  return `
+    <style>${PAGE_STYLE}</style>
+    <div class="pdf-page">
+      ${slip(order, company, 'Driver Copy')}
+      <div class="cut-line"><span>cut here</span></div>
+      ${slip(order, company, 'Warehouse Copy')}
+    </div>
+  `;
+}
+
+function waitForImages(root: HTMLElement): Promise<void[]> {
+  const imgs = Array.from(root.querySelectorAll('img'));
+  return Promise.all(
+    imgs.map(
+      (img) =>
+        new Promise<void>((resolve) => {
+          if (img.complete) {
+            resolve();
+            return;
+          }
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+        }),
+    ),
+  );
+}
+
 /**
- * Prints one A4 page per loading order — a "Driver Copy" and "Warehouse
- * Copy" slip stacked on the same sheet with a cut line between them, each
- * carrying the route/customer/cargo and blank Driver/Truck fields to fill
- * by hand — built as a print-friendly page sized to A4 (browser's "Save
- * as PDF") instead of a PDF library.
+ * Renders one A4 page per loading order — a "Driver Copy" and "Warehouse
+ * Copy" slip stacked on the same sheet with a cut line between them — into
+ * an actual PDF (via an offscreen render + html2canvas + jsPDF, so Arabic/
+ * non-Latin text and the uploaded logo render exactly as designed) and
+ * opens it directly in a new tab. No print dialog in the flow — the
+ * person can save/print from the browser's own PDF viewer if they want to.
  */
-export function printLoadingOrders(orders: LoadingOrderDto[], company: CompanySettingsDto) {
+export async function printLoadingOrders(orders: LoadingOrderDto[], company: CompanySettingsDto): Promise<void> {
   if (orders.length === 0) return;
-  const win = window.open('', '_blank', 'width=900,height=700');
-  if (!win) return;
 
-  const title =
-    orders.length === 1 ? orders[0].serialNumber : `${orders[0].serialNumber}_to_${orders[orders.length - 1].serialNumber}`;
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.top = '0';
+  container.style.left = '-10000px';
+  container.style.zIndex = '-1';
+  document.body.appendChild(container);
 
-  const pages = orders
-    .map(
-      (order) => `
-        <div class="page">
-          ${slip(order, company, 'Driver Copy')}
-          <div class="cut-line"><span>&#9986; cut here</span></div>
-          ${slip(order, company, 'Warehouse Copy')}
-        </div>
-      `,
-    )
-    .join('');
+  try {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const title = orders.length === 1 ? orders[0].serialNumber : `${orders[0].serialNumber}_to_${orders[orders.length - 1].serialNumber}`;
+    doc.setProperties({ title });
+    let first = true;
 
-  win.document.write(`
-    <!doctype html>
-    <html>
-      <head>
-        <meta charset="utf-8" />
-        <title>${esc(title)}</title>
-        <style>
-          @page { size: A4; margin: 10mm; }
+    for (const order of orders) {
+      container.innerHTML = pageHtml(order, company);
+      const pageEl = container.querySelector<HTMLElement>('.pdf-page');
+      if (!pageEl) continue;
+      await waitForImages(pageEl);
+      const canvas = await html2canvas(pageEl, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      if (!first) doc.addPage('a4', 'portrait');
+      first = false;
+      doc.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+    }
 
-          * { box-sizing: border-box; }
-
-          html, body {
-            margin: 0;
-            font-family: 'Segoe UI', -apple-system, system-ui, Roboto, sans-serif;
-            color: #171b26;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-
-          .page {
-            display: flex;
-            flex-direction: column;
-            width: 190mm;
-            min-height: 277mm;
-            page-break-after: always;
-          }
-          .page:last-child { page-break-after: auto; }
-
-          .slip {
-            flex: 1 1 0;
-            display: flex;
-            flex-direction: column;
-            border: 1.4px solid #d8dbe3;
-            border-radius: 10px;
-            padding: 9mm 10mm;
-            position: relative;
-            overflow: hidden;
-          }
-          .slip::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 5px;
-            background: linear-gradient(90deg, #e8743d, #d4622e);
-          }
-
-          .slip-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            padding-top: 4px;
-            border-bottom: 1.5px solid #171b26;
-            padding-bottom: 10px;
-            margin-bottom: 10px;
-          }
-
-          .brand { display: flex; align-items: center; gap: 12px; }
-          .logo { width: 48px; height: 48px; object-fit: contain; border-radius: 8px; }
-          .logo-placeholder { background: #f1f0eb; border: 1px solid #e3e1d8; }
-          .brand-text { display: flex; flex-direction: column; gap: 3px; }
-          .company-name { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
-          .company-contact { font-size: 10px; color: #6b7180; }
-
-          .doc-id { text-align: right; flex-shrink: 0; }
-          .doc-type {
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: #e8743d;
-            margin-bottom: 4px;
-          }
-          .serial {
-            font-family: 'Courier New', monospace;
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: 0.02em;
-          }
-          .doc-date { font-size: 10px; color: #6b7180; margin-top: 2px; }
-
-          .copy-chip {
-            align-self: flex-start;
-            background: #171b26;
-            color: #fff;
-            font-size: 9.5px;
-            font-weight: 700;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            padding: 4px 12px;
-            border-radius: 999px;
-            margin-bottom: 14px;
-          }
-
-          .fields-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px 20px;
-            margin-bottom: 14px;
-          }
-          .field {
-            border: 1px solid #e3e1d8;
-            border-radius: 8px;
-            padding: 9px 12px;
-            background: #faf8f4;
-          }
-          .field-label {
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            color: #8a8f9c;
-            margin-bottom: 4px;
-          }
-          .field-value { font-size: 14px; font-weight: 700; }
-
-          .fillins {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-top: auto;
-            padding-top: 14px;
-          }
-          .fillin .field-label { margin-bottom: 6px; }
-          .fillin-box {
-            height: 30px;
-            border: 1.5px dashed #b7bcc8;
-            border-radius: 6px;
-          }
-
-          .slip-footer {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 12px;
-            padding-top: 8px;
-            border-top: 1px solid #ece8de;
-            font-size: 8.5px;
-            color: #9ba0ad;
-          }
-
-          .cut-line {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 5mm 0;
-            height: 1px;
-            background: repeating-linear-gradient(to right, #b0b0b0 0, #b0b0b0 5px, transparent 5px, transparent 10px);
-            position: relative;
-          }
-          .cut-line span {
-            position: absolute;
-            background: #fff;
-            padding: 0 10px;
-            font-size: 9px;
-            color: #9ba0ad;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-          }
-
-          @media print {
-            .page { min-height: 0; }
-          }
-        </style>
-      </head>
-      <body>
-        ${pages}
-      </body>
-    </html>
-  `);
-  win.document.close();
-  win.focus();
-  win.print();
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank', 'noopener,noreferrer');
+  } finally {
+    document.body.removeChild(container);
+  }
 }

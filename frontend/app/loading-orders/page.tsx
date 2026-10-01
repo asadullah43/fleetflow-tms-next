@@ -16,9 +16,10 @@ type Opt = { value: string; label: string }[];
 
 /**
  * Matches the legacy app: "Generate" creates N individually-serialled
- * slips (LO-0001, LO-0002, ...) sharing one batch and immediately prints
- * them (Driver Copy + Warehouse Copy per order). The list shows one row
- * per batch — there's no per-row edit, only deleting the whole batch.
+ * slips (LO-0001, LO-0002, ...) sharing one batch and immediately opens
+ * them as a PDF in a new tab (Driver Copy + Warehouse Copy per order) — no
+ * print dialog in the flow. The list shows one row per batch — there's no
+ * per-row edit, only re-opening the PDF or deleting the whole batch.
  */
 export default function LoadingOrdersPage() {
   const { token } = useAuth();
@@ -33,6 +34,7 @@ export default function LoadingOrdersPage() {
   const [quantity, setQuantity] = useState('1');
   const [generating, setGenerating] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [openingBatchId, setOpeningBatchId] = useState<number | null>(null);
 
   function loadBatches() {
     if (!token) return;
@@ -84,7 +86,7 @@ export default function LoadingOrdersPage() {
         ),
         companySettingsClient.get(token!),
       ]);
-      printLoadingOrders(orders, company);
+      await printLoadingOrders(orders, company);
       setPickupLocationId('');
       setDeliveryLocationId('');
       setCustomerId('');
@@ -99,11 +101,14 @@ export default function LoadingOrdersPage() {
   }
 
   async function handleReprint(batch: LoadingOrderBatchDto) {
+    setOpeningBatchId(batch.batchId);
     try {
       const [orders, company] = await Promise.all([loadingOrdersClient.getBatch(batch.batchId, token!), companySettingsClient.get(token!)]);
-      printLoadingOrders(orders, company);
+      await printLoadingOrders(orders, company);
     } catch (err) {
-      setError((err as RpcError).message ?? 'Unable to print this batch.');
+      setError((err as RpcError).message ?? 'Unable to open this batch as a PDF.');
+    } finally {
+      setOpeningBatchId(null);
     }
   }
 
@@ -129,7 +134,7 @@ export default function LoadingOrdersPage() {
     <AppShell title="Loading Orders">
       <div className="page-header">
         <h2>Loading Orders</h2>
-        <p>Generate pre-printed loading order slips (Driver &amp; Warehouse copies) for a route, then print or delete a batch.</p>
+        <p>Generate loading order slips (Driver &amp; Warehouse copies) for a route — the PDF opens in a new tab, ready to print or save.</p>
       </div>
 
       <div className="panel" style={{ padding: 20, marginBottom: 20 }}>
@@ -228,7 +233,12 @@ export default function LoadingOrdersPage() {
                   <td>{new Date(b.createdAt).toLocaleDateString()}</td>
                   <td>
                     <div className="row-actions">
-                      <button className="row-action" onClick={() => handleReprint(b)} title="Print">
+                      <button
+                        className="row-action"
+                        onClick={() => handleReprint(b)}
+                        disabled={openingBatchId === b.batchId}
+                        title="Open PDF"
+                      >
                         <Icon.fileText size={16} />
                       </button>
                       <button className="row-action danger" onClick={() => handleDelete(b)} title="Delete batch">
