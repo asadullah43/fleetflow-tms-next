@@ -1,4 +1,4 @@
-import { createCrudRepository } from '../data_repositories/crud.repository.js';
+import { blankToNull, blankToUndefined, createCrudRepository } from '../data_repositories/crud.repository.js';
 import { ErrorCode } from '../global_config/error-codes.js';
 import { buildLocalizedWriteData } from '../utils/language.js';
 import { filter } from '../utils/pagination.js';
@@ -19,6 +19,7 @@ export const driversService = createCrudRepository({
     defaultSort: { field: 'id', order: 'desc' },
     filters: { status: filter.equals('status') },
   },
-  toCreate: (input) => buildLocalizedWriteData(input, true),
-  toUpdate: (input) => buildLocalizedWriteData(input, false),
+  // License and ID numbers are unique per company but optional: blank means "none", not the value ''.
+  toCreate: (input) => blankToUndefined(buildLocalizedWriteData(input, true), ['licenseNo', 'idNumber']),
+  toUpdate: (input) => blankToNull(buildLocalizedWriteData(input, false), ['licenseNo', 'idNumber']),
 });

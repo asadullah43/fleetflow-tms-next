@@ -103,5 +103,12 @@ export const tripsService = createCrudRepository({
     const driverId = input.driverId ?? (await assignmentsService.driverForTruckOn(input.truckId, tripDate));
     return { ...input, tripDate, driverId, supplierId: input.supplierId ?? null, customerId: input.customerId ?? null };
   },
-  toUpdate: ({ id: _id, ...input }: TripInput & { id?: number }) => blankToUndefined(withDates(input, ['tripDate']), ['transactionNumber', 'quantity']),
+  toUpdate: async ({ id: _id, ...input }: TripInput & { id?: number }, existing) => {
+    const data = blankToUndefined(withDates(input, ['tripDate']), ['transactionNumber', 'quantity']) as Record<string, unknown>;
+    // Moving the trip to another truck without naming a driver: the driver follows that truck's assignment on the trip date.
+    if (input.driverId === undefined && input.truckId !== undefined && input.truckId !== existing.truckId) {
+      data.driverId = await assignmentsService.driverForTruckOn(input.truckId, (data.tripDate as Date | undefined) ?? new Date(existing.tripDate));
+    }
+    return data;
+  },
 });

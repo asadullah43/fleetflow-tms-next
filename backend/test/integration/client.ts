@@ -42,7 +42,7 @@ export interface CallResult<T = any> {
 }
 
 /** A bearer token, or explicit credentials / headers. */
-export type Auth = string | { token?: string; apiKey?: string; idempotencyKey?: string; ip?: string } | undefined;
+export type Auth = string | { token?: string; apiKey?: string; idempotencyKey?: string } | undefined;
 
 export function client(pkg: string, service: string): any {
   return new services[pkg][service](ADDR, grpc.credentials.createInsecure());
@@ -54,7 +54,6 @@ export function call<T = any>(svc: any, method: string, request: object, auth?: 
   if (options.token) metadata.set('authorization', `Bearer ${options.token}`);
   if (options.apiKey) metadata.set('x-api-key', options.apiKey);
   if (options.idempotencyKey) metadata.set('idempotency-key', options.idempotencyKey);
-  if (options.ip) metadata.set('x-forwarded-for', options.ip);
 
   return new Promise((resolve, reject) => {
     svc[method](request, metadata, (error: grpc.ServiceError | null, response: any) => {

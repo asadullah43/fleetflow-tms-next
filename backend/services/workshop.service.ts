@@ -1,7 +1,7 @@
 import { prisma } from '../_core_app_connectivities/prisma.js';
 import { currentCompanyId } from '../_core_app_connectivities/tenant-context.js';
 import { AppError } from '../classes/app-error.js';
-import { blankToUndefined, createCrudRepository, withDates } from '../data_repositories/crud.repository.js';
+import { blankToNull, blankToUndefined, createCrudRepository, withDates } from '../data_repositories/crud.repository.js';
 import { ErrorCode } from '../global_config/error-codes.js';
 import { buildLocalizedWriteData } from '../utils/language.js';
 import { fromCents, toCents } from '../utils/money.js';
@@ -181,8 +181,9 @@ export const sparePartsService = createCrudRepository({
     filters: { status: filter.equals('status'), category: filter.equals('category'), supplierId: filter.id('supplierId') },
   },
   map: (row) => ({ ...row, supplierName: row.supplier?.name, supplierNameAr: row.supplier?.nameAr }),
-  toCreate: (input) => buildLocalizedWriteData(input, true),
-  toUpdate: (input) => buildLocalizedWriteData(input, false),
+  // Part numbers are unique per company but optional: blank means "none".
+  toCreate: (input) => blankToUndefined(buildLocalizedWriteData(input, true), ['partNumber', 'unitCost']),
+  toUpdate: (input) => blankToUndefined(blankToNull(buildLocalizedWriteData(input, false), ['partNumber']), ['unitCost']),
 });
 
 // ── Workshop expenses ───────────────────────────────────────────────────

@@ -11,7 +11,7 @@ export interface RequestContext<Input = any> {
   rpc: string;
   requestId: string;
   startedAt: number;
-  /** Best-effort client address (first X-Forwarded-For hop, else the gRPC peer). */
+  /** Client address as reported by the reverse proxy (X-Real-IP / last X-Forwarded-For hop), else the gRPC peer. */
   ip: string;
   metadata: grpc.Metadata;
   /** The decoded request message as sent by the client. */
@@ -34,7 +34,9 @@ export function header(metadata: grpc.Metadata, name: string): string | undefine
 }
 
 export function createContext(rpc: string, call: grpc.ServerUnaryCall<unknown, unknown>): RequestContext {
-  const forwarded = header(call.metadata, 'x-forwarded-for')?.split(',')[0]?.trim();
+  // nginx sets X-Real-IP to the address it saw (overwriting anything the client sent), and appends that same
+  // address to X-Forwarded-For — so the *last* hop is trustworthy while the first is whatever the client claimed.
+  const forwarded = header(call.metadata, 'x-real-ip')?.trim() || header(call.metadata, 'x-forwarded-for')?.split(',').pop()?.trim();
   return {
     rpc,
     requestId: header(call.metadata, 'x-request-id') ?? crypto.randomUUID(),

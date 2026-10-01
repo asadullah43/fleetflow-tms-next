@@ -138,3 +138,13 @@ export function blankToUndefined<T extends Data>(input: T, fields: string[]): T 
   for (const field of fields) if (out[field] === '') out[field] = undefined;
   return out as T;
 }
+
+/**
+ * For optional columns under a unique constraint (a driver's license number, a part number): '' must be stored as
+ * "no value" (NULL) — two rows may both lack one, but two rows cannot both hold ''. Use on updates, where '' clears it.
+ */
+export function blankToNull<T extends Data>(input: T, fields: string[]): T {
+  const out: Data = { ...input };
+  for (const field of fields) if (out[field] === '') out[field] = null;
+  return out as T;
+}

@@ -1,7 +1,7 @@
 import { prisma } from '../_core_app_connectivities/prisma.js';
 import { currentCompanyId } from '../_core_app_connectivities/tenant-context.js';
 import { AppError } from '../classes/app-error.js';
-import { blankToUndefined, createCrudRepository, withDates } from '../data_repositories/crud.repository.js';
+import { blankToNull, blankToUndefined, createCrudRepository, withDates } from '../data_repositories/crud.repository.js';
 import { ErrorCode } from '../global_config/error-codes.js';
 import { buildLocalizedWriteData } from '../utils/language.js';
 import { filter } from '../utils/pagination.js';
@@ -65,7 +65,7 @@ const employeesRepository = createCrudRepository({
   },
   map: (row) => ({ ...row, departmentName: row.department?.name, designationName: row.designation?.name }),
   // '' is not a value for the optional unique email or the salary decimal.
-  toUpdate: (input) => blankToUndefined(withDates(buildLocalizedWriteData(input, false), ['joiningDate']), ['email', 'salary']),
+  toUpdate: (input) => blankToUndefined(blankToNull(withDates(buildLocalizedWriteData(input, false), ['joiningDate']), ['email']), ['salary']),
 });
 
 const EMPLOYEE_INCLUDE = { department: { select: { name: true } }, designation: { select: { name: true } } } as const;

@@ -2,6 +2,8 @@
 # dockerfile: backend/Dockerfile) because this service needs the sibling
 # /proto directory, not just backend/.
 FROM node:22-alpine AS base
+# Prisma's engines (query + migrations) link against OpenSSL.
+RUN apk add --no-cache openssl
 WORKDIR /app
 
 FROM base AS deps
