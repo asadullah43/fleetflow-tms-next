@@ -23,7 +23,7 @@ export interface RoleDto {
 export const rolesClient = {
   list(token: string): Promise<RoleDto[]> {
     return unaryCall({ serviceName: SERVICE, methodName: 'List', request: ListRequest.create({}), RequestType: ListRequest, ResponseType: RoleList, token }).then(
-      (res: any) => res.items ?? [],
+      (res) => (res.items ?? []) as unknown as RoleDto[],
     );
   },
   get(id: number, token: string): Promise<RoleDto> {
@@ -62,6 +62,6 @@ export const rolesClient = {
       RequestType: ListRequest,
       ResponseType: ModuleList,
       token,
-    }).then((res: any) => res.modules ?? []);
+    }).then((res) => (res.modules ?? []) as unknown as string[]);
   },
 };

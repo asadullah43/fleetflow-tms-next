@@ -11,7 +11,8 @@ import { rolesClient } from '../../lib/grpc/roles';
 export default function UsersPage() {
   const { token } = useAuth();
   const { data: roles, error: lookupError } = useLookups<{ value: string; label: string }[]>(async (token) => {
-    const rows = await rolesClient.list(token);
+    // The role picker needs roles:view; without it the page still works, just with no roles to pick.
+    const rows = await rolesClient.list(token).catch(() => []);
     return rows.map((r) => ({ value: String(r.id), label: r.name }));
   }, []);
 

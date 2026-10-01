@@ -58,8 +58,8 @@ export function AppShell({ title, children }: { title: string; children: React.R
   const visibleGroups: NavGroup[] = NAV_GROUPS.map((group) => ({
     ...group,
     items: group.items.filter((item) => {
-      const module = moduleForPath(item.href);
-      return !module || can(module, 'view');
+      const pageModule = moduleForPath(item.href);
+      return !pageModule || can(pageModule, 'view');
     }),
   })).filter((group) => group.items.length > 0);
 
@@ -69,6 +69,7 @@ export function AppShell({ title, children }: { title: string; children: React.R
         <div className="sidebar-brand">
           {logoUrl ? (
             <span className="sidebar-brand-mark sidebar-brand-mark-logo">
+              {/* eslint-disable-next-line @next/next/no-img-element -- logo is a data: URI from company settings; next/image adds nothing */}
               <img src={logoUrl} alt={companyName} />
             </span>
           ) : (

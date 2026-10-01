@@ -303,7 +303,7 @@ model CompanySettings {
    * - SECRETS in this vault are AES-256-GCM encrypted at rest (key from
    * ZATCA_MASTER_KEY env) and are NEVER returned by any API surface.
    * - The ZATCA hash-chain COUNTERS live ONLY here + on Invoice records,
-   * both in PostgreSQL ΓÇö PostgreSQL is the authoritative source of truth.
+   * both in PostgreSQL — PostgreSQL is the authoritative source of truth.
    * Redis (when wired later) will be a non-authoritative cache ONLY.
    * =====================================================================
    */
@@ -438,9 +438,9 @@ model Permission {
   @@unique([roleId, module])
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ============================================================
 // WORKSHOP MODULE
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ============================================================
 
 model WorkOrder {
   id             Int       @id @default(autoincrement())
@@ -613,9 +613,9 @@ model WorkshopExpense {
   @@index([category])
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ============================================================
 // HR MODULE
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ============================================================
 
 model Department {
   id          Int      @id @default(autoincrement())

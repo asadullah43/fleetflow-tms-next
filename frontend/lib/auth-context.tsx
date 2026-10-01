@@ -59,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const stored = readStoredToken();
     if (!stored) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- no saved session: finish the post-hydration check
       setLoading(false);
       return;
     }
@@ -123,7 +124,7 @@ export function useAuth(): AuthState {
 export function usePagePermissions(): Record<PermissionAction, boolean> {
   const { can } = useAuth();
   const pathname = usePathname();
-  const module = moduleForPath(pathname);
-  if (!module) return { view: true, add: true, edit: true, delete: true };
-  return { view: can(module, 'view'), add: can(module, 'add'), edit: can(module, 'edit'), delete: can(module, 'delete') };
+  const pageModule = moduleForPath(pathname);
+  if (!pageModule) return { view: true, add: true, edit: true, delete: true };
+  return { view: can(pageModule, 'view'), add: can(pageModule, 'add'), edit: can(pageModule, 'edit'), delete: can(pageModule, 'delete') };
 }

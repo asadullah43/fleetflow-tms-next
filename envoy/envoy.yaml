@@ -64,6 +64,7 @@ static_resources:
                       address: backend
                       port_value: 50051
 
+# Admin interface (config dump, /quitquitquit, ...) is reachable from inside the container only.
 admin:
   address:
-    socket_address: { address: 0.0.0.0, port_value: 9901 }
+    socket_address: { address: 127.0.0.1, port_value: 9901 }

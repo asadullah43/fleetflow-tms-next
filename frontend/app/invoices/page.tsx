@@ -77,7 +77,7 @@ export default function InvoicesPage() {
           toDate,
           vatEnabled,
           lineItems: lines.filter((l) => l.description),
-        } as any,
+        },
         token!,
       );
       setModal(null);

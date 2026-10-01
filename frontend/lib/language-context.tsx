@@ -15,6 +15,22 @@ interface LanguageState {
 const LanguageContext = createContext<LanguageState | null>(null);
 const STORAGE_KEY = 'fleetflow_language';
 
+function readStoredLanguage(): Language {
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) === 'ar' ? 'ar' : 'en';
+  } catch {
+    return 'en'; // storage blocked (private mode, policy): default language
+  }
+}
+
+function writeStoredLanguage(lang: Language): void {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, lang);
+  } catch {
+    // storage blocked: the choice still applies for this session
+  }
+}
+
 function applyDocumentDirection(lang: Language) {
   if (typeof document === 'undefined') return;
   document.documentElement.lang = lang;
@@ -31,19 +47,20 @@ function applyDocumentDirection(lang: Language) {
  * devices. Signing in then re-syncs the switcher from the profile's saved
  * language, same as the legacy screens did.
  *
- * Today this flips the document's text direction (RTL for Arabic) and
- * `lang` attribute app-wide; full string translation is a separate,
- * larger follow-on piece of work this hook is ready to support later
- * (every consumer already re-renders off `language`).
+ * Flips the document's text direction (RTL for Arabic) and `lang`
+ * attribute app-wide; `useT()` below translates UI strings through
+ * lib/i18n/dictionary.ts.
  */
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const { token, user } = useAuth();
   const [language, setLanguageState] = useState<Language>('en');
 
-  // Initial load: whatever was last chosen on this device/browser.
+  // Initial load: whatever was last chosen on this device/browser. Read in
+  // an effect (not the useState initializer) so the server render and the
+  // first client render agree, avoiding a hydration mismatch.
   useEffect(() => {
-    const stored = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_KEY) : null;
-    const initial: Language = stored === 'ar' ? 'ar' : 'en';
+    const initial: Language = readStoredLanguage();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync from localStorage after hydration
     setLanguageState(initial);
     applyDocumentDirection(initial);
   }, []);
@@ -51,9 +68,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   // Once signed in, the account's saved preference takes over.
   useEffect(() => {
     if (user?.language === 'ar' || user?.language === 'en') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- adopting the profile's language when a session starts
       setLanguageState(user.language);
       applyDocumentDirection(user.language);
-      if (typeof window !== 'undefined') window.localStorage.setItem(STORAGE_KEY, user.language);
+      writeStoredLanguage(user.language);
     }
   }, [user]);
 
@@ -61,7 +79,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     (lang: Language) => {
       setLanguageState(lang);
       applyDocumentDirection(lang);
-      if (typeof window !== 'undefined') window.localStorage.setItem(STORAGE_KEY, lang);
+      writeStoredLanguage(lang);
       if (token) {
         authClient.updateLanguage(token, lang).catch(() => {
           // Best-effort — the local switch has already taken effect.

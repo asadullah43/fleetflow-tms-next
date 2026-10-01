@@ -146,7 +146,7 @@ export const workOrderPartsClient = {
       RequestType: ws.ListRequest,
       ResponseType: ws.WorkOrderPartList,
       token,
-    }).then((res: any) => res.items ?? []);
+    }).then((res) => (res.items ?? []) as unknown as WorkOrderPartDto[]);
   },
   create(values: Record<string, unknown>, token: string) {
     return unaryCall({
@@ -187,7 +187,7 @@ export const inspectionItemsClient = {
       RequestType: ws.ListRequest,
       ResponseType: ws.InspectionItemList,
       token,
-    }).then((res: any) => res.items ?? []);
+    }).then((res) => (res.items ?? []) as unknown as InspectionItemDto[]);
   },
   create(values: Record<string, unknown>, token: string) {
     return unaryCall({
@@ -228,7 +228,7 @@ export const sparePartTransactionsClient = {
       RequestType: ws.ListRequest,
       ResponseType: ws.SparePartTransactionList,
       token,
-    }).then((res: any) => res.items ?? []);
+    }).then((res) => (res.items ?? []) as unknown as SparePartTransactionDto[]);
   },
   create(values: Record<string, unknown>, token: string) {
     return unaryCall({

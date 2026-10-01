@@ -4,7 +4,8 @@ import { PrismaClient } from '../src/generated/prisma/client.js';
 const prisma = new PrismaClient();
 
 const ADMIN_USERNAME = 'admin';
-const ADMIN_PASSWORD = 'Admin123!'; // change after first login
+// Override with SEED_ADMIN_PASSWORD; the default is public (it's in the README), so change it after first login.
+const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD || 'Admin123!';
 
 async function main() {
   const role = await prisma.role.upsert({
@@ -30,7 +31,7 @@ async function main() {
     },
   });
 
-  console.log(`Seeded admin user -> username: ${ADMIN_USERNAME}  password: ${ADMIN_PASSWORD}`);
+  console.log(`Seeded admin user -> username: ${ADMIN_USERNAME}${process.env.SEED_ADMIN_PASSWORD ? '' : `  password: ${ADMIN_PASSWORD}`}`);
 }
 
 main()

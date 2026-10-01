@@ -49,7 +49,7 @@ export const loadingOrdersClient = {
       RequestType: ListRequest,
       ResponseType: LoadingOrderBatchList,
       token,
-    }).then((res: any) => (res.items ?? []) as LoadingOrderBatchDto[]);
+    }).then((res) => (res.items ?? []) as unknown as LoadingOrderBatchDto[]);
   },
 
   getBatch(batchId: number, token: string): Promise<LoadingOrderDto[]> {
@@ -60,7 +60,7 @@ export const loadingOrdersClient = {
       RequestType: DeleteBatchRequest,
       ResponseType: LoadingOrderList,
       token,
-    }).then((res: any) => (res.items ?? []) as LoadingOrderDto[]);
+    }).then((res) => (res.items ?? []) as unknown as LoadingOrderDto[]);
   },
 
   /** Creates `quantity` individually-serialled orders in one batch; returns every row created (for the printable slip). */
@@ -75,7 +75,7 @@ export const loadingOrdersClient = {
       RequestType: CreateLoadingOrderRequest,
       ResponseType: LoadingOrderList,
       token,
-    }).then((res: any) => (res.items ?? []) as LoadingOrderDto[]);
+    }).then((res) => (res.items ?? []) as unknown as LoadingOrderDto[]);
   },
 
   removeBatch(batchId: number, token: string): Promise<void> {

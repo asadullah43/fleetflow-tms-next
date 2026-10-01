@@ -19,13 +19,12 @@ export default function WorkshopExpensesPage() {
       categories: Array.from(new Set(expenses.map((e) => e.category).filter(Boolean))).sort(),
     };
   }, []);
-  const categories = opts?.categories ?? [];
 
   const filterBar = useMemo(
     () => ({
       fields: [
         { name: 'truck', label: 'Truck', options: opts?.trucks.map((o) => o.label) ?? [] },
-        { name: 'category', label: 'Category', options: categories },
+        { name: 'category', label: 'Category', options: opts?.categories ?? [] },
       ],
       apply: (r: WorkshopExpenseDto, f: Record<string, string>) => {
         const match = (field: string | undefined, needle: string | undefined) =>
@@ -33,7 +32,7 @@ export default function WorkshopExpensesPage() {
         return match(r.truckNumber, f.truck) && match(r.category, f.category);
       },
     }),
-    [opts, categories],
+    [opts],
   );
 
   if (!opts) return <PageLoading title="Expenses" error={lookupError} />;

@@ -145,7 +145,6 @@ export function CrudPanel<T extends { id: number }>({
       if (text) values.add(text);
     }
     return Array.from(values).sort((a, b) => a.localeCompare(b));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows, columns, filterBar]);
 
   const visibleRows = useMemo(() => {

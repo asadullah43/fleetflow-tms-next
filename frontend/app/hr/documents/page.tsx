@@ -21,13 +21,12 @@ export default function EmployeeDocumentsPage() {
       docTypes: Array.from(new Set(docs.map((d) => d.documentType).filter(Boolean))).sort(),
     };
   }, [language]);
-  const docTypes = opts?.docTypes ?? [];
 
   const filterBar = useMemo(
     () => ({
       fields: [
         { name: 'employee', label: 'Employee', options: opts?.employees.map((o) => o.label) ?? [] },
-        { name: 'documentType', label: 'Document Type', options: docTypes },
+        { name: 'documentType', label: 'Document Type', options: opts?.docTypes ?? [] },
       ],
       apply: (r: EmployeeDocumentDto, f: Record<string, string>) => {
         const match = (field: string | undefined, needle: string | undefined) =>
@@ -35,7 +34,7 @@ export default function EmployeeDocumentsPage() {
         return match(r.employeeName, f.employee) && match(r.documentType, f.documentType);
       },
     }),
-    [opts, docTypes],
+    [opts],
   );
 
   if (!opts) return <PageLoading title="Documents" error={lookupError} />;

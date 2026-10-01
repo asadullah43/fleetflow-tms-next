@@ -7,13 +7,13 @@ interface ProtoType<T> {
 }
 
 export interface CrudMessages {
-  ListRequest: ProtoType<any>;
-  ItemList: ProtoType<any>;
-  Item: ProtoType<any>;
-  IdRequest: ProtoType<any>;
-  CreateRequest: ProtoType<any>;
-  UpdateRequest: ProtoType<any>;
-  DeleteResponse: ProtoType<any>;
+  ListRequest: ProtoType<object>;
+  ItemList: ProtoType<object>;
+  Item: ProtoType<object>;
+  IdRequest: ProtoType<object>;
+  CreateRequest: ProtoType<object>;
+  UpdateRequest: ProtoType<object>;
+  DeleteResponse: ProtoType<object>;
 }
 
 /**
@@ -33,7 +33,7 @@ export function createCrudClient<T>(serviceName: string, m: CrudMessages, listKe
         RequestType: m.ListRequest,
         ResponseType: m.ItemList,
         token,
-      }).then((res: any) => (res[listKey] ?? []) as T[]);
+      }).then((res) => ((res as Record<string, unknown>)[listKey] ?? []) as T[]);
     },
 
     get(id: number, token: string): Promise<T> {
@@ -44,7 +44,7 @@ export function createCrudClient<T>(serviceName: string, m: CrudMessages, listKe
         RequestType: m.IdRequest,
         ResponseType: m.Item,
         token,
-      }) as Promise<T>;
+      }) as Promise<unknown> as Promise<T>;
     },
 
     create(values: Record<string, unknown>, token: string): Promise<T> {
@@ -55,7 +55,7 @@ export function createCrudClient<T>(serviceName: string, m: CrudMessages, listKe
         RequestType: m.CreateRequest,
         ResponseType: m.Item,
         token,
-      }) as Promise<T>;
+      }) as Promise<unknown> as Promise<T>;
     },
 
     update(id: number, values: Record<string, unknown>, token: string): Promise<T> {
@@ -66,7 +66,7 @@ export function createCrudClient<T>(serviceName: string, m: CrudMessages, listKe
         RequestType: m.UpdateRequest,
         ResponseType: m.Item,
         token,
-      }) as Promise<T>;
+      }) as Promise<unknown> as Promise<T>;
     },
 
     remove(id: number, token: string): Promise<void> {

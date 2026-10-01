@@ -29,8 +29,8 @@ export default function LoginPage() {
       const perms = await login(username, password);
       router.push(
         firstAllowedHref((href) => {
-          const module = moduleForPath(href);
-          return !module || hasPermission(perms, module, 'view');
+          const pageModule = moduleForPath(href);
+          return !pageModule || hasPermission(perms, pageModule, 'view');
         }),
       );
     } catch (err) {
@@ -72,6 +72,7 @@ export default function LoginPage() {
           <div className="auth-brand">
             {logoUrl ? (
               <span className="sidebar-brand-mark sidebar-brand-mark-logo">
+                {/* eslint-disable-next-line @next/next/no-img-element -- logo is a data: URI from company settings; next/image adds nothing */}
                 <img src={logoUrl} alt={companyName} />
               </span>
             ) : (

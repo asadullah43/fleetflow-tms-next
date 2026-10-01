@@ -17,8 +17,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_use_strong_password}
       POSTGRES_DB: ${POSTGRES_DB:-fleetflow}
+    # Published on the host's loopback only (for `prisma db push` / seeding
+    # from the host) — not on every network interface.
     ports:
-      - "${DB_PORT:-5433}:5432"
+      - "127.0.0.1:${DB_PORT:-5433}:5432"
     volumes:
       - database_data:/var/lib/postgresql/data
     healthcheck:
@@ -44,7 +46,9 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       GRPC_PORT: 50051
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme_use_strong_password}@database:5432/${POSTGRES_DB:-fleetflow}?schema=public
-      JWT_SECRET: ${JWT_SECRET:-fleetflow-jwt-secret-change-in-production-2024}
+      # Required, no default: a default secret is public (it's in this file),
+      # and anyone who knows it can forge an ADMIN token. Set it in .env.
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env to a long random string (see .env.example)}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
     expose:
       - "50051"
