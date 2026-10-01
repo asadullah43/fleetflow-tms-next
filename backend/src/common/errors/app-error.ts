@@ -1,5 +1,8 @@
 import * as grpc from '@grpc/grpc-js';
 import { ErrorFilter, ErrorResponse } from './error-response.interface.js';
+import { createLogger } from '../../lib/logger.js';
+
+const log = createLogger('app-error.ts');
 
 /**
  * Same structured error shape the legacy NestJS app used (AppError +
@@ -36,8 +39,7 @@ export class AppError extends Error {
     // is actually diagnosable from `docker compose logs api` instead
     // of a dead end.
     if (this.statusCode >= 500) {
-      // eslint-disable-next-line no-console
-      console.error(`[AppError ${this.errorCode}]`, params.cause ?? this);
+      log.error('001', 'constructor', `AppError ${this.errorCode}`, params.cause ?? this);
     }
   }
 

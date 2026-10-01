@@ -13,6 +13,18 @@ export interface ColumnDef<T> {
   align?: 'left' | 'right';
 }
 
+export interface FilterFieldDef {
+  name: string;
+  label: string;
+  type?: 'text' | 'date';
+}
+
+export interface FilterBarDef<T> {
+  fields: FilterFieldDef[];
+  /** Return true to keep `row` visible given the current filter values. */
+  apply: (row: T, filters: Record<string, string>) => boolean;
+}
+
 interface CrudPanelProps<T extends { id: number }> {
   columns: ColumnDef<T>[];
   fetchAll: () => Promise<T[]>;
@@ -25,6 +37,15 @@ interface CrudPanelProps<T extends { id: number }> {
   emptyLabel?: string;
   addLabel?: string;
   searchPlaceholder?: string;
+  /** Extra filter toolbar (date range, column filters, ...) rendered above search/export. */
+  filterBar?: FilterBarDef<T>;
+  /**
+   * Called whenever a form field changes. Return a partial patch of other
+   * field values to auto-fill (e.g. picking a truck auto-fills its
+   * currently assigned driver) — merged into the form state alongside the
+   * field's own new value.
+   */
+  onValuesChange?: (name: string, value: string, values: Record<string, string>) => Record<string, string> | void;
 }
 
 interface CrudPageProps<T extends { id: number }> extends CrudPanelProps<T> {
@@ -38,6 +59,8 @@ export interface FormFieldDef {
   type?: 'text' | 'number' | 'date' | 'select' | 'textarea';
   options?: { value: string; label: string }[];
   required?: boolean;
+  /** Always shown disabled, value driven by `onValuesChange` — not user-editable. */
+  readOnly?: boolean;
 }
 
 /**
@@ -59,6 +82,8 @@ export function CrudPanel<T extends { id: number }>({
   addLabel = 'Add',
   searchPlaceholder,
   exportTitle,
+  filterBar,
+  onValuesChange,
 }: CrudPanelProps<T> & { exportTitle?: string }) {
   const [rows, setRows] = useState<T[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +92,7 @@ export function CrudPanel<T extends { id: number }>({
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [filters, setFilters] = useState<Record<string, string>>({});
 
   function load() {
     fetchAll()
@@ -79,12 +105,29 @@ export function CrudPanel<T extends { id: number }>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const hasActiveFilters = filterBar ? Object.values(filters).some((v) => v) : false;
+
   const visibleRows = useMemo(() => {
     if (!rows) return rows;
+    let result = rows;
+    if (filterBar && hasActiveFilters) {
+      result = result.filter((row) => filterBar.apply(row, filters));
+    }
     const q = query.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((row) => columns.some((col) => cellText(col.render(row)).toLowerCase().includes(q)));
-  }, [rows, query, columns]);
+    if (q) {
+      result = result.filter((row) => columns.some((col) => cellText(col.render(row)).toLowerCase().includes(q)));
+    }
+    return result;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, query, columns, filters, hasActiveFilters]);
+
+  function updateField(name: string, value: string) {
+    setValues((prev) => {
+      const next = { ...prev, [name]: value };
+      const patch = onValuesChange?.(name, value, next);
+      return patch ? { ...next, ...patch } : next;
+    });
+  }
 
   function openCreate() {
     setValues(emptyValues);
@@ -144,6 +187,39 @@ export function CrudPanel<T extends { id: number }>({
   return (
     <>
       {error && <div className="error-banner">{error}</div>}
+
+      {filterBar && (
+        <div className="filter-bar">
+          {filterBar.fields.map((f) =>
+            f.type === 'date' ? (
+              <div className="search-field filter-field" key={f.name}>
+                <Icon.calendar size={15} />
+                <input
+                  type="date"
+                  placeholder={f.label}
+                  aria-label={f.label}
+                  value={filters[f.name] ?? ''}
+                  onChange={(e) => setFilters({ ...filters, [f.name]: e.target.value })}
+                />
+              </div>
+            ) : (
+              <div className="search-field filter-field" key={f.name}>
+                <Icon.search size={15} />
+                <input
+                  placeholder={f.label}
+                  value={filters[f.name] ?? ''}
+                  onChange={(e) => setFilters({ ...filters, [f.name]: e.target.value })}
+                />
+              </div>
+            )
+          )}
+          {hasActiveFilters && (
+            <button type="button" className="btn btn-secondary" onClick={() => setFilters({})}>
+              Clear filters
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="toolbar">
         <div className="field" style={{ margin: 0, maxWidth: 280, flex: 1 }}>
@@ -239,11 +315,13 @@ export function CrudPanel<T extends { id: number }>({
           {formFields.map((field) => (
             <div className="field" key={field.name}>
               <label htmlFor={field.name}>{field.label}</label>
-              {field.type === 'select' ? (
+              {field.readOnly ? (
+                <input id={field.name} type="text" value={values[field.name] ?? ''} disabled readOnly />
+              ) : field.type === 'select' ? (
                 <select
                   id={field.name}
                   value={values[field.name] ?? ''}
-                  onChange={(e) => setValues({ ...values, [field.name]: e.target.value })}
+                  onChange={(e) => updateField(field.name, e.target.value)}
                   disabled={modal.mode === 'view'}
                 >
                   <option value="" disabled>
@@ -260,7 +338,7 @@ export function CrudPanel<T extends { id: number }>({
                   id={field.name}
                   rows={3}
                   value={values[field.name] ?? ''}
-                  onChange={(e) => setValues({ ...values, [field.name]: e.target.value })}
+                  onChange={(e) => updateField(field.name, e.target.value)}
                   disabled={modal.mode === 'view'}
                 />
               ) : (
@@ -268,7 +346,7 @@ export function CrudPanel<T extends { id: number }>({
                   id={field.name}
                   type={field.type === 'number' || field.type === 'date' ? field.type : 'text'}
                   value={values[field.name] ?? ''}
-                  onChange={(e) => setValues({ ...values, [field.name]: e.target.value })}
+                  onChange={(e) => updateField(field.name, e.target.value)}
                   required={field.required}
                   disabled={modal.mode === 'view'}
                 />
@@ -290,6 +368,7 @@ export function CrudPanel<T extends { id: number }>({
  * directly inside their own AppShell instead of this.
  */
 export function CrudPage<T extends { id: number }>({ title, description, ...panelProps }: CrudPageProps<T>) {
+  // filterBar/onValuesChange flow through panelProps already (CrudPanelProps superset)
   return (
     <AppShell title={title}>
       <div className="page-header">

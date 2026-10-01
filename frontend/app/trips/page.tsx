@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CrudPage } from '../../components/CrudPage';
 import { AppShell } from '../../components/AppShell';
 import { useAuth } from '../../lib/auth-context';
@@ -11,12 +11,22 @@ import { locationsClient } from '../../lib/grpc/locations';
 import { cargoTypesClient } from '../../lib/grpc/cargo-types';
 import { trucksClient } from '../../lib/grpc/trucks';
 import { driversClient } from '../../lib/grpc/drivers';
+import { assignmentsClient, AssignmentDto } from '../../lib/grpc/assignments';
 
 type Opt = { value: string; label: string }[];
+
+/** The driver currently assigned to a truck (matches the overlap rule in assignments.service.ts). */
+function currentAssignment(assignments: AssignmentDto[], truckId: number): AssignmentDto | undefined {
+  const today = new Date().toISOString().slice(0, 10);
+  return assignments
+    .filter((a) => a.truckId === truckId && a.startDate.slice(0, 10) <= today && (!a.endDate || a.endDate.slice(0, 10) >= today))
+    .sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
+}
 
 export default function TripsPage() {
   const { token } = useAuth();
   const [opts, setOpts] = useState<{ suppliers: Opt; customers: Opt; locations: Opt; cargoTypes: Opt; trucks: Opt; drivers: Opt } | null>(null);
+  const [assignments, setAssignments] = useState<AssignmentDto[]>([]);
 
   useEffect(() => {
     if (!token) return;
@@ -27,7 +37,8 @@ export default function TripsPage() {
       cargoTypesClient.list(token),
       trucksClient.list(token),
       driversClient.list(token),
-    ]).then(([suppliers, customers, locations, cargoTypes, trucks, drivers]) => {
+      assignmentsClient.list(token),
+    ]).then(([suppliers, customers, locations, cargoTypes, trucks, drivers, assignmentList]) => {
       setOpts({
         suppliers: suppliers.map((s) => ({ value: String(s.id), label: s.name })),
         customers: customers.map((c) => ({ value: String(c.id), label: c.name })),
@@ -36,8 +47,52 @@ export default function TripsPage() {
         trucks: trucks.map((t) => ({ value: String(t.id), label: t.truckNumber })),
         drivers: drivers.map((d) => ({ value: String(d.id), label: d.name })),
       });
+      setAssignments(assignmentList);
     });
   }, [token]);
+
+  const filterBar = useMemo(
+    () => ({
+      fields: [
+        { name: 'fromDate', label: 'From Date', type: 'date' as const },
+        { name: 'toDate', label: 'To Date', type: 'date' as const },
+        { name: 'transactionNumber', label: 'Transaction #' },
+        { name: 'customer', label: 'Customer' },
+        { name: 'driver', label: 'Driver' },
+        { name: 'truck', label: 'Truck' },
+        { name: 'pickup', label: 'Pickup Location' },
+        { name: 'delivery', label: 'Delivery Location' },
+        { name: 'cargoType', label: 'Cargo Type' },
+      ],
+      apply: (r: TripDto, f: Record<string, string>) => {
+        const day = r.tripDate?.slice(0, 10) ?? '';
+        if (f.fromDate && day < f.fromDate) return false;
+        if (f.toDate && day > f.toDate) return false;
+        const match = (field: string | undefined, needle: string | undefined) =>
+          !needle || (field ?? '').toLowerCase().includes(needle.toLowerCase());
+        return (
+          match(r.transactionNumber, f.transactionNumber) &&
+          match(r.customerName, f.customer) &&
+          match(r.driverName, f.driver) &&
+          match(r.truckNumber, f.truck) &&
+          match(r.pickupLocationName, f.pickup) &&
+          match(r.deliveryLocationName, f.delivery) &&
+          match(r.cargoTypeName, f.cargoType)
+        );
+      },
+    }),
+    []
+  );
+
+  function onValuesChange(name: string, value: string) {
+    if (name === 'truckId') {
+      const assignment = value ? currentAssignment(assignments, Number(value)) : undefined;
+      return {
+        driverId: assignment ? String(assignment.driverId) : '',
+        driverName: assignment?.driverName ?? (value ? 'No driver currently assigned to this truck' : ''),
+      };
+    }
+  }
 
   if (!opts) {
     return (
@@ -66,6 +121,8 @@ export default function TripsPage() {
       title="Trips"
       addLabel="Trip"
       emptyLabel="No trips yet — record a run once a truck picks up a load."
+      filterBar={filterBar}
+      onValuesChange={onValuesChange}
       columns={[
         { header: 'Transaction #', render: (r) => <span className="mono">{r.transactionNumber}</span> },
         { header: 'Route', render: (r) => `${r.pickupLocationName ?? r.pickupLocationId} → ${r.deliveryLocationName ?? r.deliveryLocationId}` },
@@ -87,7 +144,7 @@ export default function TripsPage() {
         { name: 'quantity', label: 'Quantity', required: true },
         { name: 'tripDate', label: 'Trip date', type: 'date', required: true },
         { name: 'truckId', label: 'Truck', type: 'select', options: opts.trucks, required: true },
-        { name: 'driverId', label: 'Driver', type: 'select', options: opts.drivers },
+        { name: 'driverName', label: 'Assigned driver', readOnly: true },
       ]}
       emptyValues={{
         customerId: '',
@@ -99,6 +156,7 @@ export default function TripsPage() {
         tripDate: '',
         truckId: '',
         driverId: '',
+        driverName: '',
       }}
       toFormValues={(r) => ({
         customerId: r.customerId ? String(r.customerId) : '',
@@ -110,6 +168,7 @@ export default function TripsPage() {
         tripDate: r.tripDate?.slice(0, 10) ?? '',
         truckId: String(r.truckId),
         driverId: r.driverId ? String(r.driverId) : '',
+        driverName: r.driverName ?? '',
       })}
     />
   );

@@ -477,6 +477,23 @@ table.data-table {
   outline: none;
 }
 
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.filter-field {
+  flex: 1 1 170px;
+  min-width: 150px;
+  max-width: 220px;
+}
+
+.filter-field input {
+  color-scheme: light;
+}
+
 .page-header {
   margin-bottom: 18px;
 }
