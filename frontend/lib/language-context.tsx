@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
 import { useAuth } from './auth-context';
 import { authClient } from './grpc/auth';
+import { translate } from './i18n/dictionary';
 
 export type Language = 'en' | 'ar';
 
@@ -77,4 +78,17 @@ export function useLanguage(): LanguageState {
   const ctx = useContext(LanguageContext);
   if (!ctx) throw new Error('useLanguage must be used within LanguageProvider');
   return ctx;
+}
+
+/**
+ * `t('Some English label')` — translates a literal UI string to Arabic
+ * when that's the active language (via the dictionary in `./i18n/dictionary`),
+ * or returns it unchanged for English / anything not yet translated.
+ * Used throughout the shared chrome (AppShell, CrudPage/CrudPanel, login)
+ * so every module page gets bilingual labels for free without each page
+ * needing its own translation wiring.
+ */
+export function useT(): (text: string) => string {
+  const { language } = useLanguage();
+  return useCallback((text: string) => translate(text, language), [language]);
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { AppShell } from '../../components/AppShell';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useAuth } from '../../lib/auth-context';
+import { useT, useLanguage } from '../../lib/language-context';
 import { dashboardClient, DashboardSummaryDto } from '../../lib/grpc/dashboard';
 import { Icon, IconName } from '../../components/icons';
 import { trucksClient, TruckDto } from '../../lib/grpc/trucks';
@@ -19,6 +20,7 @@ const TABS: { key: string; label: string; icon: IconName }[] = [
 
 function StatCard({ icon, tone, label, value }: { icon: IconName; tone: string; label: string; value: string | number }) {
   const ItemIcon = Icon[icon];
+  const t = useT();
   return (
     <div className="stat-card">
       <div className="stat-card-top">
@@ -26,7 +28,7 @@ function StatCard({ icon, tone, label, value }: { icon: IconName; tone: string; 
           <ItemIcon size={18} />
         </span>
       </div>
-      <div className="stat-label">{label}</div>
+      <div className="stat-label">{t(label)}</div>
       <div className="stat-value mono">{value}</div>
     </div>
   );
@@ -34,9 +36,10 @@ function StatCard({ icon, tone, label, value }: { icon: IconName; tone: string; 
 
 function ProgressRow({ label, value, max, tone }: { label: string; value: number; max: number; tone: string }) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
+  const t = useT();
   return (
     <div className="progress-row">
-      <span className="progress-label">{label}</span>
+      <span className="progress-label">{t(label)}</span>
       <span className="progress-track">
         <span className="progress-fill" style={{ width: `${pct}%`, background: `var(--tile-${tone}-fg)` }} />
       </span>
@@ -46,16 +49,17 @@ function ProgressRow({ label, value, max, tone }: { label: string; value: number
 }
 
 function TabBar({ active, onChange }: { active: string; onChange: (key: string) => void }) {
+  const t = useT();
   return (
     <div className="dash-tabs">
-      {TABS.map((t) => {
-        const TabIcon = Icon[t.icon];
+      {TABS.map((tab) => {
+        const TabIcon = Icon[tab.icon];
         return (
-          <button key={t.key} type="button" className={`dash-tab${active === t.key ? ' active' : ''}`} onClick={() => onChange(t.key)}>
+          <button key={tab.key} type="button" className={`dash-tab${active === tab.key ? ' active' : ''}`} onClick={() => onChange(tab.key)}>
             <span className="dash-tab-icon">
               <TabIcon size={14} />
             </span>
-            {t.label}
+            {t(tab.label)}
           </button>
         );
       })}
@@ -64,8 +68,9 @@ function TabBar({ active, onChange }: { active: string; onChange: (key: string) 
 }
 
 function OperationsTab({ summary }: { summary: DashboardSummaryDto | null }) {
+  const t = useT();
   if (!summary) {
-    return <div className="empty-state" style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 10 }}>Loading fleet summary...</div>;
+    return <div className="empty-state" style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 10 }}>{t('Loading fleet summary...')}</div>;
   }
 
   const snapshot = [
@@ -113,18 +118,18 @@ function OperationsTab({ summary }: { summary: DashboardSummaryDto | null }) {
 
       <div className="dash-grid">
         <div className="panel" style={{ padding: 22 }}>
-          <h3 className="dash-panel-title">This month at a glance</h3>
-          <p className="dash-panel-sub">Active fleet &amp; operational load, side by side.</p>
+          <h3 className="dash-panel-title">{t('This month at a glance')}</h3>
+          <p className="dash-panel-sub">{t('Active fleet & operational load, side by side.')}</p>
           {snapshot.map((row) => (
             <ProgressRow key={row.label} label={row.label} value={row.value} max={snapshotMax} tone={row.tone} />
           ))}
         </div>
 
         <div className="panel" style={{ padding: 22 }}>
-          <h3 className="dash-panel-title">Needs attention</h3>
-          <p className="dash-panel-sub">Open items pulled from across the fleet.</p>
+          <h3 className="dash-panel-title">{t('Needs attention')}</h3>
+          <p className="dash-panel-sub">{t('Open items pulled from across the fleet.')}</p>
           {alerts.length === 0 ? (
-            <div style={{ color: 'var(--text-faint)', fontSize: 13 }}>Nothing outstanding right now.</div>
+            <div style={{ color: 'var(--text-faint)', fontSize: 13 }}>{t('Nothing outstanding right now.')}</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {alerts.map((a, i) => {
@@ -147,6 +152,7 @@ function OperationsTab({ summary }: { summary: DashboardSummaryDto | null }) {
 }
 
 function HrDashboardTab({ token }: { token: string }) {
+  const t = useT();
   const [loading, setLoading] = useState(true);
   const [employees, setEmployees] = useState<EmployeeDto[]>([]);
   const [departmentsCount, setDepartmentsCount] = useState(0);
@@ -186,7 +192,7 @@ function HrDashboardTab({ token }: { token: string }) {
   }, [token]);
 
   if (loading) {
-    return <div className="empty-state" style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 10 }}>Loading HR summary...</div>;
+    return <div className="empty-state" style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 10 }}>{t('Loading HR summary...')}</div>;
   }
 
   const active = employees.filter((e) => e.employmentStatus === 'ACTIVE').length;
@@ -216,18 +222,18 @@ function HrDashboardTab({ token }: { token: string }) {
 
       <div className="dash-grid">
         <div className="panel" style={{ padding: 22 }}>
-          <h3 className="dash-panel-title">Headcount by department</h3>
-          <p className="dash-panel-sub">Where the active roster sits today.</p>
+          <h3 className="dash-panel-title">{t('Headcount by department')}</h3>
+          <p className="dash-panel-sub">{t('Where the active roster sits today.')}</p>
           {deptRows.length === 0 ? (
-            <div style={{ color: 'var(--text-faint)', fontSize: 13 }}>No employees recorded yet.</div>
+            <div style={{ color: 'var(--text-faint)', fontSize: 13 }}>{t('No employees recorded yet.')}</div>
           ) : (
             deptRows.map(([label, value]) => <ProgressRow key={label} label={label} value={value} max={deptMax} tone="blue" />)
           )}
         </div>
 
         <div className="panel" style={{ padding: 22 }}>
-          <h3 className="dash-panel-title">Workforce status</h3>
-          <p className="dash-panel-sub">Active, on leave, and terminated employees.</p>
+          <h3 className="dash-panel-title">{t('Workforce status')}</h3>
+          <p className="dash-panel-sub">{t('Active, on leave, and terminated employees.')}</p>
           {(
             [
               { label: 'Active', value: active, tone: 'green' },
@@ -244,6 +250,7 @@ function HrDashboardTab({ token }: { token: string }) {
 }
 
 function WorkshopDashboardTab({ token }: { token: string }) {
+  const t = useT();
   const [loading, setLoading] = useState(true);
   const [workOrders, setWorkOrders] = useState<WorkOrderDto[]>([]);
   const [maintenance, setMaintenance] = useState<MaintenanceScheduleDto[]>([]);
@@ -272,7 +279,7 @@ function WorkshopDashboardTab({ token }: { token: string }) {
   }, [token]);
 
   if (loading) {
-    return <div className="empty-state" style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 10 }}>Loading workshop summary...</div>;
+    return <div className="empty-state" style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 10 }}>{t('Loading workshop summary...')}</div>;
   }
 
   const today = new Date().toISOString().slice(0, 10);
@@ -302,18 +309,18 @@ function WorkshopDashboardTab({ token }: { token: string }) {
 
       <div className="dash-grid">
         <div className="panel" style={{ padding: 22 }}>
-          <h3 className="dash-panel-title">Open work by priority</h3>
-          <p className="dash-panel-sub">Jobs not yet completed or cancelled.</p>
+          <h3 className="dash-panel-title">{t('Open work by priority')}</h3>
+          <p className="dash-panel-sub">{t('Jobs not yet completed or cancelled.')}</p>
           {byPriority.every((r) => r.value === 0) ? (
-            <div style={{ color: 'var(--text-faint)', fontSize: 13 }}>Nothing open right now.</div>
+            <div style={{ color: 'var(--text-faint)', fontSize: 13 }}>{t('Nothing open right now.')}</div>
           ) : (
             byPriority.map((row) => <ProgressRow key={row.label} label={row.label} value={row.value} max={priorityMax} tone="orange" />)
           )}
         </div>
 
         <div className="panel" style={{ padding: 22 }}>
-          <h3 className="dash-panel-title">Needs attention</h3>
-          <p className="dash-panel-sub">Open items pulled from the workshop.</p>
+          <h3 className="dash-panel-title">{t('Needs attention')}</h3>
+          <p className="dash-panel-sub">{t('Open items pulled from the workshop.')}</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {overdueMaintenance > 0 && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -340,7 +347,7 @@ function WorkshopDashboardTab({ token }: { token: string }) {
               </div>
             )}
             {overdueMaintenance === 0 && lowStockParts === 0 && failedInspections === 0 && (
-              <div style={{ color: 'var(--text-faint)', fontSize: 13 }}>Nothing outstanding right now.</div>
+              <div style={{ color: 'var(--text-faint)', fontSize: 13 }}>{t('Nothing outstanding right now.')}</div>
             )}
           </div>
         </div>
@@ -350,6 +357,7 @@ function WorkshopDashboardTab({ token }: { token: string }) {
 }
 
 function MapTab({ token }: { token: string }) {
+  const t = useT();
   const [loading, setLoading] = useState(true);
   const [trucks, setTrucks] = useState<TruckDto[]>([]);
 
@@ -366,7 +374,7 @@ function MapTab({ token }: { token: string }) {
   }, [token]);
 
   if (loading) {
-    return <div className="empty-state" style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 10 }}>Loading fleet...</div>;
+    return <div className="empty-state" style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 10 }}>{t('Loading fleet...')}</div>;
   }
 
   const active = trucks.filter((t) => t.status === 'ACTIVE').length;
@@ -386,20 +394,21 @@ function MapTab({ token }: { token: string }) {
               <Icon.mapPin size={24} />
             </span>
             <h3 className="dash-panel-title" style={{ margin: 0 }}>
-              Live tracker not connected yet
+              {t('Live tracker not connected yet')}
             </h3>
             <p className="dash-panel-sub" style={{ margin: 0, maxWidth: 360 }}>
-              This is where the real-time GPS positions of your trucks will show up once a tracking provider is wired in — pins moving on
-              the map, trip routes, and geofence alerts.
+              {t(
+                'This is where the real-time GPS positions of your trucks will show up once a tracking provider is wired in — pins moving on the map, trip routes, and geofence alerts.',
+              )}
             </p>
           </div>
         </div>
 
         <div className="panel" style={{ padding: 22 }}>
-          <h3 className="dash-panel-title">Fleet roster</h3>
-          <p className="dash-panel-sub">Trucks that will appear on the map once tracking is connected.</p>
+          <h3 className="dash-panel-title">{t('Fleet roster')}</h3>
+          <p className="dash-panel-sub">{t('Trucks that will appear on the map once tracking is connected.')}</p>
           {trucks.length === 0 ? (
-            <div style={{ color: 'var(--text-faint)', fontSize: 13 }}>No trucks recorded yet.</div>
+            <div style={{ color: 'var(--text-faint)', fontSize: 13 }}>{t('No trucks recorded yet.')}</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 280, overflowY: 'auto' }}>
               {trucks.map((t) => (
@@ -424,6 +433,8 @@ function MapTab({ token }: { token: string }) {
 
 export default function DashboardPage() {
   const { user, token } = useAuth();
+  const { language } = useLanguage();
+  const t = useT();
   const [tab, setTab] = useState('operations');
   const [summary, setSummary] = useState<DashboardSummaryDto | null>(null);
 
@@ -436,9 +447,11 @@ export default function DashboardPage() {
     <AppShell title="Dashboard">
       <div className="panel dash-welcome">
         <div>
-          <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 6 }}>Welcome back, {user?.name}</div>
+          <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 6 }}>
+            {t('Welcome back,')} {user?.name}
+          </div>
           <div style={{ color: 'var(--text-muted)', fontSize: 13.5 }}>
-            Role: {user?.role ?? 'None'} &nbsp;&nbsp; Language: {user?.language}
+            {t('Role:')} {user?.role ? t(user.role) : t('None')} &nbsp;&nbsp; {t('Language:')} {language === 'ar' ? 'العربية' : 'English'}
           </div>
         </div>
         <span className="topbar-avatar" style={{ width: 44, height: 44, fontSize: 16 }}>

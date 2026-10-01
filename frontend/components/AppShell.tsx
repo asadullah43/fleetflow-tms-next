@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { NAV_GROUPS } from '../lib/nav-config';
 import { useAuth } from '../lib/auth-context';
 import { useCompanyBranding } from '../lib/use-company-branding';
+import { useT } from '../lib/language-context';
 import { Icon } from './icons';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
@@ -18,6 +19,7 @@ export function AppShell({ title, children }: { title: string; children: React.R
   const pathname = usePathname();
   const { user, loading, logout } = useAuth();
   const { companyName, logoUrl } = useCompanyBranding();
+  const t = useT();
   const router = useRouter();
 
   // Groups are collapsible; the group containing the current page starts
@@ -47,7 +49,7 @@ export function AppShell({ title, children }: { title: string; children: React.R
   }
 
   if (loading || !user) {
-    return <div className="centered-screen">Loading...</div>;
+    return <div className="centered-screen">{t('Loading...')}</div>;
   }
 
   return (
@@ -80,7 +82,7 @@ export function AppShell({ title, children }: { title: string; children: React.R
                   className={`sidebar-link-top${pathname.startsWith(item.href) ? ' active' : ''}`}
                 >
                   <ItemIcon size={16} />
-                  <span>{item.label}</span>
+                  <span>{t(item.label)}</span>
                 </Link>
               );
             }
@@ -94,7 +96,7 @@ export function AppShell({ title, children }: { title: string; children: React.R
                   aria-expanded={isOpen}
                 >
                   <GroupIcon size={16} />
-                  <span>{group.label}</span>
+                  <span>{t(group.label)}</span>
                   <Icon.chevronDown size={14} />
                 </button>
                 {isOpen && (
@@ -108,7 +110,7 @@ export function AppShell({ title, children }: { title: string; children: React.R
                           className={`sidebar-link${pathname.startsWith(item.href) ? ' active' : ''}`}
                         >
                           <ItemIcon size={16} />
-                          {item.label}
+                          {t(item.label)}
                         </Link>
                       );
                     })}
@@ -122,13 +124,13 @@ export function AppShell({ title, children }: { title: string; children: React.R
 
       <div className="main-area">
         <header className="topbar">
-          <h1>{title}</h1>
+          <h1>{t(title)}</h1>
           <div className="topbar-user">
             <LanguageSwitcher />
             <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{user?.name}</span>
             <span className="topbar-avatar">{(user?.name ?? '?').slice(0, 1).toUpperCase()}</span>
             <button className="btn btn-secondary" onClick={onSignOut}>
-              Sign out
+              {t('Sign out')}
             </button>
           </div>
         </header>

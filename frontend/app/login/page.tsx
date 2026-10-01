@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../lib/auth-context';
 import { useCompanyBranding } from '../../lib/use-company-branding';
+import { useT } from '../../lib/language-context';
 import type { RpcError } from '../../lib/grpc/client';
 import { Icon } from '../../components/icons';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
@@ -11,6 +12,7 @@ import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 export default function LoginPage() {
   const { login } = useAuth();
   const { companyName, logoUrl } = useCompanyBranding();
+  const t = useT();
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -50,8 +52,8 @@ export default function LoginPage() {
           </span>
         </div>
         <div>
-          <div className="auth-hero-tag">Trucking &middot; Logistics &middot; Operations</div>
-          <h2>Every trip, every truck, one screen.</h2>
+          <div className="auth-hero-tag">{t('Trucking · Logistics · Operations')}</div>
+          <h2>{t('Every trip, every truck, one screen.')}</h2>
         </div>
       </div>
 
@@ -72,11 +74,11 @@ export default function LoginPage() {
             )}
             <strong>{companyName}</strong>
           </div>
-          <h1>Sign in</h1>
-          <p className="subtitle">Use your {companyName} credentials.</p>
+          <h1>{t('Sign in')}</h1>
+          <p className="subtitle">{t('Use your {company} credentials.').replace('{company}', companyName)}</p>
           {error && <div className="error-banner">{error}</div>}
           <div className="field">
-            <label htmlFor="username">Username</label>
+            <label htmlFor="username">{t('Username')}</label>
             <input
               id="username"
               value={username}
@@ -86,7 +88,7 @@ export default function LoginPage() {
             />
           </div>
           <div className="field">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">{t('Password')}</label>
             <input
               id="password"
               type="password"
@@ -97,7 +99,7 @@ export default function LoginPage() {
             />
           </div>
           <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} type="submit" disabled={submitting}>
-            {submitting ? 'Signing in...' : 'Sign in'}
+            {submitting ? t('Signing in...') : t('Sign in')}
           </button>
         </form>
       </div>

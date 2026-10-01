@@ -1135,5 +1135,53 @@ table.data-table {
   }
   .main-area {
     margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+/* ── RTL (Arabic) ───────────────────────────────────────────
+   The sidebar/topbar/table layout uses fixed positioning and physical
+   left/right properties that don't auto-mirror with `dir`, so the handful
+   that matter are flipped explicitly here. Ordinary text flow, flexbox
+   gaps, and most spacing already mirror correctly on their own. */
+
+[dir='rtl'] .sidebar {
+  left: auto;
+  right: 0;
+  border-right: none;
+  border-left: 1px solid var(--sidebar-border);
+}
+
+[dir='rtl'] .main-area {
+  margin-left: 0;
+  margin-right: var(--sidebar-width);
+}
+
+[dir='rtl'] .sidebar-link-top.active,
+[dir='rtl'] .sidebar-link.active {
+  box-shadow: inset -2px 0 0 var(--accent);
+}
+
+[dir='rtl'] .sidebar-group-header {
+  text-align: right;
+}
+
+[dir='rtl'] .lang-switcher svg {
+  margin-left: 0;
+  margin-right: 4px;
+}
+
+[dir='rtl'] .data-table th,
+[dir='rtl'] .data-table td {
+  text-align: right;
+}
+
+[dir='rtl'] .auth-lang-row {
+  justify-content: flex-start;
+}
+
+@media (max-width: 900px) {
+  [dir='rtl'] .main-area {
+    margin-right: 0;
   }
 }
