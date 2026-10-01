@@ -65,6 +65,12 @@ export const Icon = {
     svg(size, <><path d="M12 3 2.5 20h19L12 3z" /><path d="M12 10v4.5" /><circle cx="12" cy="17.3" r="0.2" fill="currentColor" /></>),
   calendar: ({ size = 18 }: IconProps) =>
     svg(size, <><rect x="3" y="4.5" width="18" height="16" rx="1.5" /><path d="M3 9.5h18M8 2.5v4M16 2.5v4" /></>),
+  menu: ({ size = 18 }: IconProps) =>
+    svg(size, <><path d="M3.5 6.5h17M3.5 12h17M3.5 17.5h17" /></>),
+  chevronDown: ({ size = 18 }: IconProps) =>
+    svg(size, <path d="M5.5 8.5 12 15l6.5-6.5" />),
+  gridLayers: ({ size = 18 }: IconProps) =>
+    svg(size, <><rect x="3" y="3" width="8" height="8" rx="1.5" /><rect x="13" y="3" width="8" height="8" rx="1.5" /><rect x="3" y="13" width="8" height="8" rx="1.5" /><rect x="13" y="13" width="8" height="8" rx="1.5" /></>),
 };
 
 export type IconName = keyof typeof Icon;

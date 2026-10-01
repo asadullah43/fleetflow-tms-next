@@ -8,20 +8,24 @@ export interface NavItem {
 
 export interface NavGroup {
   label: string;
+  icon: IconName;
   items: NavItem[];
 }
 
 /**
  * Sidebar nav grouped the way a dispatcher actually thinks about the
- * business, not an alphabetical dump of all 20 modules.
+ * business, not an alphabetical dump of all 20 modules. Each group is a
+ * collapsible section (header icon + label + chevron) in the sidebar.
  */
 export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Overview',
+    icon: 'dashboard',
     items: [{ label: 'Dashboard', href: '/dashboard', icon: 'dashboard' }],
   },
   {
     label: 'Operations',
+    icon: 'route',
     items: [
       { label: 'Trips', href: '/trips', icon: 'route' },
       { label: 'Loading Orders', href: '/loading-orders', icon: 'clipboard' },
@@ -29,6 +33,7 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: 'Accounts',
+    icon: 'creditCard',
     items: [
       { label: 'Invoices', href: '/invoices', icon: 'invoice' },
       { label: 'Supplier Payments', href: '/supplier-payments', icon: 'creditCard' },
@@ -36,10 +41,12 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: 'Workshop',
+    icon: 'wrench',
     items: [{ label: 'Workshop', href: '/workshop', icon: 'wrench' }],
   },
   {
     label: 'Master Data',
+    icon: 'menu',
     items: [
       { label: 'Trucks', href: '/trucks', icon: 'truck' },
       { label: 'Drivers', href: '/drivers', icon: 'driver' },
@@ -53,10 +60,12 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: 'Human Resources',
+    icon: 'userCog',
     items: [{ label: 'HR', href: '/hr', icon: 'userCog' }],
   },
   {
     label: 'Administration',
+    icon: 'shield',
     items: [
       { label: 'Users', href: '/users', icon: 'users' },
       { label: 'Roles', href: '/roles', icon: 'shield' },

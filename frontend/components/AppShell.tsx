@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { NAV_GROUPS } from '../lib/nav-config';
@@ -16,6 +16,21 @@ export function AppShell({ title, children }: { title: string; children: React.R
   const pathname = usePathname();
   const { user, loading, logout } = useAuth();
   const router = useRouter();
+
+  // Groups are collapsible; the group containing the current page starts
+  // open, every other group starts closed. Toggling is independent per
+  // group so more than one can be open at once.
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    for (const group of NAV_GROUPS) {
+      initial[group.label] = group.items.some((item) => pathname.startsWith(item.href));
+    }
+    return initial;
+  });
+
+  function toggleGroup(label: string) {
+    setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }));
+  }
 
   useEffect(() => {
     if (!loading && !user) {
@@ -42,24 +57,41 @@ export function AppShell({ title, children }: { title: string; children: React.R
           Fleet<span>Flow</span>
         </div>
         <nav className="sidebar-nav">
-          {NAV_GROUPS.map((group) => (
-            <div key={group.label}>
-              <div className="sidebar-group">{group.label}</div>
-              {group.items.map((item) => {
-                const ItemIcon = Icon[item.icon];
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`sidebar-link${pathname.startsWith(item.href) ? ' active' : ''}`}
-                  >
-                    <ItemIcon size={16} />
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
+          {NAV_GROUPS.map((group) => {
+            const GroupIcon = Icon[group.icon];
+            const isOpen = openGroups[group.label] ?? false;
+            return (
+              <div key={group.label}>
+                <button
+                  type="button"
+                  className="sidebar-group-header"
+                  onClick={() => toggleGroup(group.label)}
+                  aria-expanded={isOpen}
+                >
+                  <GroupIcon size={16} />
+                  <span>{group.label}</span>
+                  <Icon.chevronDown size={14} />
+                </button>
+                {isOpen && (
+                  <div className="sidebar-group-items">
+                    {group.items.map((item) => {
+                      const ItemIcon = Icon[item.icon];
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={`sidebar-link${pathname.startsWith(item.href) ? ' active' : ''}`}
+                        >
+                          <ItemIcon size={16} />
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
       </aside>
 

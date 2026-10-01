@@ -150,13 +150,46 @@ svg {
   padding: 10px 0 20px;
 }
 
-.sidebar-group {
-  padding: 16px 20px 6px;
-  font-size: 10.5px;
-  color: var(--sidebar-text-faint);
+.sidebar-group-header {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 11px 20px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--sidebar-border);
+  color: var(--sidebar-text);
+  font-family: inherit;
+  font-size: 13.5px;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sidebar-group-header:hover {
+  color: #fff;
+}
+
+.sidebar-group-header span {
+  flex: 1;
+}
+
+.sidebar-group-header svg:first-child {
+  color: var(--sidebar-text-muted);
+}
+
+.sidebar-group-header svg:last-child {
+  color: var(--sidebar-text-faint);
+  transition: transform 0.15s ease;
+}
+
+.sidebar-group-header[aria-expanded='true'] svg:last-child {
+  transform: rotate(180deg);
+}
+
+.sidebar-group-items {
+  padding: 4px 0 8px;
 }
 
 .sidebar-link {
