@@ -1,189 +1,199 @@
-# FleetFlow-TMS (Next.js + React + gRPC rewrite)
+# FleetFlow TMS
 
-Parallel rewrite of [`FleetFlow-TMS`](https://github.com/asadullah43/FleetFlow-TMS) (NestJS + Flutter/REST)
-onto a new stack, same functionality and the same Postgres/Prisma data model:
+A bilingual (English / Arabic) transport management system: trips, loading
+orders, invoices with ZATCA Phase-1 QR, fleet and driver master data,
+workshop, inventory, HR, and role-based administration. Built to serve
+several companies from one installation, each seeing only its own data.
 
-| Layer | Legacy repo | This repo |
-|---|---|---|
-| Frontend | Flutter Web | Next.js + React (TypeScript) |
-| Backend | NestJS (REST) | Node.js (TypeScript), native gRPC — no NestJS |
-| Browser \<-\> backend | REST/JSON over HTTP | grpc-web, bridged to native gRPC by **Envoy** |
-| Database | PostgreSQL + Prisma | Same — `backend/prisma/schema.prisma` is carried over as-is |
-| Auth | JWT (HTTP header) | JWT (gRPC metadata) |
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js + React (TypeScript), Mantine, TanStack Query, Day.js |
+| Backend | Node.js (TypeScript), native gRPC |
+| Browser ↔ backend | grpc-web, bridged to gRPC by Envoy; nginx puts both behind one origin |
+| Database | PostgreSQL + Prisma (with migration history) |
+| Auth | 12-hour JWT sessions for people, API keys for integrations |
 
-Browsers can't speak native gRPC directly, so the frontend calls **Envoy**
-(`envoy/envoy.yaml`), which translates grpc-web into native gRPC calls to
-the backend. In production, `nginx.conf` puts one public origin in front
-of both Next.js and Envoy (`/grpc/*` → Envoy, everything else → Next.js),
-so the browser never needs to know they're separate services.
+## Modules
 
-## Status
+Auth · Dashboard · Trips · Loading Orders (printable PDF) · Invoices (line
+items, exact totals, ZATCA QR) · Supplier Payments · Trucks · Drivers ·
+Truck-Driver Assignments · Customers · Suppliers · Locations · Cargo Types ·
+Rate Contracts · Workshop (work orders, maintenance, inspections, expenses) ·
+Inventory · HR (departments, designations, employees, attendance, leave,
+documents, contracts) · Users · Roles · Company Settings · API Keys.
 
-All 20 legacy modules are ported, backend and frontend, with a shared
-design system (sidebar app shell, dense-data theme):
+**ZATCA:** Phase 1 (the TLV QR code on each invoice) is implemented.
+Phase 2 (cryptographic stamping and live clearance against ZATCA's API)
+is not — it needs government-issued certificates.
 
-Auth, Locations, Cargo Types, Customers, Suppliers, Trucks, Drivers,
-Truck-Driver Assignments, Trips, Rate Contracts, Loading Orders, Supplier
-Payments, Company Settings, Roles (permission matrix), Users, Invoices
-(with line items and totals), HR (Departments/Designations/Employees/
-Attendance/Leave Requests/Documents/Contracts), Workshop (Work Orders/
-Maintenance Schedules/Inspections/Spare Parts/Expenses/nested line
-items), and Dashboard (real summary stats).
-
-Known gaps/simplifications, called out so they're not mistaken for bugs:
-
-- **ZATCA e-invoicing** — Phase-1 QR codes are a real implementation
-  (`backend/src/modules/invoices/zatca-qr.ts`, TLV-encoded seller/VAT/
-  timestamp/total/VAT amount). Phase-2 (cryptographic invoice stamping,
-  live clearance/reporting against ZATCA's API) needs a government-issued
-  CSR and CSID certificate for a real CR number, which this environment
-  has no way to request or test against — `CompanySettings`' `zatca_*`
-  onboarding columns are already in the schema for when real certificates
-  are available.
-- A few loading-order and work-order-part error codes reuse a
-  neighboring `ErrorCode` entry where the legacy table didn't have an
-  exact match (e.g. no `LDO_UPDATE_FAILED` code existed) — cosmetic only,
-  doesn't affect behavior.
-- `backend/src/generated/prisma/` (the Prisma Client) isn't checked in —
-  run `npx prisma generate` after `npm install` (needs network access to
-  `binaries.prisma.sh`, which some sandboxes block; works fine on a normal
-  machine or in the Docker build).
-
-## Repo layout
+## Repository layout
 
 ```
-proto/              .proto files — one message/service set per module
-backend/             Node.js gRPC server (TypeScript)
-  src/modules/<name>/   <name>.service.ts (business logic) + <name>.grpc.ts (RPC handlers)
-  src/common/errors/    Same AppError/ErrorCode pattern as the legacy backend, adapted for gRPC
-  src/lib/               Prisma client, JWT, authorize() + rpc() handler wrapper, error mapping
-  src/common/auth/       Permission modules and the allow/deny decision
-  prisma/schema.prisma   Carried over from the legacy repo (data model unchanged)
-  test/                  Unit tests; test/integration/ runs against a live backend
-frontend/             Next.js app (TypeScript)
-  app/                   Routes (App Router) — one per legacy Flutter screen
-  lib/grpc/              grpc-web client wiring, one file per module
-envoy/envoy.yaml      grpc-web <-> gRPC bridge config
-docker-compose.yml    database + backend + envoy + frontend + nginx
+proto/                    The API contract: one .proto per module
+backend/
+  app.ts                  API server entry point (wiring only)
+  admin_app.ts            Operator CLI: database preparation, companies, API keys
+  routes/                 Every rpc and its middleware chain
+  middlewares/            Rate limit, authentication, authorization, validation, idempotency, errors
+  controllers/            Thin: validated input → service call
+  services/               Business rules
+  data_repositories/      Shared data access (paged lists, CRUD)
+  validations/            One zod schema per request
+  global_config/          The only place environment variables are read; error-code table
+  _core_app_connectivities/  Database client (tenant-scoped), proto loader, tenant context
+  _bg_services/           Background jobs
+  classes/ models/ utils/ Shared types and helpers
+  event_driven_services/ plugins/   Reserved (see their READMEs)
+  technical_dev_docs/     API reference and the error-code registry
+  prisma/                 Schema and migrations
+  test/                   Unit tests; test/integration/ runs against a live backend
+frontend/
+  app/                    Routes only — each page re-exports a screen
+  features/<domain>/      Screen (View) + view model + queries/mutations
+  features/crud/          The shared list/create/edit/delete screen
+  components/             Shared presentational components
+  lib/api/                API client, one module per domain, query keys
+  theme/ providers/       Mantine theme; app-wide providers
+envoy/ nginx.conf docker-compose.yml
 ```
 
-## Local development
+Request flow in the backend:
 
-Requires Node 22+, Docker, and a reachable Postgres instance (or use `docker compose up database`).
-
-```bash
-# 1. Install all workspaces
-npm install
-npm --prefix backend install
-npm --prefix frontend install
-
-# 2. Generate code
-npm run proto:gen                 # proto -> TS message types (backend + frontend)
-cd backend && npx prisma generate # Prisma client (needs real network access —
-                                   # blocked in sandboxed CI/dev containers that
-                                   # can't reach binaries.prisma.sh)
-
-# 3. Configure env
-cp backend/.env.example backend/.env       # set DATABASE_URL, JWT_SECRET
-cp frontend/.env.example frontend/.env     # NEXT_PUBLIC_GRPC_WEB_URL
-
-# 4. Run
-npm run dev:backend     # gRPC server on :50051
-npm run dev:frontend    # Next.js on :3000 (talks directly to Envoy for local dev)
-docker compose up envoy # grpc-web bridge on :8080, needed even in local dev
+```
+route → rate limit → authenticate → authorize → validate → idempotency → controller → service → repository → Prisma
 ```
 
-## Docker
+Data flow in the frontend:
 
-`npm run proto:gen` must be run **before** `docker compose build` — the
-frontend image's `COPY . .` picks up whatever is on disk, including the
-generated proto client code, and it isn't regenerated inside the Docker
-build itself. Skipping this after pulling new/changed `.proto` files
-gives a frontend build error about a missing `generated/proto/messages`
-module or missing exports on `fleetflow.<module>`.
+```
+View → ViewModel hook → TanStack query / mutation → lib/api client → backend
+```
+
+## How the API behaves
+
+Full details: [`backend/technical_dev_docs/api_reference.md`](backend/technical_dev_docs/api_reference.md).
+
+- **One response shape.** Every rpc returns `{ STATUS, ERROR_CODE, ERROR_FILTER, ERROR_DESCRIPTION, DB_DATA }`.
+  Error codes are listed in [`error_codes_data.md`](backend/technical_dev_docs/error_codes_data.md).
+- **Lists are paged on the server** (20 per page by default, 100 at most), with server-side search, sort and filters.
+- **Companies are isolated.** The company comes from the signed-in user or API key, never from the request.
+- **Sessions last 12 hours** (`SESSION_DURATION`), enforced by the backend.
+- **API keys** (Settings → API Keys) let other systems call the same API with only the permissions granted to the key.
+- **Creates are idempotent** when the client sends an `Idempotency-Key` (the web app always does).
+- **Rate limits** apply per IP, per user and per API key.
+
+## Running with Docker
 
 ```bash
 cp .env.example .env        # once: set JWT_SECRET (required) and POSTGRES_PASSWORD
-npm install                 # once, if you haven't
-npm run proto:gen           # regenerate proto client code (do this after every pull)
-docker compose down         # stop anything already running (old containers, old ports)
+npm install                 # once
+npm run proto:gen           # after every pull that changes proto/ — the frontend image needs the generated client
 docker compose up -d --build
 ```
 
-`JWT_SECRET` has no default: `docker compose` refuses to start without it.
-It signs every login token, so anyone who knows it can impersonate any
-user — generate one with `openssl rand -base64 48`. Postgres is published
-on `127.0.0.1` only.
+The app is served at `http://localhost:8889`.
 
-Mirrors the legacy repo's deployment shape (Postgres + backend + frontend
-+ nginx), with an added `envoy` service for the grpc-web bridge.
+On start, the backend container prepares the database by itself: it
+applies any pending migrations and, if the database has no users at all,
+creates a first `admin` user. Its password is `SEED_ADMIN_PASSWORD` from
+`.env` if you set one; otherwise a random password is printed once in the
+backend log (`docker compose logs backend`). Change it after signing in.
 
-### First run only: create the schema and an admin login
+`JWT_SECRET` has no default: `docker compose` refuses to start without
+it. It signs every session token — generate one with
+`openssl rand -base64 48` and keep it out of version control.
 
-The `database` container starts with an empty Postgres — nothing runs
-`prisma migrate`/`db push` or the seed script inside the containers (the
-production backend image strips `prisma`/`tsx` as devDependencies, so
-there's no Prisma CLI inside it to do this with). Do it once from the
-host, against the Postgres port Docker publishes (`5433` by default):
+### Upgrading an existing installation
+
+Back up first, then rebuild. Migrations only add to the database; nothing
+is dropped or reset.
 
 ```bash
-cd backend
-npm install                 # if you haven't already (needs the prisma CLI + tsx)
-
-# PowerShell:
-$env:DATABASE_URL="postgresql://postgres:changeme_use_strong_password@localhost:5433/fleetflow?schema=public"
-# bash:
-export DATABASE_URL="postgresql://postgres:changeme_use_strong_password@localhost:5433/fleetflow?schema=public"
-
-npx prisma db push          # creates all tables from schema.prisma
-npm run seed                # creates the admin login (admin / Admin123!,
-                            # or set SEED_ADMIN_PASSWORD first)
+docker compose exec -T database pg_dump -U postgres fleetflow > backup.sql
+git pull
+npm install
+npm run proto:gen
+docker compose up -d --build
+docker compose logs backend      # should end with "FleetFlow gRPC server listening"
 ```
 
-Only needed again if you reset the `database_data` volume (`docker
-compose down -v`) or change `schema.prisma`. The app is then reachable
-at `http://localhost:8889` (nginx's published port) — log in with
-`admin` / `Admin123!` and change the password after.
+A database created before migrations existed (with `prisma db push`) is
+recognised automatically: the first migration is recorded as already
+applied and only the newer ones run. Existing data becomes company #1.
+Everyone signs in again after an upgrade that changes sessions.
+
+## Operator commands
+
+Run inside the backend container (`docker compose exec backend node dist/admin_app.js <command>`)
+or locally (`npm --prefix backend run admin -- <command>`):
+
+| Command | Does |
+|---|---|
+| `db:prepare` | Apply pending migrations; create the first admin if there are no users |
+| `company:list` | List companies |
+| `company:create --name "Acme" --admin-username acme --admin-email admin@acme.sa` | Create a company with its own ADMIN role and first admin (password from `ADMIN_PASSWORD`, or generated and printed once) |
+| `company:suspend --id 2` / `company:activate --id 2` | Block / restore every sign-in and API key of a company |
+| `apikey:create --company 1 --name "ERP sync" --grant trips:view,add --grant trucks:view` | Issue an API key from the server |
 
 ## Roles and permissions
 
-Every RPC is checked on the server against the caller's role (Roles page →
-permission matrix: View / Add / Edit / Delete per module):
+Every rpc is checked on the server against the caller's role (Roles page →
+permission matrix: View / Add / Edit / Delete per module).
 
-- The built-in **ADMIN** role has full access regardless of its matrix, and
-  can't be renamed or deleted. Users can't deactivate or delete themselves.
-- List/Get needs **View**; Create needs **Add**; Update (and Mark Paid /
-  Submit to ZATCA) needs **Edit**; Delete needs **Delete**.
-- Shared lookup lists — trucks, drivers, customers, suppliers, locations,
-  cargo types, truck-driver assignments — are readable by any signed-in
-  user, because other modules' forms pick from them. Writing them still
-  needs the module permission.
-- HR (incl. salaries), Workshop (incl. Inventory), Invoices, Supplier
-  Payments, Users, Roles, Dashboard and Settings reads need **View**.
-- `users` and `roles` permissions are effectively administrator rights
-  (whoever has them can grant themselves more) — give them out accordingly.
-- Deactivating a user or changing their role takes effect on their next
-  request, not when their token expires.
+- The built-in **ADMIN** role has full access, and can't be renamed or deleted. Users can't deactivate or delete themselves.
+- List/Get needs **View**; Create needs **Add**; Update (and Mark Paid / Submit to ZATCA) needs **Edit**; Delete needs **Delete**.
+- Shared lookup lists — trucks, drivers, customers, suppliers, locations, cargo types, assignments — are readable by any signed-in user, because other modules' forms pick from them. An API key needs the module's View permission even for these.
+- `users`, `roles` and `apiKeys` are administrator rights — give them out accordingly. They can never be granted to an API key.
+- Deactivating a user, changing their role, revoking a key or suspending a company takes effect on the next request.
 
-The UI mirrors this: the sidebar only lists pages the role can view, and
-Add / Edit / Delete buttons only appear with the matching permission.
+The UI mirrors this: the sidebar lists only pages the role can view, and
+Add / Edit / Delete appear only with the matching permission.
+
+## Local development
+
+Requires Node 22+ and a Postgres instance (`docker compose up -d database` gives one on port 5433).
+
+```bash
+npm install && npm --prefix backend install && npm --prefix frontend install
+npm run proto:gen                              # frontend proto client
+cp backend/.env.example backend/.env           # set DATABASE_URL, JWT_SECRET
+cp frontend/.env.example frontend/.env
+cd backend && npx prisma generate && npm run admin -- db:prepare && cd ..
+
+npm run dev:backend        # gRPC server on :50051
+docker compose up envoy    # grpc-web bridge on :8080
+npm run dev:frontend       # Next.js on :3000
+```
+
+Changing the database: edit `backend/prisma/schema.prisma`, then
+`npm --prefix backend run prisma:migrate` to create a migration. Do not
+use `prisma db push` — it bypasses the migration history.
 
 ## Checks and tests
 
 ```bash
 cd backend
-npm run typecheck           # src + tests
-npm test                    # unit tests (node:test via tsx)
-# integration tests against a running backend + database (a dev DB — they create records):
+npm run typecheck
+npm test                    # unit tests: route table vs proto, tenancy map vs schema, error registry, pagination, …
+npm run docs:errors         # regenerate the error-code registry after adding or changing a code
+# integration tests against a running backend and a development database (they create records):
 INTEGRATION_GRPC_ADDR=127.0.0.1:50051 npm run test:integration
 
 cd ../frontend
 npm run typecheck
-npm run lint                # ESLint 9 + eslint-config-next
-npm test                    # unit tests, incl. "every translated string has an Arabic entry"
+npm run lint
+npm test                    # incl. "every UI string has an Arabic entry" and the architecture guards
 npm run build
 ```
 
-The integration suite logs in as `admin` / `Admin123!` by default
-(override with `INTEGRATION_ADMIN_USER` / `INTEGRATION_ADMIN_PASSWORD`).
+The integration suite signs in as `admin` / `Admin123!` by default
+(`INTEGRATION_ADMIN_USER` / `INTEGRATION_ADMIN_PASSWORD`). The
+tenant-isolation and session-expiry tests also need the backend's own
+`DATABASE_URL` and `JWT_SECRET` in the environment.
 
+## Known limits
+
+- Rate-limit counters live in the backend's memory: they reset on restart and assume one backend instance.
+- The company logo is stored as a small image on the company record; there is no general file-upload storage.
+- Before sign-in, the login screen shows company #1's name and logo (`DEFAULT_COMPANY_ID`).
+- Live GPS tracking (the dashboard's Map tab) is a placeholder.
