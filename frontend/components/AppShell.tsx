@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { NAV_GROUPS } from '../lib/nav-config';
 import { useAuth } from '../lib/auth-context';
+import { useCompanyBranding } from '../lib/use-company-branding';
 import { Icon } from './icons';
 
 /**
@@ -15,6 +16,7 @@ import { Icon } from './icons';
 export function AppShell({ title, children }: { title: string; children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, loading, logout } = useAuth();
+  const { companyName, logoUrl } = useCompanyBranding();
   const router = useRouter();
 
   // Groups are collapsible; the group containing the current page starts
@@ -51,10 +53,16 @@ export function AppShell({ title, children }: { title: string; children: React.R
     <div className="app-shell">
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <span className="sidebar-brand-mark">
-            <Icon.truck size={16} />
-          </span>
-          Fleet<span>Flow</span>
+          {logoUrl ? (
+            <span className="sidebar-brand-mark sidebar-brand-mark-logo">
+              <img src={logoUrl} alt={companyName} />
+            </span>
+          ) : (
+            <span className="sidebar-brand-mark">
+              <Icon.truck size={16} />
+            </span>
+          )}
+          <span className="sidebar-brand-name">{companyName}</span>
         </div>
         <nav className="sidebar-nav">
           {NAV_GROUPS.map((group) => {

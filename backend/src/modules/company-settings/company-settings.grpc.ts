@@ -41,4 +41,17 @@ export const companySettingsGrpcImpl: grpc.UntypedServiceImplementation = {
       fail(callback, error);
     }
   },
+  // No requireAuth — the login screen and sidebar need company name/logo
+  // before there's a session. The underlying row has far more on it
+  // (VAT, bank account, address, ...); the CompanyBranding proto message
+  // only has company_name/logo_url fields, so that's all that goes out
+  // on the wire regardless of what's passed to callback() here.
+  getBranding: async (_call: grpc.ServerUnaryCall<any, any>, callback: Callback<any>) => {
+    try {
+      const row = await companySettingsService.getOrCreate();
+      callback(null, serialize(row));
+    } catch (error) {
+      fail(callback, error);
+    }
+  },
 };

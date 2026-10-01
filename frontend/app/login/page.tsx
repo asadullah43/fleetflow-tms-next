@@ -3,11 +3,13 @@
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../lib/auth-context';
+import { useCompanyBranding } from '../../lib/use-company-branding';
 import type { RpcError } from '../../lib/grpc/client';
 import { Icon } from '../../components/icons';
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { companyName, logoUrl } = useCompanyBranding();
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -55,13 +57,19 @@ export default function LoginPage() {
       <div className="auth-form-side">
         <form className="auth-card" onSubmit={onSubmit}>
           <div className="auth-brand">
-            <span className="sidebar-brand-mark">
-              <Icon.truck size={16} />
-            </span>
-            <strong>FleetFlow</strong>
+            {logoUrl ? (
+              <span className="sidebar-brand-mark sidebar-brand-mark-logo">
+                <img src={logoUrl} alt={companyName} />
+              </span>
+            ) : (
+              <span className="sidebar-brand-mark">
+                <Icon.truck size={16} />
+              </span>
+            )}
+            <strong>{companyName}</strong>
           </div>
           <h1>Sign in</h1>
-          <p className="subtitle">Use your FleetFlow credentials.</p>
+          <p className="subtitle">Use your {companyName} credentials.</p>
           {error && <div className="error-banner">{error}</div>}
           <div className="field">
             <label htmlFor="username">Username</label>

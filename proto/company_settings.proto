@@ -6,9 +6,18 @@ package fleetflow.companysettings;
 service CompanySettingsService {
   rpc Get(GetRequest) returns (CompanySettings);
   rpc Update(UpdateCompanySettingsRequest) returns (CompanySettings);
+  // Public (no auth) — just enough to brand the sidebar and the login
+  // screen before a session exists. Everything else on this row (VAT,
+  // bank account, address, ...) stays behind Get.
+  rpc GetBranding(GetRequest) returns (CompanyBranding);
 }
 
 message GetRequest {}
+
+message CompanyBranding {
+  string company_name = 1;
+  optional string logo_url = 2;
+}
 
 message CompanySettings {
   int32 id = 1;

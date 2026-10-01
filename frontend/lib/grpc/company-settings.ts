@@ -1,8 +1,13 @@
 import { fleetflow } from '../generated/proto/messages.js';
 import { unaryCall } from './client';
 
-const { CompanySettings, GetRequest, UpdateCompanySettingsRequest } = fleetflow.companysettings;
+const { CompanySettings, CompanyBranding, GetRequest, UpdateCompanySettingsRequest } = fleetflow.companysettings;
 const SERVICE = 'fleetflow.companysettings.CompanySettingsService';
+
+export interface CompanyBrandingDto {
+  companyName: string;
+  logoUrl?: string;
+}
 
 export interface CompanySettingsDto {
   id: number;
@@ -44,5 +49,16 @@ export const companySettingsClient = {
       ResponseType: CompanySettings,
       token,
     }) as Promise<CompanySettingsDto>;
+  },
+  /** Public — no token needed. Just enough to brand the sidebar and the
+   *  login screen before a session exists. */
+  getBranding(): Promise<CompanyBrandingDto> {
+    return unaryCall({
+      serviceName: SERVICE,
+      methodName: 'GetBranding',
+      request: GetRequest.create({}),
+      RequestType: GetRequest,
+      ResponseType: CompanyBranding,
+    }) as Promise<CompanyBrandingDto>;
   },
 };

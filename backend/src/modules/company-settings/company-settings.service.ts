@@ -14,7 +14,7 @@ export const companySettingsService = {
       const existing = await prisma.companySettings.findFirst({ orderBy: { id: 'asc' } });
       if (existing) return existing;
       return await prisma.companySettings.create({
-        data: { companyName: 'My Company', country: 'SA' },
+        data: { companyName: 'FleetFlow', country: 'SA' },
       });
     } catch (error) {
       throw new AppError({
