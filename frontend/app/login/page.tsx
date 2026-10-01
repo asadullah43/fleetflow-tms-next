@@ -6,6 +6,7 @@ import { useAuth } from '../../lib/auth-context';
 import { useCompanyBranding } from '../../lib/use-company-branding';
 import type { RpcError } from '../../lib/grpc/client';
 import { Icon } from '../../components/icons';
+import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -55,6 +56,9 @@ export default function LoginPage() {
       </div>
 
       <div className="auth-form-side">
+        <div className="auth-lang-row">
+          <LanguageSwitcher />
+        </div>
         <form className="auth-card" onSubmit={onSubmit}>
           <div className="auth-brand">
             {logoUrl ? (

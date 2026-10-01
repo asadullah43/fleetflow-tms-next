@@ -305,6 +305,36 @@ svg {
   gap: 14px;
 }
 
+.lang-switcher {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  color: var(--text-faint);
+}
+
+.lang-switcher svg {
+  margin-left: 4px;
+}
+
+.lang-switcher button {
+  border: none;
+  background: transparent;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.lang-switcher button.active {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
 .topbar-avatar {
   width: 32px;
   height: 32px;
@@ -822,6 +852,7 @@ table.data-table {
   flex: 1;
   min-width: 380px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 24px;
@@ -830,6 +861,14 @@ table.data-table {
 .auth-card {
   width: 100%;
   max-width: 360px;
+}
+
+.auth-lang-row {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 14px;
 }
 
 .auth-card .auth-brand {

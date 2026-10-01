@@ -7,6 +7,7 @@ import { NAV_GROUPS } from '../lib/nav-config';
 import { useAuth } from '../lib/auth-context';
 import { useCompanyBranding } from '../lib/use-company-branding';
 import { Icon } from './icons';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 /**
  * Shared shell for every authenticated page: sidebar nav, topbar, and the
@@ -123,6 +124,7 @@ export function AppShell({ title, children }: { title: string; children: React.R
         <header className="topbar">
           <h1>{title}</h1>
           <div className="topbar-user">
+            <LanguageSwitcher />
             <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{user?.name}</span>
             <span className="topbar-avatar">{(user?.name ?? '?').slice(0, 1).toUpperCase()}</span>
             <button className="btn btn-secondary" onClick={onSignOut}>

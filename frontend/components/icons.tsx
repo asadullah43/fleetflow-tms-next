@@ -81,6 +81,8 @@ export const Icon = {
     svg(size, <><path d="M4 20l.9-4.3 10-10 3.4 3.4-10 10L4 20z" /><path d="M13.6 6.4l3.4 3.4" /></>),
   trash: ({ size = 18 }: IconProps) =>
     svg(size, <><path d="M4.5 7h15" /><path d="M9.5 7V4.8c0-.7.5-1.3 1.2-1.3h2.6c.7 0 1.2.6 1.2 1.3V7" /><path d="M6.5 7l.9 12.1c.06.8.7 1.4 1.5 1.4h6.2c.8 0 1.44-.6 1.5-1.4L17.5 7" /><path d="M10.2 11v6M13.8 11v6" /></>),
+  globe: ({ size = 18 }: IconProps) =>
+    svg(size, <><circle cx="12" cy="12" r="9.3" /><path d="M2.7 12h18.6" /><path d="M12 2.7c2.6 2.4 4 5.8 4 9.3s-1.4 6.9-4 9.3c-2.6-2.4-4-5.8-4-9.3s1.4-6.9 4-9.3z" /></>),
 };
 
 export type IconName = keyof typeof Icon;
