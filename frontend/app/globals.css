@@ -612,6 +612,11 @@ table.data-table {
   max-width: 220px;
 }
 
+.search-select-wide {
+  flex: 1 1 280px;
+  max-width: 320px;
+}
+
 .search-select-menu {
   position: absolute;
   top: calc(100% + 4px);

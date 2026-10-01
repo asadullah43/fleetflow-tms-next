@@ -9,6 +9,7 @@ interface SearchSelectProps {
   options: string[];
   placeholder?: string;
   onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
+  className?: string;
 }
 
 /**
@@ -18,7 +19,7 @@ interface SearchSelectProps {
  * text was typed if nothing in the list is picked, so it still works as a
  * substring filter.
  */
-export function SearchSelect({ value, onChange, options, placeholder, onKeyDown }: SearchSelectProps) {
+export function SearchSelect({ value, onChange, options, placeholder, onKeyDown, className }: SearchSelectProps) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -34,8 +35,8 @@ export function SearchSelect({ value, onChange, options, placeholder, onKeyDown 
   const filtered = (q ? options.filter((o) => o.toLowerCase().includes(q)) : options).slice(0, 50);
 
   return (
-    <div className="search-select" ref={wrapRef}>
-      <div className="search-field filter-field">
+    <div className={className ? `search-select ${className}` : 'search-select'} ref={wrapRef}>
+      <div className="search-field">
         <Icon.search size={15} />
         <input
           placeholder={placeholder}

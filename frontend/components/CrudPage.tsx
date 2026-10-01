@@ -112,6 +112,23 @@ export function CrudPanel<T extends { id: number }>({
 
   const hasActiveFilters = filterBar ? Object.values(filters).some((v) => v) : false;
 
+  // Known values for the quick-search dropdown — the primary (first)
+  // column's rendered text for every loaded row, e.g. every truck number
+  // or driver name already in the system, so quick search behaves like
+  // the Trips filter fields (type to narrow, or pick straight from the list).
+  const quickSearchOptions = useMemo(() => {
+    if (!rows || filterBar) return [];
+    const primaryColumn = columns[0];
+    if (!primaryColumn) return [];
+    const values = new Set<string>();
+    for (const row of rows) {
+      const text = cellText(primaryColumn.render(row));
+      if (text) values.add(text);
+    }
+    return Array.from(values).sort((a, b) => a.localeCompare(b));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, columns, filterBar]);
+
   const visibleRows = useMemo(() => {
     if (!rows) return rows;
     let result = rows;
@@ -252,16 +269,13 @@ export function CrudPanel<T extends { id: number }>({
             )}
           </div>
         ) : (
-          <div className="field" style={{ margin: 0, maxWidth: 280, flex: 1 }}>
-            <div className="search-field">
-              <Icon.search size={15} />
-              <input
-                placeholder={searchPlaceholder ?? 'Search...'}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </div>
-          </div>
+          <SearchSelect
+            className="search-select-wide"
+            placeholder={searchPlaceholder ?? 'Search...'}
+            options={quickSearchOptions}
+            value={query}
+            onChange={setQuery}
+          />
         )}
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn btn-excel" onClick={() => exportRows('csv')} type="button">
