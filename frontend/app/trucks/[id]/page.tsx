@@ -12,21 +12,8 @@ import { useAuth } from '../../../lib/auth-context';
 import { trucksClient, TruckDto } from '../../../lib/grpc/trucks';
 import { driversClient, DriverDto } from '../../../lib/grpc/drivers';
 import { assignmentsClient, AssignmentDto } from '../../../lib/grpc/assignments';
+import { assignmentState, STATE_LABEL, STATE_TONE } from '../../../lib/assignment-state';
 import type { RpcError } from '../../../lib/grpc/client';
-
-type AssignmentState = 'active' | 'upcoming' | 'completed';
-
-function assignmentState(a: AssignmentDto): AssignmentState {
-  const today = new Date().toISOString().slice(0, 10);
-  const start = a.startDate.slice(0, 10);
-  const end = a.endDate?.slice(0, 10);
-  if (start > today) return 'upcoming';
-  if (end && end < today) return 'completed';
-  return 'active';
-}
-
-const STATE_LABEL: Record<AssignmentState, string> = { active: 'Active', upcoming: 'Upcoming', completed: 'Completed' };
-const STATE_TONE: Record<AssignmentState, string> = { active: 'green', upcoming: 'orange', completed: 'blue' };
 
 export default function TruckDetailPage() {
   const params = useParams<{ id: string }>();

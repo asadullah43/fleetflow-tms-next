@@ -50,6 +50,13 @@ interface CrudPanelProps<T extends { id: number }> {
    * field's own new value.
    */
   onValuesChange?: (name: string, value: string, values: Record<string, string>) => Record<string, string> | void;
+  /**
+   * When provided, a "view" (eye) row action appears and calls this with
+   * the row instead of opening the generic edit-form-as-readonly modal —
+   * e.g. Truck-Driver Assignments uses it to show that truck's full
+   * assignment history. Omitted everywhere else: no view action.
+   */
+  onView?: (row: T) => void;
 }
 
 interface CrudPageProps<T extends { id: number }> extends CrudPanelProps<T> {
@@ -88,10 +95,11 @@ export function CrudPanel<T extends { id: number }>({
   exportTitle,
   filterBar,
   onValuesChange,
+  onView,
 }: CrudPanelProps<T> & { exportTitle?: string }) {
   const [rows, setRows] = useState<T[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [modal, setModal] = useState<{ mode: 'create' | 'edit' | 'view'; row?: T } | null>(null);
+  const [modal, setModal] = useState<{ mode: 'create' | 'edit'; row?: T } | null>(null);
   const [values, setValues] = useState<Record<string, string>>(emptyValues);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -170,12 +178,6 @@ export function CrudPanel<T extends { id: number }>({
     setValues(toFormValues(row));
     setFormError(null);
     setModal({ mode: 'edit', row });
-  }
-
-  function openView(row: T) {
-    setValues(toFormValues(row));
-    setFormError(null);
-    setModal({ mode: 'view', row });
   }
 
   async function submit() {
@@ -317,9 +319,11 @@ export function CrudPanel<T extends { id: number }>({
                   ))}
                   <td>
                     <div className="row-actions">
-                      <button className="row-action" onClick={() => openView(row)} title="View">
-                        <Icon.eye size={16} />
-                      </button>
+                      {onView && (
+                        <button className="row-action" onClick={() => onView(row)} title="View history">
+                          <Icon.eye size={16} />
+                        </button>
+                      )}
                       <button className="row-action" onClick={() => openEdit(row)} title="Edit">
                         <Icon.pencil size={16} />
                       </button>
@@ -337,23 +341,17 @@ export function CrudPanel<T extends { id: number }>({
 
       {modal && (
         <Modal
-          title={modal.mode === 'create' ? addLabel : modal.mode === 'view' ? 'View' : 'Edit'}
+          title={modal.mode === 'create' ? addLabel : 'Edit'}
           onClose={() => setModal(null)}
           footer={
-            modal.mode === 'view' ? (
+            <>
               <button className="btn btn-secondary" onClick={() => setModal(null)}>
-                Close
+                Cancel
               </button>
-            ) : (
-              <>
-                <button className="btn btn-secondary" onClick={() => setModal(null)}>
-                  Cancel
-                </button>
-                <button className="btn btn-primary" onClick={submit} disabled={saving}>
-                  {saving ? 'Saving...' : 'Save'}
-                </button>
-              </>
-            )
+              <button className="btn btn-primary" onClick={submit} disabled={saving}>
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+            </>
           }
         >
           {formError && <div className="error-banner">{formError}</div>}
@@ -368,15 +366,9 @@ export function CrudPanel<T extends { id: number }>({
                   value={values[field.name] ?? ''}
                   onChange={(v) => updateField(field.name, v)}
                   required={field.required}
-                  disabled={modal.mode === 'view'}
                 />
               ) : field.type === 'select' ? (
-                <select
-                  id={field.name}
-                  value={values[field.name] ?? ''}
-                  onChange={(e) => updateField(field.name, e.target.value)}
-                  disabled={modal.mode === 'view'}
-                >
+                <select id={field.name} value={values[field.name] ?? ''} onChange={(e) => updateField(field.name, e.target.value)}>
                   <option value="" disabled>
                     Select...
                   </option>
@@ -387,13 +379,7 @@ export function CrudPanel<T extends { id: number }>({
                   ))}
                 </select>
               ) : field.type === 'textarea' ? (
-                <textarea
-                  id={field.name}
-                  rows={3}
-                  value={values[field.name] ?? ''}
-                  onChange={(e) => updateField(field.name, e.target.value)}
-                  disabled={modal.mode === 'view'}
-                />
+                <textarea id={field.name} rows={3} value={values[field.name] ?? ''} onChange={(e) => updateField(field.name, e.target.value)} />
               ) : (
                 <input
                   id={field.name}
@@ -401,7 +387,6 @@ export function CrudPanel<T extends { id: number }>({
                   value={values[field.name] ?? ''}
                   onChange={(e) => updateField(field.name, e.target.value)}
                   required={field.required}
-                  disabled={modal.mode === 'view'}
                 />
               )}
             </div>
