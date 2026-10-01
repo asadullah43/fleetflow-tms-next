@@ -24,6 +24,7 @@ import { purgeExpiredIdempotencyRecords } from './_bg_services/idempotency-clean
 import { provisioningService } from './services/provisioning.service.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
+const BASELINE = '0_init';
 
 function parseOptions(args: string[]): Record<string, string[]> {
   const options: Record<string, string[]> = {};
@@ -61,18 +62,22 @@ function prismaCli(...args: string[]): void {
 }
 
 /**
- * Databases created before migrations existed (with `prisma db push`)
- * already contain everything in the first migration, so it is recorded
- * as applied instead of being run again. Nothing is dropped or reset.
+ * Databases that already contain the tables of the first migration —
+ * created with `prisma db push`, or with a locally generated migration
+ * under another name — must not run it again. It is recorded as applied
+ * instead. Nothing is dropped or reset.
  */
 async function markBaselineIfNeeded(): Promise<void> {
   const [{ has_history, has_tables }] = await prisma.$queryRaw<{ has_history: boolean; has_tables: boolean }[]>`
     SELECT to_regclass('"_prisma_migrations"') IS NOT NULL AS has_history,
            to_regclass('"Truck"') IS NOT NULL AS has_tables`;
-  if (!has_history && has_tables) {
-    console.log('Existing database without migration history: recording 0_init as already applied.');
-    prismaCli('migrate', 'resolve', '--applied', '0_init');
+  if (!has_tables) return; // empty database: every migration runs normally
+  if (has_history) {
+    const recorded = await prisma.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n FROM "_prisma_migrations" WHERE migration_name = ${BASELINE}`;
+    if (recorded[0].n > 0) return;
   }
+  console.log(`Existing tables without the ${BASELINE} baseline in the migration history: recording it as already applied.`);
+  prismaCli('migrate', 'resolve', '--applied', BASELINE);
 }
 
 const commands: Record<string, (options: Record<string, string[]>) => Promise<void>> = {
