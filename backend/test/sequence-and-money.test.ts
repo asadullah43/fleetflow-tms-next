@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createWithSequence, nextInSequence } from '../src/common/sequence.js';
-import { fromCents, toCents } from '../src/common/money.js';
+import { createWithSequence, nextInSequence } from '../utils/sequence.js';
+import { fromCents, toCents } from '../utils/money.js';
 
 const fmt = (n: number) => `INV-2026-${String(n).padStart(5, '0')}`;
 

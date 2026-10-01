@@ -17,12 +17,18 @@ RUN npm run build
 FROM base AS production
 ENV NODE_ENV=production
 COPY backend/package.json backend/package-lock.json* ./
+# The Prisma CLI is a runtime dependency: the container applies pending
+# database migrations itself before the API starts (see CMD).
 RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
-COPY --from=build /app/src/generated/prisma ./src/generated/prisma
-COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
+# The generated client's query engine is looked up at the path it was generated to.
+COPY --from=build /app/generated/prisma ./generated/prisma
 COPY backend/prisma ./prisma
 COPY proto /proto
 
 EXPOSE 50051
-CMD ["node", "dist/server.js"]
+# 1. db:prepare — records the baseline on a pre-migrations database, applies
+#    pending migrations (never drops or resets anything), and creates the
+#    first admin user only if the database has no users at all.
+# 2. start the API.
+CMD ["sh", "-c", "node dist/admin_app.js db:prepare && node dist/app.js"]

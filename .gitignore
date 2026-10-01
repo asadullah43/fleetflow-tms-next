@@ -8,7 +8,7 @@ node_modules/
 
 # Backend build output & generated Prisma client
 backend/dist/
-backend/src/generated/
+backend/generated/
 
 # Frontend build output & generated proto client
 frontend/.next/

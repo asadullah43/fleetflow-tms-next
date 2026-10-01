@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeInvoice, InvoiceInputError } from '../src/modules/invoices/invoice-math.js';
+import { computeInvoice, InvoiceInputError } from '../utils/invoice-math.js';
 
 const line = (quantity: string, rate: string, extra: Record<string, string> = {}) => ({ description: 'Haul', quantity, rate, ...extra });
 

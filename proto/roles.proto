@@ -2,18 +2,26 @@ syntax = "proto3";
 
 package fleetflow.roles;
 
+import "common.proto";
+
 service RolesService {
-  rpc List(ListRequest) returns (RoleList);
-  rpc Get(IdRequest) returns (Role);
-  rpc Create(CreateRoleRequest) returns (Role);
-  rpc Update(UpdateRoleRequest) returns (Role);
-  rpc Delete(IdRequest) returns (DeleteResponse);
-  rpc GetPermissionModules(ListRequest) returns (ModuleList);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: RoleList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Role
+  rpc Create(CreateRoleRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Role
+  rpc Update(UpdateRoleRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Role
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
+  rpc GetPermissionModules(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: ModuleList
 }
 
-message ListRequest {}
+message ListRequest {
+  int32 page = 1;        // 1-based; default 1
+  int32 page_size = 2;   // default 20, max 100
+  string search = 3;     // server-side, case-insensitive partial match
+  string sort_by = 4;    // one of the service's sortable fields
+  string sort_order = 5; // asc | desc
+  map<string, string> filters = 6; // service-specific exact/range filters
+}
 message IdRequest { int32 id = 1; }
-message DeleteResponse {}
 
 message Permission {
   string module = 1;
@@ -30,7 +38,10 @@ message Role {
   repeated Permission permissions = 4;
 }
 
-message RoleList { repeated Role items = 1; }
+message RoleList {
+  repeated Role items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 
 message ModuleList { repeated string modules = 1; }
 

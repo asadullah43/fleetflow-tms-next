@@ -1,42 +1,20 @@
-import bcrypt from 'bcrypt';
-import { PrismaClient } from '../src/generated/prisma/client.js';
+/**
+ * `npm run seed` / `prisma db seed`: creates the first company's admin
+ * user if the database has no users yet. Safe to run repeatedly.
+ * The same step runs as part of `admin_app db:prepare`.
+ */
+import { disconnectDatabase } from '../_core_app_connectivities/prisma.js';
+import { provisioningService } from '../services/provisioning.service.js';
 
-const prisma = new PrismaClient();
-
-const ADMIN_USERNAME = 'admin';
-// Override with SEED_ADMIN_PASSWORD; the default is public (it's in the README), so change it after first login.
-const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD || 'Admin123!';
-
-async function main() {
-  const role = await prisma.role.upsert({
-    where: { name: 'ADMIN' },
-    update: {},
-    create: { name: 'ADMIN', description: 'Full system access' },
-  });
-
-  const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 10);
-
-  await prisma.user.upsert({
-    where: { username: ADMIN_USERNAME },
-    update: {},
-    create: {
-      name: 'Admin',
-      email: 'admin@fleetflow.local',
-      username: ADMIN_USERNAME,
-      passwordHash,
-      role: 'ADMIN',
-      roleId: role.id,
-      status: 'ACTIVE',
-      language: 'en',
-    },
-  });
-
-  console.log(`Seeded admin user -> username: ${ADMIN_USERNAME}${process.env.SEED_ADMIN_PASSWORD ? '' : `  password: ${ADMIN_PASSWORD}`}`);
-}
-
-main()
-  .catch((err) => {
-    console.error(err);
-    process.exit(1);
+provisioningService
+  .ensureInitialAdmin()
+  .then((admin) => {
+    if (!admin.created) return console.log('Users already exist — nothing to seed.');
+    console.log(`Seeded admin user -> username: ${admin.username}`);
+    if (admin.generatedPassword) console.log(`  one-time password (change it after signing in): ${admin.generatedPassword}`);
   })
-  .finally(() => prisma.$disconnect());
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  })
+  .finally(() => disconnectDatabase());

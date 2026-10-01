@@ -1,10 +1,7 @@
 # ═══════════════════════════════════════════════════════════
-# FleetFlow TMS (Next.js/React + gRPC rewrite) - Docker Compose
+# FleetFlow TMS - Docker Compose
 # Stack: PostgreSQL + Node gRPC backend + Envoy (grpc-web proxy)
-#        + Next.js frontend + Nginx
-#
-# Same data (Postgres/Prisma) as the legacy NestJS/Flutter repo;
-# everything above the DB layer is new. See README.md.
+#        + Next.js frontend + Nginx. See README.md.
 # ═══════════════════════════════════════════════════════════
 
 services:
@@ -17,8 +14,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_use_strong_password}
       POSTGRES_DB: ${POSTGRES_DB:-fleetflow}
-    # Published on the host's loopback only (for `prisma db push` / seeding
-    # from the host) — not on every network interface.
+    # Published on the host's loopback only (for backups and local tooling)
+    # — not on every network interface.
     ports:
       - "127.0.0.1:${DB_PORT:-5433}:5432"
     volumes:
@@ -32,7 +29,8 @@ services:
     networks:
       - fleetflow-net
 
-  # ── Backend gRPC service (Node/TS, no NestJS) ───────────
+  # ── Backend gRPC service (Node/TS) ───────────────────────
+  # On start it applies pending database migrations, then serves the API.
   backend:
     build:
       context: .
@@ -49,7 +47,10 @@ services:
       # Required, no default: a default secret is public (it's in this file),
       # and anyone who knows it can forge an ADMIN token. Set it in .env.
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env to a long random string (see .env.example)}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
+      # How long a sign-in lasts. Enforced by the backend: after this the user must sign in again.
+      SESSION_DURATION: ${SESSION_DURATION:-12h}
+      # Only used when the database has no users yet (first start). Without it a random password is printed once in the backend log.
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
     expose:
       - "50051"
     networks:

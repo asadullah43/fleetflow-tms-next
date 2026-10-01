@@ -2,8 +2,15 @@ syntax = "proto3";
 
 package fleetflow.dashboard;
 
+import "common.proto";
+
+// Every figure is computed in the database for the caller's company —
+// the frontend never downloads whole tables to count them.
 service DashboardService {
-  rpc GetSummary(SummaryRequest) returns (SummaryResponse);
+  rpc GetSummary(SummaryRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: SummaryResponse
+  rpc GetHrSummary(SummaryRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: HrSummary
+  rpc GetWorkshopSummary(SummaryRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: WorkshopSummary
+  rpc GetFleetSummary(SummaryRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: FleetSummary
 }
 
 message SummaryRequest {}
@@ -17,4 +24,40 @@ message SummaryResponse {
   int32 unpaid_invoices_count = 6;
   int32 pending_leave_requests = 7;
   int32 low_stock_spare_parts = 8;
+}
+
+message LabelCount {
+  string label = 1;
+  int32 count = 2;
+  optional string label_ar = 3;
+}
+
+message HrSummary {
+  int32 total_employees = 1;
+  int32 active_employees = 2;
+  int32 on_leave_employees = 3;
+  int32 terminated_employees = 4;
+  int32 departments = 5;
+  int32 present_today = 6;
+  int32 absent_today = 7;
+  int32 late_today = 8;
+  int32 pending_leave_requests = 9;
+  int32 contracts_expiring = 10; // active contracts ending within 30 days
+  repeated LabelCount headcount_by_department = 11;
+}
+
+message WorkshopSummary {
+  int32 open_work_orders = 1;
+  int32 in_progress_work_orders = 2;
+  int32 completed_this_month = 3;
+  int32 overdue_maintenance = 4;
+  int32 failed_inspections = 5;
+  int32 low_stock_spare_parts = 6;
+  string expenses_this_month = 7;
+  repeated LabelCount open_by_priority = 8; // URGENT, HIGH, MEDIUM, LOW
+}
+
+message FleetSummary {
+  int32 fleet_size = 1;
+  int32 active_trucks = 2;
 }

@@ -2,17 +2,25 @@ syntax = "proto3";
 
 package fleetflow.customers;
 
+import "common.proto";
+
 service CustomersService {
-  rpc List(ListRequest) returns (CustomerList);
-  rpc Get(IdRequest) returns (Customer);
-  rpc Create(CreateCustomerRequest) returns (Customer);
-  rpc Update(UpdateCustomerRequest) returns (Customer);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: CustomerList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Customer
+  rpc Create(CreateCustomerRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Customer
+  rpc Update(UpdateCustomerRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Customer
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
-message ListRequest {}
+message ListRequest {
+  int32 page = 1;        // 1-based; default 1
+  int32 page_size = 2;   // default 20, max 100
+  string search = 3;     // server-side, case-insensitive partial match
+  string sort_by = 4;    // one of the service's sortable fields
+  string sort_order = 5; // asc | desc
+  map<string, string> filters = 6; // service-specific exact/range filters
+}
 message IdRequest { int32 id = 1; }
-message DeleteResponse {}
 
 message Customer {
   int32 id = 1;
@@ -32,7 +40,10 @@ message Customer {
   string status = 15;
 }
 
-message CustomerList { repeated Customer items = 1; }
+message CustomerList {
+  repeated Customer items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 
 message CreateCustomerRequest {
   string name = 1;
@@ -49,6 +60,8 @@ message CreateCustomerRequest {
   optional string city = 12;
   optional string country = 13;
   optional string status = 14;
+  // Arabic value entered alongside the English one (preferred over the legacy `language` tag).
+  optional string name_ar = 50;
 }
 
 message UpdateCustomerRequest {
@@ -67,4 +80,6 @@ message UpdateCustomerRequest {
   optional string city = 13;
   optional string country = 14;
   optional string status = 15;
+  // Arabic value entered alongside the English one (preferred over the legacy `language` tag).
+  optional string name_ar = 50;
 }

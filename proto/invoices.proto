@@ -2,25 +2,33 @@ syntax = "proto3";
 
 package fleetflow.invoices;
 
+import "common.proto";
+
 service InvoicesService {
-  rpc List(ListRequest) returns (InvoiceList);
-  rpc Get(IdRequest) returns (Invoice);
-  rpc Create(CreateInvoiceRequest) returns (Invoice);
-  rpc Update(UpdateInvoiceRequest) returns (Invoice);
-  rpc Delete(IdRequest) returns (DeleteResponse);
-  rpc MarkPaid(IdRequest) returns (Invoice);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: InvoiceList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Invoice
+  rpc Create(CreateInvoiceRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Invoice
+  rpc Update(UpdateInvoiceRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Invoice
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
+  rpc MarkPaid(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Invoice
   // Generates the ZATCA Phase-1 QR (seller/VAT/timestamp/total/VAT TLV,
   // base64) and moves the invoice to SIGNED. Full Phase-2 cryptographic
   // stamping (CSR / compliance CSID / production CSID against ZATCA's
   // real API) needs live government-issued certificates this environment
   // has no way to obtain or test against, so it isn't wired up — see
   // CompanySettings' zatca_* onboarding fields for where that plugs in.
-  rpc SubmitToZatca(IdRequest) returns (Invoice);
+  rpc SubmitToZatca(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Invoice
 }
 
-message ListRequest {}
+message ListRequest {
+  int32 page = 1;        // 1-based; default 1
+  int32 page_size = 2;   // default 20, max 100
+  string search = 3;     // server-side, case-insensitive partial match
+  string sort_by = 4;    // one of the service's sortable fields
+  string sort_order = 5; // asc | desc
+  map<string, string> filters = 6; // service-specific exact/range filters
+}
 message IdRequest { int32 id = 1; }
-message DeleteResponse {}
 
 message InvoiceLineItemInput {
   string description = 1;
@@ -68,7 +76,10 @@ message Invoice {
   optional string invoice_uuid = 32;
 }
 
-message InvoiceList { repeated Invoice items = 1; }
+message InvoiceList {
+  repeated Invoice items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 
 message CreateInvoiceRequest {
   int32 customer_id = 1;

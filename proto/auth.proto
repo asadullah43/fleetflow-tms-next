@@ -2,13 +2,15 @@ syntax = "proto3";
 
 package fleetflow.auth;
 
-// Mirrors legacy REST: POST /auth/login, GET /auth/me,
-// PATCH /auth/me/language, GET /auth/me/permissions
+import "common.proto";
+
+// Login is public; the other three act on the signed-in user (JWT only —
+// an API key has no user profile).
 service AuthService {
-  rpc Login(LoginRequest) returns (LoginResponse);
-  rpc GetMe(GetMeRequest) returns (UserProfile);
-  rpc UpdateLanguage(UpdateLanguageRequest) returns (UserProfile);
-  rpc GetMyPermissions(GetMeRequest) returns (PermissionList);
+  rpc Login(LoginRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: LoginResponse
+  rpc GetMe(GetMeRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: UserProfile
+  rpc UpdateLanguage(UpdateLanguageRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: UserProfile
+  rpc GetMyPermissions(GetMeRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: PermissionList
 }
 
 message LoginRequest {
@@ -20,11 +22,13 @@ message LoginRequest {
 message LoginResponse {
   string access_token = 1;
   UserProfile user = 2;
+  // When the session ends (ISO 8601). The backend rejects the token after
+  // this moment; the frontend uses it to sign the user out on time.
+  string expires_at = 3;
 }
 
 // GetMe / GetMyPermissions take no body fields — the caller identity comes
-// from the "authorization: Bearer <jwt>" gRPC metadata, same as the old
-// JwtAuthGuard reading the Authorization header.
+// from the "authorization: Bearer <jwt>" metadata.
 message GetMeRequest {}
 
 message UpdateLanguageRequest {
@@ -38,6 +42,8 @@ message UserProfile {
   optional string role = 4;
   optional int32 role_id = 5;
   string language = 6;
+  int32 company_id = 7;
+  string company_name = 8;
 }
 
 message Permission {

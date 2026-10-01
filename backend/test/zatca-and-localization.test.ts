@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildZatcaQrTlv, zatcaTimestamp } from '../src/modules/invoices/zatca-qr.js';
-import { buildLocalizedWriteData } from '../src/common/localization/language.util.js';
+import { buildZatcaQrTlv, zatcaTimestamp } from '../utils/zatca-qr.js';
+import { buildLocalizedWriteData } from '../utils/language.js';
 
 function decodeTlv(base64: string): Record<number, string> {
   const buf = Buffer.from(base64, 'base64');

@@ -2,19 +2,31 @@ syntax = "proto3";
 
 package fleetflow.loadingorders;
 
+import "common.proto";
+
 // Matches the legacy app: a "Generate Loading Order" run creates `quantity`
 // individually-serialled slips (LO-0001, LO-0002, ...) sharing one batch,
 // the list view shows one row per batch (serial range + quantity), and the
 // only delete is "remove this whole batch" — there is no per-row edit.
 service LoadingOrdersService {
-  rpc ListGrouped(ListRequest) returns (LoadingOrderBatchList);
-  rpc GetBatch(DeleteBatchRequest) returns (LoadingOrderList);
-  rpc Create(CreateLoadingOrderRequest) returns (LoadingOrderList);
-  rpc DeleteBatch(DeleteBatchRequest) returns (DeleteResponse);
+  rpc ListGrouped(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: LoadingOrderBatchList
+  rpc GetBatch(DeleteBatchRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: LoadingOrderList
+  rpc Create(CreateLoadingOrderRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: LoadingOrderList
+  rpc DeleteBatch(DeleteBatchRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
+  // Everything the printable Loading Order needs, from the authoritative
+  // records: the batch's slips plus the caller's company branding. The
+  // printed document is rendered from this response only.
+  rpc GetBatchDocument(DeleteBatchRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: LoadingOrderDocument
 }
 
-message ListRequest {}
-message DeleteResponse {}
+message ListRequest {
+  int32 page = 1;        // 1-based; default 1
+  int32 page_size = 2;   // default 20, max 100
+  string search = 3;     // server-side, case-insensitive partial match
+  string sort_by = 4;    // one of the service's sortable fields
+  string sort_order = 5; // asc | desc
+  map<string, string> filters = 6; // service-specific exact/range filters
+}
 
 message LoadingOrder {
   int32 id = 1;
@@ -37,7 +49,10 @@ message LoadingOrder {
   optional string cargo_type_name_ar = 27;
 }
 
-message LoadingOrderList { repeated LoadingOrder items = 1; }
+message LoadingOrderList {
+  repeated LoadingOrder items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 
 message LoadingOrderBatch {
   int32 batch_id = 1;
@@ -56,7 +71,10 @@ message LoadingOrderBatch {
   optional string cargo_type_name_ar = 13;
 }
 
-message LoadingOrderBatchList { repeated LoadingOrderBatch items = 1; }
+message LoadingOrderBatchList {
+  repeated LoadingOrderBatch items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 
 message CreateLoadingOrderRequest {
   int32 pickup_location_id = 1;
@@ -67,3 +85,20 @@ message CreateLoadingOrderRequest {
 }
 
 message DeleteBatchRequest { int32 batch_id = 1; }
+
+message DocumentCompany {
+  string company_name = 1;
+  optional string logo_url = 2;
+  optional string vat_number = 3;
+  optional string cr_number = 4;
+  optional string address = 5;
+  optional string city = 6;
+  optional string phone = 7;
+  optional string email = 8;
+}
+
+message LoadingOrderDocument {
+  DocumentCompany company = 1;
+  repeated LoadingOrder orders = 2;
+  string generated_at = 3;
+}

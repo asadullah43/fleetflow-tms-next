@@ -2,17 +2,25 @@ syntax = "proto3";
 
 package fleetflow.drivers;
 
+import "common.proto";
+
 service DriversService {
-  rpc List(ListRequest) returns (DriverList);
-  rpc Get(IdRequest) returns (Driver);
-  rpc Create(CreateDriverRequest) returns (Driver);
-  rpc Update(UpdateDriverRequest) returns (Driver);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: DriverList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Driver
+  rpc Create(CreateDriverRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Driver
+  rpc Update(UpdateDriverRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Driver
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
-message ListRequest {}
+message ListRequest {
+  int32 page = 1;        // 1-based; default 1
+  int32 page_size = 2;   // default 20, max 100
+  string search = 3;     // server-side, case-insensitive partial match
+  string sort_by = 4;    // one of the service's sortable fields
+  string sort_order = 5; // asc | desc
+  map<string, string> filters = 6; // service-specific exact/range filters
+}
 message IdRequest { int32 id = 1; }
-message DeleteResponse {}
 
 message Driver {
   int32 id = 1;
@@ -24,7 +32,10 @@ message Driver {
   string status = 7;
 }
 
-message DriverList { repeated Driver items = 1; }
+message DriverList {
+  repeated Driver items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 
 message CreateDriverRequest {
   string name = 1;
@@ -33,6 +44,8 @@ message CreateDriverRequest {
   optional string license_no = 4;
   optional string id_number = 5;
   optional string status = 6;
+  // Arabic value entered alongside the English one (preferred over the legacy `language` tag).
+  optional string name_ar = 50;
 }
 
 message UpdateDriverRequest {
@@ -43,4 +56,6 @@ message UpdateDriverRequest {
   optional string license_no = 5;
   optional string id_number = 6;
   optional string status = 7;
+  // Arabic value entered alongside the English one (preferred over the legacy `language` tag).
+  optional string name_ar = 50;
 }

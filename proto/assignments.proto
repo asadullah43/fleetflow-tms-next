@@ -2,18 +2,26 @@ syntax = "proto3";
 
 package fleetflow.assignments;
 
+import "common.proto";
+
 // Truck <-> Driver assignments (which driver is currently running which truck).
 service AssignmentsService {
-  rpc List(ListRequest) returns (AssignmentList);
-  rpc Get(IdRequest) returns (Assignment);
-  rpc Create(CreateAssignmentRequest) returns (Assignment);
-  rpc Update(UpdateAssignmentRequest) returns (Assignment);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: AssignmentList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Assignment
+  rpc Create(CreateAssignmentRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Assignment
+  rpc Update(UpdateAssignmentRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Assignment
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
-message ListRequest {}
+message ListRequest {
+  int32 page = 1;        // 1-based; default 1
+  int32 page_size = 2;   // default 20, max 100
+  string search = 3;     // server-side, case-insensitive partial match
+  string sort_by = 4;    // one of the service's sortable fields
+  string sort_order = 5; // asc | desc
+  map<string, string> filters = 6; // service-specific exact/range filters
+}
 message IdRequest { int32 id = 1; }
-message DeleteResponse {}
 
 message Assignment {
   int32 id = 1;
@@ -26,7 +34,10 @@ message Assignment {
   optional string driver_name_ar = 8;
 }
 
-message AssignmentList { repeated Assignment items = 1; }
+message AssignmentList {
+  repeated Assignment items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 
 message CreateAssignmentRequest {
   int32 truck_id = 1;

@@ -2,17 +2,25 @@ syntax = "proto3";
 
 package fleetflow.workshop;
 
-message ListRequest {}
+import "common.proto";
+
+message ListRequest {
+  int32 page = 1;        // 1-based; default 1
+  int32 page_size = 2;   // default 20, max 100
+  string search = 3;     // server-side, case-insensitive partial match
+  string sort_by = 4;    // one of the service's sortable fields
+  string sort_order = 5; // asc | desc
+  map<string, string> filters = 6; // service-specific exact/range filters
+}
 message IdRequest { int32 id = 1; }
-message DeleteResponse {}
 
 // ---- Work orders ----
 service WorkOrdersService {
-  rpc List(ListRequest) returns (WorkOrderList);
-  rpc Get(IdRequest) returns (WorkOrder);
-  rpc Create(CreateWorkOrderRequest) returns (WorkOrder);
-  rpc Update(UpdateWorkOrderRequest) returns (WorkOrder);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: WorkOrderList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: WorkOrder
+  rpc Create(CreateWorkOrderRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: WorkOrder
+  rpc Update(UpdateWorkOrderRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: WorkOrder
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
 message WorkOrder {
@@ -38,7 +46,10 @@ message WorkOrder {
   optional string driver_name = 20;
   optional string driver_name_ar = 21;
 }
-message WorkOrderList { repeated WorkOrder items = 1; }
+message WorkOrderList {
+  repeated WorkOrder items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 message CreateWorkOrderRequest {
   int32 truck_id = 1;
   optional int32 driver_id = 2;
@@ -77,11 +88,11 @@ message UpdateWorkOrderRequest {
 
 // ---- Maintenance schedules ----
 service MaintenanceSchedulesService {
-  rpc List(ListRequest) returns (MaintenanceScheduleList);
-  rpc Get(IdRequest) returns (MaintenanceSchedule);
-  rpc Create(CreateMaintenanceScheduleRequest) returns (MaintenanceSchedule);
-  rpc Update(UpdateMaintenanceScheduleRequest) returns (MaintenanceSchedule);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: MaintenanceScheduleList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: MaintenanceSchedule
+  rpc Create(CreateMaintenanceScheduleRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: MaintenanceSchedule
+  rpc Update(UpdateMaintenanceScheduleRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: MaintenanceSchedule
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
 message MaintenanceSchedule {
@@ -97,7 +108,10 @@ message MaintenanceSchedule {
   optional string notes = 10;
   optional string truck_number = 11;
 }
-message MaintenanceScheduleList { repeated MaintenanceSchedule items = 1; }
+message MaintenanceScheduleList {
+  repeated MaintenanceSchedule items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 message CreateMaintenanceScheduleRequest {
   int32 truck_id = 1;
   string maintenance_type = 2;
@@ -124,11 +138,11 @@ message UpdateMaintenanceScheduleRequest {
 
 // ---- Vehicle inspections ----
 service VehicleInspectionsService {
-  rpc List(ListRequest) returns (VehicleInspectionList);
-  rpc Get(IdRequest) returns (VehicleInspection);
-  rpc Create(CreateVehicleInspectionRequest) returns (VehicleInspection);
-  rpc Update(UpdateVehicleInspectionRequest) returns (VehicleInspection);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: VehicleInspectionList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: VehicleInspection
+  rpc Create(CreateVehicleInspectionRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: VehicleInspection
+  rpc Update(UpdateVehicleInspectionRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: VehicleInspection
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
 message VehicleInspection {
@@ -143,7 +157,10 @@ message VehicleInspection {
   optional string truck_number = 9;
   optional string inspector_name = 10;
 }
-message VehicleInspectionList { repeated VehicleInspection items = 1; }
+message VehicleInspectionList {
+  repeated VehicleInspection items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 message CreateVehicleInspectionRequest {
   int32 truck_id = 1;
   int32 inspector_id = 2;
@@ -166,11 +183,11 @@ message UpdateVehicleInspectionRequest {
 
 // ---- Spare parts ----
 service SparePartsService {
-  rpc List(ListRequest) returns (SparePartList);
-  rpc Get(IdRequest) returns (SparePart);
-  rpc Create(CreateSparePartRequest) returns (SparePart);
-  rpc Update(UpdateSparePartRequest) returns (SparePart);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: SparePartList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: SparePart
+  rpc Create(CreateSparePartRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: SparePart
+  rpc Update(UpdateSparePartRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: SparePart
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
 message SparePart {
@@ -187,7 +204,10 @@ message SparePart {
   optional string supplier_name = 11;
   optional string supplier_name_ar = 12;
 }
-message SparePartList { repeated SparePart items = 1; }
+message SparePartList {
+  repeated SparePart items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 message CreateSparePartRequest {
   string name = 1;
   optional string language = 2;
@@ -198,6 +218,8 @@ message CreateSparePartRequest {
   optional string unit_cost = 7;
   optional int32 supplier_id = 8;
   optional string status = 9;
+  // Arabic value entered alongside the English one (preferred over the legacy `language` tag).
+  optional string name_ar = 50;
 }
 message UpdateSparePartRequest {
   int32 id = 1;
@@ -210,15 +232,17 @@ message UpdateSparePartRequest {
   optional string unit_cost = 8;
   optional int32 supplier_id = 9;
   optional string status = 10;
+  // Arabic value entered alongside the English one (preferred over the legacy `language` tag).
+  optional string name_ar = 50;
 }
 
 // ---- Workshop expenses ----
 service WorkshopExpensesService {
-  rpc List(ListRequest) returns (WorkshopExpenseList);
-  rpc Get(IdRequest) returns (WorkshopExpense);
-  rpc Create(CreateWorkshopExpenseRequest) returns (WorkshopExpense);
-  rpc Update(UpdateWorkshopExpenseRequest) returns (WorkshopExpense);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: WorkshopExpenseList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: WorkshopExpense
+  rpc Create(CreateWorkshopExpenseRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: WorkshopExpense
+  rpc Update(UpdateWorkshopExpenseRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: WorkshopExpense
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
 message WorkshopExpense {
@@ -231,7 +255,10 @@ message WorkshopExpense {
   string expense_date = 7;
   optional string truck_number = 8;
 }
-message WorkshopExpenseList { repeated WorkshopExpense items = 1; }
+message WorkshopExpenseList {
+  repeated WorkshopExpense items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 message CreateWorkshopExpenseRequest {
   int32 truck_id = 1;
   optional int32 work_order_id = 2;
@@ -252,10 +279,10 @@ message UpdateWorkshopExpenseRequest {
 
 // ---- Work order parts (line items on a WorkOrder) ----
 service WorkOrderPartsService {
-  rpc List(ListRequest) returns (WorkOrderPartList);
-  rpc Create(CreateWorkOrderPartRequest) returns (WorkOrderPart);
-  rpc Update(UpdateWorkOrderPartRequest) returns (WorkOrderPart);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: WorkOrderPartList
+  rpc Create(CreateWorkOrderPartRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: WorkOrderPart
+  rpc Update(UpdateWorkOrderPartRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: WorkOrderPart
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
 message WorkOrderPart {
@@ -267,7 +294,10 @@ message WorkOrderPart {
   string total_cost = 6;
   optional string spare_part_name = 7;
 }
-message WorkOrderPartList { repeated WorkOrderPart items = 1; }
+message WorkOrderPartList {
+  repeated WorkOrderPart items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 message CreateWorkOrderPartRequest {
   int32 work_order_id = 1;
   int32 spare_part_id = 2;
@@ -282,10 +312,10 @@ message UpdateWorkOrderPartRequest {
 
 // ---- Inspection checklist items ----
 service InspectionItemsService {
-  rpc List(ListRequest) returns (InspectionItemList);
-  rpc Create(CreateInspectionItemRequest) returns (InspectionItem);
-  rpc Update(UpdateInspectionItemRequest) returns (InspectionItem);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: InspectionItemList
+  rpc Create(CreateInspectionItemRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: InspectionItem
+  rpc Update(UpdateInspectionItemRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: InspectionItem
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
 message InspectionItem {
@@ -296,7 +326,10 @@ message InspectionItem {
   string status = 5;
   optional string defect = 6;
 }
-message InspectionItemList { repeated InspectionItem items = 1; }
+message InspectionItemList {
+  repeated InspectionItem items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 message CreateInspectionItemRequest {
   int32 inspection_id = 1;
   optional int32 work_order_id = 2;
@@ -312,9 +345,9 @@ message UpdateInspectionItemRequest {
 
 // ---- Spare part stock transactions ----
 service SparePartTransactionsService {
-  rpc List(ListRequest) returns (SparePartTransactionList);
-  rpc Create(CreateSparePartTransactionRequest) returns (SparePartTransaction);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: SparePartTransactionList
+  rpc Create(CreateSparePartTransactionRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: SparePartTransaction
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
 message SparePartTransaction {
@@ -325,7 +358,10 @@ message SparePartTransaction {
   optional string reference_note = 5;
   optional string spare_part_name = 6;
 }
-message SparePartTransactionList { repeated SparePartTransaction items = 1; }
+message SparePartTransactionList {
+  repeated SparePartTransaction items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 message CreateSparePartTransactionRequest {
   int32 spare_part_id = 1;
   string transaction_type = 2;

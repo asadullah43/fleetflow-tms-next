@@ -2,17 +2,25 @@ syntax = "proto3";
 
 package fleetflow.cargotypes;
 
+import "common.proto";
+
 service CargoTypesService {
-  rpc List(ListRequest) returns (CargoTypeList);
-  rpc Get(IdRequest) returns (CargoType);
-  rpc Create(CreateCargoTypeRequest) returns (CargoType);
-  rpc Update(UpdateCargoTypeRequest) returns (CargoType);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: CargoTypeList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: CargoType
+  rpc Create(CreateCargoTypeRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: CargoType
+  rpc Update(UpdateCargoTypeRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: CargoType
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
-message ListRequest {}
+message ListRequest {
+  int32 page = 1;        // 1-based; default 1
+  int32 page_size = 2;   // default 20, max 100
+  string search = 3;     // server-side, case-insensitive partial match
+  string sort_by = 4;    // one of the service's sortable fields
+  string sort_order = 5; // asc | desc
+  map<string, string> filters = 6; // service-specific exact/range filters
+}
 message IdRequest { int32 id = 1; }
-message DeleteResponse {}
 
 message CargoType {
   int32 id = 1;
@@ -24,7 +32,10 @@ message CargoType {
   string pricing_mode = 7; // PER_MT | PER_TRIP
 }
 
-message CargoTypeList { repeated CargoType items = 1; }
+message CargoTypeList {
+  repeated CargoType items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 
 message CreateCargoTypeRequest {
   string name = 1;
@@ -32,6 +43,9 @@ message CreateCargoTypeRequest {
   optional string description = 3;
   optional string status = 4;
   optional string pricing_mode = 5;
+  // Arabic value entered alongside the English one (preferred over the legacy `language` tag).
+  optional string name_ar = 50;
+  optional string description_ar = 51;
 }
 
 message UpdateCargoTypeRequest {
@@ -41,4 +55,7 @@ message UpdateCargoTypeRequest {
   optional string description = 4;
   optional string status = 5;
   optional string pricing_mode = 6;
+  // Arabic value entered alongside the English one (preferred over the legacy `language` tag).
+  optional string name_ar = 50;
+  optional string description_ar = 51;
 }

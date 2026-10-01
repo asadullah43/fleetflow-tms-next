@@ -1,5 +1,28 @@
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": { "noEmit": true, "rootDir": "." },
-  "include": ["src", "test"]
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "app.ts",
+    "admin_app.ts",
+    "_bg_services",
+    "_core_app_connectivities",
+    "classes",
+    "controllers",
+    "data_repositories",
+    "event_driven_services",
+    "generated",
+    "global_config",
+    "middlewares",
+    "models",
+    "plugins",
+    "routes",
+    "services",
+    "utils",
+    "validations",
+    "test",
+    "prisma/seed.ts",
+    "technical_dev_docs"
+  ]
 }

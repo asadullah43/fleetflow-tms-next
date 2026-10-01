@@ -2,17 +2,25 @@ syntax = "proto3";
 
 package fleetflow.locations;
 
+import "common.proto";
+
 service LocationsService {
-  rpc List(ListRequest) returns (LocationList);
-  rpc Get(IdRequest) returns (Location);
-  rpc Create(CreateLocationRequest) returns (Location);
-  rpc Update(UpdateLocationRequest) returns (Location);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: LocationList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Location
+  rpc Create(CreateLocationRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Location
+  rpc Update(UpdateLocationRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Location
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
-message ListRequest {}
+message ListRequest {
+  int32 page = 1;        // 1-based; default 1
+  int32 page_size = 2;   // default 20, max 100
+  string search = 3;     // server-side, case-insensitive partial match
+  string sort_by = 4;    // one of the service's sortable fields
+  string sort_order = 5; // asc | desc
+  map<string, string> filters = 6; // service-specific exact/range filters
+}
 message IdRequest { int32 id = 1; }
-message DeleteResponse {}
 
 message Location {
   int32 id = 1;
@@ -23,13 +31,19 @@ message Location {
   string status = 6;
 }
 
-message LocationList { repeated Location items = 1; }
+message LocationList {
+  repeated Location items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 
 message CreateLocationRequest {
   string name = 1;
   optional string language = 2;
   optional string description = 3;
   optional string status = 4;
+  // Arabic value entered alongside the English one (preferred over the legacy `language` tag).
+  optional string name_ar = 50;
+  optional string description_ar = 51;
 }
 
 message UpdateLocationRequest {
@@ -38,4 +52,7 @@ message UpdateLocationRequest {
   optional string language = 3;
   optional string description = 4;
   optional string status = 5;
+  // Arabic value entered alongside the English one (preferred over the legacy `language` tag).
+  optional string name_ar = 50;
+  optional string description_ar = 51;
 }

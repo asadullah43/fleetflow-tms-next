@@ -2,17 +2,25 @@ syntax = "proto3";
 
 package fleetflow.supplierpayments;
 
+import "common.proto";
+
 service SupplierPaymentsService {
-  rpc List(ListRequest) returns (SupplierPaymentList);
-  rpc Get(IdRequest) returns (SupplierPayment);
-  rpc Create(CreateSupplierPaymentRequest) returns (SupplierPayment);
-  rpc Update(UpdateSupplierPaymentRequest) returns (SupplierPayment);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: SupplierPaymentList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: SupplierPayment
+  rpc Create(CreateSupplierPaymentRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: SupplierPayment
+  rpc Update(UpdateSupplierPaymentRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: SupplierPayment
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
-message ListRequest {}
+message ListRequest {
+  int32 page = 1;        // 1-based; default 1
+  int32 page_size = 2;   // default 20, max 100
+  string search = 3;     // server-side, case-insensitive partial match
+  string sort_by = 4;    // one of the service's sortable fields
+  string sort_order = 5; // asc | desc
+  map<string, string> filters = 6; // service-specific exact/range filters
+}
 message IdRequest { int32 id = 1; }
-message DeleteResponse {}
 
 message SupplierPayment {
   int32 id = 1;
@@ -26,7 +34,10 @@ message SupplierPayment {
   optional string supplier_name_ar = 21;
 }
 
-message SupplierPaymentList { repeated SupplierPayment items = 1; }
+message SupplierPaymentList {
+  repeated SupplierPayment items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 
 message CreateSupplierPaymentRequest {
   int32 supplier_id = 1;
