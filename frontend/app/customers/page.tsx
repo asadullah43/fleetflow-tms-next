@@ -11,7 +11,9 @@ export default function CustomersPage() {
   return (
     <CrudPage<CustomerDto>
       title="Customers"
+      description="Manage the customers you move cargo for, and their billing details."
       addLabel="Customer"
+      searchPlaceholder="Customer name"
       emptyLabel="No customers yet."
       columns={[
         { header: 'Name', render: (r) => r.name },

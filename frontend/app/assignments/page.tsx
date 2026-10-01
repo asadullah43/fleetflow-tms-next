@@ -33,7 +33,9 @@ export default function AssignmentsPage() {
   return (
     <CrudPage<AssignmentDto>
       title="Truck-Driver Assignments"
+      description="Manage which driver is assigned to which truck, and for how long."
       addLabel="Assignment"
+      searchPlaceholder="Truck or driver"
       emptyLabel="No assignments yet — assign a driver to a truck to start tracking runs."
       columns={[
         { header: 'Truck', render: (r) => r.truckNumber ?? r.truckId },

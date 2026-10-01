@@ -71,6 +71,16 @@ export const Icon = {
     svg(size, <path d="M5.5 8.5 12 15l6.5-6.5" />),
   gridLayers: ({ size = 18 }: IconProps) =>
     svg(size, <><rect x="3" y="3" width="8" height="8" rx="1.5" /><rect x="13" y="3" width="8" height="8" rx="1.5" /><rect x="3" y="13" width="8" height="8" rx="1.5" /><rect x="13" y="13" width="8" height="8" rx="1.5" /></>),
+  search: ({ size = 18 }: IconProps) =>
+    svg(size, <><circle cx="10.5" cy="10.5" r="6.5" /><path d="M19.5 19.5 15 15" /></>),
+  plus: ({ size = 18 }: IconProps) =>
+    svg(size, <path d="M12 4.5v15M4.5 12h15" />),
+  eye: ({ size = 18 }: IconProps) =>
+    svg(size, <><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z" /><circle cx="12" cy="12" r="3" /></>),
+  pencil: ({ size = 18 }: IconProps) =>
+    svg(size, <><path d="M4 20l.9-4.3 10-10 3.4 3.4-10 10L4 20z" /><path d="M13.6 6.4l3.4 3.4" /></>),
+  trash: ({ size = 18 }: IconProps) =>
+    svg(size, <><path d="M4.5 7h15" /><path d="M9.5 7V4.8c0-.7.5-1.3 1.2-1.3h2.6c.7 0 1.2.6 1.2 1.3V7" /><path d="M6.5 7l.9 12.1c.06.8.7 1.4 1.5 1.4h6.2c.8 0 1.44-.6 1.5-1.4L17.5 7" /><path d="M10.2 11v6M13.8 11v6" /></>),
 };
 
 export type IconName = keyof typeof Icon;

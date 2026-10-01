@@ -11,7 +11,9 @@ export default function LocationsPage() {
   return (
     <CrudPage<LocationDto>
       title="Locations"
+      description="Manage pickup and delivery points used when scheduling trips."
       addLabel="Location"
+      searchPlaceholder="Location name"
       emptyLabel="No locations yet — add pickup and delivery points to use them on trips."
       columns={[
         { header: 'Name', render: (r) => r.name },

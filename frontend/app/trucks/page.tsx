@@ -11,7 +11,9 @@ export default function TrucksPage() {
   return (
     <CrudPage<TruckDto>
       title="Trucks"
+      description="Manage your fleet vehicles, maintenance schedules, and truck assignments."
       addLabel="Truck"
+      searchPlaceholder="Truck number"
       emptyLabel="No trucks yet — add your first vehicle to start scheduling trips."
       columns={[
         { header: 'Truck number', render: (r) => <span className="mono">{r.truckNumber}</span> },

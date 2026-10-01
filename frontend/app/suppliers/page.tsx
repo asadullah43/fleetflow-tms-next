@@ -11,7 +11,9 @@ export default function SuppliersPage() {
   return (
     <CrudPage<SupplierDto>
       title="Suppliers"
+      description="Manage vendors and service providers you buy fuel, parts, and services from."
       addLabel="Supplier"
+      searchPlaceholder="Supplier name"
       emptyLabel="No suppliers yet."
       columns={[
         { header: 'Name', render: (r) => r.name },

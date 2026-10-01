@@ -11,7 +11,9 @@ export default function CargoTypesPage() {
   return (
     <CrudPage<CargoTypeDto>
       title="Cargo Types"
+      description="Manage the kinds of cargo you haul and how each is priced."
       addLabel="Cargo Type"
+      searchPlaceholder="Cargo type name"
       emptyLabel="No cargo types yet."
       columns={[
         { header: 'Name', render: (r) => r.name },

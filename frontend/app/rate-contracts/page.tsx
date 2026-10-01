@@ -48,7 +48,9 @@ export default function RateContractsPage() {
   return (
     <CrudPage<RateContractDto>
       title="Rate Contracts"
+      description="Manage negotiated per-customer rates for a route and cargo type."
       addLabel="Rate Contract"
+      searchPlaceholder="Customer, route, or cargo"
       emptyLabel="No negotiated rates yet."
       columns={[
         { header: 'Customer', render: (r) => r.customerName ?? r.customerId },

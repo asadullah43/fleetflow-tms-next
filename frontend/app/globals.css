@@ -337,6 +337,8 @@ table.data-table {
 }
 
 .row-action {
+  display: inline-flex;
+  align-items: center;
   background: none;
   border: none;
   color: var(--text-muted);
@@ -363,32 +365,39 @@ table.data-table {
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 3px 10px;
+  padding: 3px 11px;
   border-radius: 999px;
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border: 1px solid transparent;
 }
 
 .badge-success {
   background: var(--success-bg);
   color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 35%, transparent);
 }
 .badge-warning {
   background: var(--warning-bg);
   color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 35%, transparent);
 }
 .badge-danger {
   background: var(--danger-bg);
   color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
 }
 .badge-info {
   background: var(--info-bg);
   color: var(--info);
+  border-color: color-mix(in srgb, var(--info) 35%, transparent);
 }
 .badge-neutral {
   background: var(--surface-raised);
   color: var(--text-muted);
-  border: 1px solid var(--border-subtle);
+  border-color: var(--border-subtle);
 }
 
 .btn {
@@ -433,6 +442,56 @@ table.data-table {
 }
 .btn-danger:hover:not(:disabled) {
   background: var(--danger-bg);
+}
+
+.btn-excel {
+  background: var(--success);
+  color: #fff;
+}
+.btn-excel:hover:not(:disabled) {
+  background: #15895f;
+}
+
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 11px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-faint);
+}
+
+.search-field input {
+  flex: 1;
+  border: none;
+  padding: 9px 0;
+  background: none;
+  color: var(--text);
+  font-size: 13.5px;
+  font-family: inherit;
+}
+
+.search-field input:focus {
+  outline: none;
+}
+
+.page-header {
+  margin-bottom: 18px;
+}
+
+.page-header h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+
+.page-header p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13.5px;
 }
 
 .field {

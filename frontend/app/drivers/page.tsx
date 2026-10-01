@@ -11,7 +11,9 @@ export default function DriversPage() {
   return (
     <CrudPage<DriverDto>
       title="Drivers"
+      description="Manage your driver roster, licenses, and availability status."
       addLabel="Driver"
+      searchPlaceholder="Driver name"
       emptyLabel="No drivers yet."
       columns={[
         { header: 'Name', render: (r) => r.name },
