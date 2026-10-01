@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { CrudPage } from '../../../components/CrudPage';
-import { AppShell } from '../../../components/AppShell';
+import { PageLoading } from '../../../components/PageLoading';
 import { StatusBadge } from '../../../components/StatusBadge';
 import { useAuth } from '../../../lib/auth-context';
+import { useLookups } from '../../../lib/use-lookups';
 import { useLanguage } from '../../../lib/language-context';
 import { localizedName } from '../../../lib/localized-name';
 import { departmentsClient, designationsClient, employeesClient, EmployeeDto } from '../../../lib/grpc/hr';
@@ -20,17 +21,13 @@ const STATUSES = [
 export default function EmployeesPage() {
   const { token } = useAuth();
   const { language } = useLanguage();
-  const [opts, setOpts] = useState<{ departments: Opt; designations: Opt } | null>(null);
-
-  useEffect(() => {
-    if (!token) return;
-    Promise.all([departmentsClient.list(token), designationsClient.list(token)]).then(([deps, desigs]) => {
-      setOpts({
-        departments: deps.map((d) => ({ value: String(d.id), label: localizedName(d, language) })),
-        designations: desigs.map((d) => ({ value: String(d.id), label: localizedName(d, language) })),
-      });
-    });
-  }, [token, language]);
+  const { data: opts, error: lookupError } = useLookups<{ departments: Opt; designations: Opt }>(async (token) => {
+    const [deps, desigs] = await Promise.all([departmentsClient.list(token), designationsClient.list(token)]);
+    return {
+      departments: deps.map((d) => ({ value: String(d.id), label: localizedName(d, language) })),
+      designations: desigs.map((d) => ({ value: String(d.id), label: localizedName(d, language) })),
+    };
+  }, [language]);
 
   const filterBar = useMemo(
     () => ({
@@ -55,13 +52,7 @@ export default function EmployeesPage() {
     [opts],
   );
 
-  if (!opts) {
-    return (
-      <AppShell title="Employees">
-        <div className="empty-state">Loading...</div>
-      </AppShell>
-    );
-  }
+  if (!opts) return <PageLoading title="Employees" error={lookupError} />;
 
   return (
     <CrudPage<EmployeeDto>

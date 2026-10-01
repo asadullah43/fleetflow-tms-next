@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { CrudPage } from '../../../components/CrudPage';
-import { AppShell } from '../../../components/AppShell';
+import { PageLoading } from '../../../components/PageLoading';
 import { useAuth } from '../../../lib/auth-context';
+import { useLookups } from '../../../lib/use-lookups';
 import { useLanguage } from '../../../lib/language-context';
 import { localizedName } from '../../../lib/localized-name';
 import { employeesClient, employeeDocumentsClient, EmployeeDocumentDto } from '../../../lib/grpc/hr';
@@ -13,16 +14,14 @@ type Opt = { value: string; label: string }[];
 export default function EmployeeDocumentsPage() {
   const { token } = useAuth();
   const { language } = useLanguage();
-  const [opts, setOpts] = useState<{ employees: Opt } | null>(null);
-  const [docTypes, setDocTypes] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (!token) return;
-    Promise.all([employeesClient.list(token), employeeDocumentsClient.list(token)]).then(([emps, docs]) => {
-      setOpts({ employees: emps.map((e) => ({ value: String(e.id), label: localizedName(e, language) })) });
-      setDocTypes(Array.from(new Set(docs.map((d) => d.documentType).filter(Boolean))).sort());
-    });
-  }, [token, language]);
+  const { data: opts, error: lookupError } = useLookups<{ employees: Opt; docTypes: string[] }>(async (token) => {
+    const [emps, docs] = await Promise.all([employeesClient.list(token), employeeDocumentsClient.list(token)]);
+    return {
+      employees: emps.map((e) => ({ value: String(e.id), label: localizedName(e, language) })),
+      docTypes: Array.from(new Set(docs.map((d) => d.documentType).filter(Boolean))).sort(),
+    };
+  }, [language]);
+  const docTypes = opts?.docTypes ?? [];
 
   const filterBar = useMemo(
     () => ({
@@ -39,13 +38,7 @@ export default function EmployeeDocumentsPage() {
     [opts, docTypes],
   );
 
-  if (!opts) {
-    return (
-      <AppShell title="Documents">
-        <div className="empty-state">Loading...</div>
-      </AppShell>
-    );
-  }
+  if (!opts) return <PageLoading title="Documents" error={lookupError} />;
 
   return (
     <CrudPage<EmployeeDocumentDto>

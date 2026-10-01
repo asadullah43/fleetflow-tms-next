@@ -3,6 +3,8 @@
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../lib/auth-context';
+import { firstAllowedHref } from '../../lib/nav-config';
+import { hasPermission, moduleForPath } from '../../lib/permissions';
 import { useCompanyBranding } from '../../lib/use-company-branding';
 import { useT } from '../../lib/language-context';
 import type { RpcError } from '../../lib/grpc/client';
@@ -10,7 +12,7 @@ import { Icon } from '../../components/icons';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, sessionNotice } = useAuth();
   const { companyName, logoUrl } = useCompanyBranding();
   const t = useT();
   const router = useRouter();
@@ -24,8 +26,13 @@ export default function LoginPage() {
     setError(null);
     setSubmitting(true);
     try {
-      await login(username, password);
-      router.push('/dashboard');
+      const perms = await login(username, password);
+      router.push(
+        firstAllowedHref((href) => {
+          const module = moduleForPath(href);
+          return !module || hasPermission(perms, module, 'view');
+        }),
+      );
     } catch (err) {
       const rpcError = err as RpcError;
       setError(rpcError.message || 'Login failed. Please try again.');
@@ -76,7 +83,7 @@ export default function LoginPage() {
           </div>
           <h1>{t('Sign in')}</h1>
           <p className="subtitle">{t('Use your {company} credentials.').replace('{company}', companyName)}</p>
-          {error && <div className="error-banner">{error}</div>}
+          {error ? <div className="error-banner">{t(error)}</div> : sessionNotice && <div className="error-banner">{t(sessionNotice)}</div>}
           <div className="field">
             <label htmlFor="username">{t('Username')}</label>
             <input

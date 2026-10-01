@@ -98,3 +98,16 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
 ];
+
+/**
+ * Where to land after sign-in: the dashboard when the role can see it,
+ * otherwise the first sidebar page it can. `canView` takes a page href.
+ */
+export function firstAllowedHref(canView: (href: string) => boolean): string {
+  for (const group of NAV_GROUPS) {
+    for (const item of group.items) {
+      if (canView(item.href)) return item.href;
+    }
+  }
+  return '/dashboard';
+}

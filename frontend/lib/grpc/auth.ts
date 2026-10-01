@@ -1,5 +1,6 @@
 import { fleetflow } from '../generated/proto/messages.js';
 import { unaryCall } from './client';
+import type { PermissionRow } from '../permissions';
 
 const SERVICE = 'fleetflow.auth.AuthService';
 const { LoginRequest, LoginResponse, GetMeRequest, UpdateLanguageRequest, UserProfile, PermissionList } =
@@ -69,6 +70,6 @@ export const authClient = {
       RequestType: GetMeRequest,
       ResponseType: PermissionList,
       token,
-    }).then((res) => res.permissions ?? []);
+    }).then((res) => (res.permissions ?? []) as PermissionRow[]);
   },
 };

@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { CrudPage } from '../../../components/CrudPage';
-import { AppShell } from '../../../components/AppShell';
+import { PageLoading } from '../../../components/PageLoading';
 import { StatusBadge } from '../../../components/StatusBadge';
 import { useAuth } from '../../../lib/auth-context';
+import { useLookups } from '../../../lib/use-lookups';
 import { useLanguage } from '../../../lib/language-context';
 import { localizedName } from '../../../lib/localized-name';
 import { workOrdersClient, WorkOrderDto } from '../../../lib/grpc/workshop';
@@ -30,18 +31,14 @@ const STATUSES = [
 export default function WorkOrdersPage() {
   const { token } = useAuth();
   const { language } = useLanguage();
-  const [opts, setOpts] = useState<{ trucks: Opt; drivers: Opt; suppliers: Opt } | null>(null);
-
-  useEffect(() => {
-    if (!token) return;
-    Promise.all([trucksClient.list(token), driversClient.list(token), suppliersClient.list(token)]).then(([trucks, drivers, suppliers]) => {
-      setOpts({
-        trucks: trucks.map((t) => ({ value: String(t.id), label: t.truckNumber })),
-        drivers: drivers.map((d) => ({ value: String(d.id), label: localizedName(d, language) })),
-        suppliers: suppliers.map((s) => ({ value: String(s.id), label: localizedName(s, language) })),
-      });
-    });
-  }, [token, language]);
+  const { data: opts, error: lookupError } = useLookups<{ trucks: Opt; drivers: Opt; suppliers: Opt }>(async (token) => {
+    const [trucks, drivers, suppliers] = await Promise.all([trucksClient.list(token), driversClient.list(token), suppliersClient.list(token)]);
+    return {
+      trucks: trucks.map((t) => ({ value: String(t.id), label: t.truckNumber })),
+      drivers: drivers.map((d) => ({ value: String(d.id), label: localizedName(d, language) })),
+      suppliers: suppliers.map((s) => ({ value: String(s.id), label: localizedName(s, language) })),
+    };
+  }, [language]);
 
   const filterBar = useMemo(
     () => ({
@@ -59,13 +56,7 @@ export default function WorkOrdersPage() {
     [],
   );
 
-  if (!opts) {
-    return (
-      <AppShell title="Work Orders">
-        <div className="empty-state">Loading...</div>
-      </AppShell>
-    );
-  }
+  if (!opts) return <PageLoading title="Work Orders" error={lookupError} />;
 
   return (
     <CrudPage<WorkOrderDto>

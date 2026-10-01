@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { CrudPage } from '../../components/CrudPage';
-import { AppShell } from '../../components/AppShell';
+import { PageLoading } from '../../components/PageLoading';
 import { useAuth } from '../../lib/auth-context';
+import { useLookups } from '../../lib/use-lookups';
 import { useLanguage } from '../../lib/language-context';
 import { localizedName, localizedJoinedName } from '../../lib/localized-name';
 import { rateContractsClient, RateContractDto } from '../../lib/grpc/rate-contracts';
@@ -16,26 +16,16 @@ type Opt = { value: string; label: string }[];
 export default function RateContractsPage() {
   const { token } = useAuth();
   const { language } = useLanguage();
-  const [opts, setOpts] = useState<{ customers: Opt; locations: Opt; cargoTypes: Opt } | null>(null);
+  const { data: opts, error: lookupError } = useLookups<{ customers: Opt; locations: Opt; cargoTypes: Opt }>(async (token) => {
+    const [customers, locations, cargoTypes] = await Promise.all([customersClient.list(token), locationsClient.list(token), cargoTypesClient.list(token)]);
+    return {
+      customers: customers.map((c) => ({ value: String(c.id), label: localizedName(c, language) })),
+      locations: locations.map((l) => ({ value: String(l.id), label: localizedName(l, language) })),
+      cargoTypes: cargoTypes.map((c) => ({ value: String(c.id), label: localizedName(c, language) })),
+    };
+  }, [language]);
 
-  useEffect(() => {
-    if (!token) return;
-    Promise.all([customersClient.list(token), locationsClient.list(token), cargoTypesClient.list(token)]).then(([customers, locations, cargoTypes]) => {
-      setOpts({
-        customers: customers.map((c) => ({ value: String(c.id), label: localizedName(c, language) })),
-        locations: locations.map((l) => ({ value: String(l.id), label: localizedName(l, language) })),
-        cargoTypes: cargoTypes.map((c) => ({ value: String(c.id), label: localizedName(c, language) })),
-      });
-    });
-  }, [token, language]);
-
-  if (!opts) {
-    return (
-      <AppShell title="Rate Contracts">
-        <div className="empty-state">Loading...</div>
-      </AppShell>
-    );
-  }
+  if (!opts) return <PageLoading title="Rate Contracts" error={lookupError} />;
 
   function toApi(values: Record<string, string>) {
     return {

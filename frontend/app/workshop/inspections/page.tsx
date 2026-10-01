@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { CrudPage } from '../../../components/CrudPage';
-import { AppShell } from '../../../components/AppShell';
+import { PageLoading } from '../../../components/PageLoading';
 import { StatusBadge } from '../../../components/StatusBadge';
 import { useAuth } from '../../../lib/auth-context';
+import { useLookups } from '../../../lib/use-lookups';
 import { vehicleInspectionsClient, VehicleInspectionDto } from '../../../lib/grpc/workshop';
 import { trucksClient } from '../../../lib/grpc/trucks';
 
@@ -17,12 +18,10 @@ const RESULTS = [
 
 export default function InspectionsPage() {
   const { token } = useAuth();
-  const [opts, setOpts] = useState<{ trucks: Opt } | null>(null);
-
-  useEffect(() => {
-    if (!token) return;
-    trucksClient.list(token).then((trucks) => setOpts({ trucks: trucks.map((t) => ({ value: String(t.id), label: t.truckNumber })) }));
-  }, [token]);
+  const { data: opts, error: lookupError } = useLookups<{ trucks: Opt }>(async (token) => {
+    const trucks = await trucksClient.list(token);
+    return { trucks: trucks.map((t) => ({ value: String(t.id), label: t.truckNumber })) };
+  }, []);
 
   const filterBar = useMemo(
     () => ({
@@ -40,13 +39,7 @@ export default function InspectionsPage() {
     [opts],
   );
 
-  if (!opts) {
-    return (
-      <AppShell title="Inspections">
-        <div className="empty-state">Loading...</div>
-      </AppShell>
-    );
-  }
+  if (!opts) return <PageLoading title="Inspections" error={lookupError} />;
 
   return (
     <CrudPage<VehicleInspectionDto>

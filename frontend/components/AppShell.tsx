@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { NAV_GROUPS } from '../lib/nav-config';
-import { useAuth } from '../lib/auth-context';
+import { NAV_GROUPS, NavGroup } from '../lib/nav-config';
+import { useAuth, usePagePermissions } from '../lib/auth-context';
+import { moduleForPath } from '../lib/permissions';
 import { useCompanyBranding } from '../lib/use-company-branding';
 import { useT } from '../lib/language-context';
 import { Icon } from './icons';
@@ -17,7 +18,8 @@ import { LanguageSwitcher } from './LanguageSwitcher';
  */
 export function AppShell({ title, children }: { title: string; children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, can } = useAuth();
+  const page = usePagePermissions();
   const { companyName, logoUrl } = useCompanyBranding();
   const t = useT();
   const router = useRouter();
@@ -52,6 +54,15 @@ export function AppShell({ title, children }: { title: string; children: React.R
     return <div className="centered-screen">{t('Loading...')}</div>;
   }
 
+  // Only the pages this user's role can view; groups left empty disappear.
+  const visibleGroups: NavGroup[] = NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => {
+      const module = moduleForPath(item.href);
+      return !module || can(module, 'view');
+    }),
+  })).filter((group) => group.items.length > 0);
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -68,7 +79,7 @@ export function AppShell({ title, children }: { title: string; children: React.R
           <span className="sidebar-brand-name">{companyName}</span>
         </div>
         <nav className="sidebar-nav">
-          {NAV_GROUPS.map((group) => {
+          {visibleGroups.map((group) => {
             const GroupIcon = Icon[group.icon];
             const isOpen = openGroups[group.label] ?? false;
 
@@ -134,7 +145,9 @@ export function AppShell({ title, children }: { title: string; children: React.R
             </button>
           </div>
         </header>
-        <main className="content">{children}</main>
+        <main className="content">
+          {page.view ? children : <div className="empty-state">{t("You don't have permission to view this page.")}</div>}
+        </main>
       </div>
     </div>
   );

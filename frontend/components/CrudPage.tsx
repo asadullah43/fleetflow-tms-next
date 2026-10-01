@@ -8,6 +8,7 @@ import { DateField } from './DateField';
 import { SearchSelect } from './SearchSelect';
 import { cellText, exportCsv, printTable } from '../lib/export-table';
 import { useT } from '../lib/language-context';
+import { usePagePermissions } from '../lib/auth-context';
 import type { RpcError } from '../lib/grpc/client';
 
 export interface ColumnDef<T> {
@@ -99,6 +100,7 @@ export function CrudPanel<T extends { id: number }>({
   onView,
 }: CrudPanelProps<T> & { exportTitle?: string }) {
   const t = useT();
+  const allowed = usePagePermissions();
   const [rows, setRows] = useState<T[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [modal, setModal] = useState<{ mode: 'create' | 'edit'; row?: T } | null>(null);
@@ -111,8 +113,15 @@ export function CrudPanel<T extends { id: number }>({
 
   function load() {
     fetchAll()
-      .then(setRows)
-      .catch((err) => setError((err as RpcError).message ?? 'Failed to load data.'));
+      .then((data) => {
+        setRows(data);
+        setError(null);
+      })
+      .catch((err) => {
+        setError((err as RpcError).message ?? 'Failed to load data.');
+        // Leave any rows from a previous successful load; on first load show an empty table rather than "Loading..." forever.
+        setRows((prev) => prev ?? []);
+      });
   }
 
   useEffect(() => {
@@ -221,7 +230,7 @@ export function CrudPanel<T extends { id: number }>({
 
   return (
     <>
-      {error && <div className="error-banner">{error}</div>}
+      {error && <div className="error-banner">{t(error)}</div>}
 
       {filterBar && (
         <div className="filter-bar">
@@ -288,9 +297,11 @@ export function CrudPanel<T extends { id: number }>({
           <button className="btn btn-secondary" onClick={() => exportRows('pdf')} type="button">
             <Icon.fileText size={15} /> {t('PDF')}
           </button>
-          <button className="btn btn-primary" onClick={openCreate} type="button">
-            <Icon.plus size={15} /> {t(addLabel)}
-          </button>
+          {allowed.add && (
+            <button className="btn btn-primary" onClick={openCreate} type="button">
+              <Icon.plus size={15} /> {t(addLabel)}
+            </button>
+          )}
         </div>
       </div>
 
@@ -326,12 +337,16 @@ export function CrudPanel<T extends { id: number }>({
                           <Icon.eye size={16} />
                         </button>
                       )}
-                      <button className="row-action" onClick={() => openEdit(row)} title={t('Edit')}>
-                        <Icon.pencil size={16} />
-                      </button>
-                      <button className="row-action danger" onClick={() => remove(row)} title={t('Delete')}>
-                        <Icon.trash size={16} />
-                      </button>
+                      {allowed.edit && (
+                        <button className="row-action" onClick={() => openEdit(row)} title={t('Edit')}>
+                          <Icon.pencil size={16} />
+                        </button>
+                      )}
+                      {allowed.delete && (
+                        <button className="row-action danger" onClick={() => remove(row)} title={t('Delete')}>
+                          <Icon.trash size={16} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -356,7 +371,7 @@ export function CrudPanel<T extends { id: number }>({
             </>
           }
         >
-          {formError && <div className="error-banner">{formError}</div>}
+          {formError && <div className="error-banner">{t(formError)}</div>}
           {formFields.map((field) => (
             <div className="field" key={field.name}>
               <label htmlFor={field.name}>{t(field.label)}</label>

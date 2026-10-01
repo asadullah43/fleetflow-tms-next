@@ -7,6 +7,7 @@ import { DateField } from '../../components/DateField';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useAuth } from '../../lib/auth-context';
 import { useT, useLanguage } from '../../lib/language-context';
+import { usePagePermissions } from '../../lib/auth-context';
 import { localizedName, localizedJoinedName } from '../../lib/localized-name';
 import { invoicesClient, InvoiceDto, InvoiceLineItemDto } from '../../lib/grpc/invoices';
 import { customersClient } from '../../lib/grpc/customers';
@@ -20,6 +21,7 @@ export default function InvoicesPage() {
   const { token } = useAuth();
   const t = useT();
   const { language } = useLanguage();
+  const allowed = usePagePermissions();
   const [invoices, setInvoices] = useState<InvoiceDto[] | null>(null);
   const [customers, setCustomers] = useState<{ value: string; label: string }[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -119,13 +121,15 @@ export default function InvoicesPage() {
 
   return (
     <AppShell title="Invoices">
-      {error && <div className="error-banner">{error}</div>}
+      {error && <div className="error-banner">{t(error)}</div>}
 
       <div className="toolbar">
         <div />
-        <button className="btn btn-primary" onClick={openCreate} disabled={!customers}>
-          {t('+ Invoice')}
-        </button>
+        {allowed.add && (
+          <button className="btn btn-primary" onClick={openCreate} disabled={!customers}>
+            {t('+ Invoice')}
+          </button>
+        )}
       </div>
 
       <div className="panel">
@@ -167,9 +171,11 @@ export default function InvoicesPage() {
                   </td>
                   <td>
                     <div className="row-actions">
-                      <button className="row-action danger" onClick={() => remove(inv)}>
-                        {t('Delete')}
-                      </button>
+                      {allowed.delete && (
+                        <button className="row-action danger" onClick={() => remove(inv)}>
+                          {t('Delete')}
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -194,7 +200,7 @@ export default function InvoicesPage() {
             </>
           }
         >
-          {formError && <div className="error-banner">{formError}</div>}
+          {formError && <div className="error-banner">{t(formError)}</div>}
           <div className="field">
             <label>{t('Customer')}</label>
             <select value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
@@ -279,12 +285,12 @@ export default function InvoicesPage() {
           onClose={() => setModal(null)}
           footer={
             <>
-              {modal.invoice.status !== 'PAID' && (
+              {allowed.edit && modal.invoice.status !== 'PAID' && (
                 <button className="btn btn-secondary" onClick={() => markPaid(modal.invoice!)}>
                   {t('Mark as paid')}
                 </button>
               )}
-              {(!modal.invoice.zatcaStatus || modal.invoice.zatcaStatus === 'PENDING_SIGN') && (
+              {allowed.edit && (!modal.invoice.zatcaStatus || modal.invoice.zatcaStatus === 'PENDING_SIGN') && (
                 <button className="btn btn-primary" onClick={() => submitToZatca(modal.invoice!)}>
                   {t('Submit to ZATCA')}
                 </button>

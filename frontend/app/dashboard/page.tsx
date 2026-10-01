@@ -11,10 +11,11 @@ import { trucksClient, TruckDto } from '../../lib/grpc/trucks';
 import { departmentsClient, employeesClient, attendanceClient, leaveRequestsClient, employmentContractsClient, EmployeeDto } from '../../lib/grpc/hr';
 import { workOrdersClient, maintenanceSchedulesClient, vehicleInspectionsClient, workshopExpensesClient, sparePartsClient, WorkOrderDto, MaintenanceScheduleDto, VehicleInspectionDto } from '../../lib/grpc/workshop';
 
-const TABS: { key: string; label: string; icon: IconName }[] = [
+/** `module`: extra permission (beyond dashboard:view) a tab's data needs — the tab is hidden without it. */
+const TABS: { key: string; label: string; icon: IconName; module?: string }[] = [
   { key: 'operations', label: 'Operations', icon: 'gauge' },
-  { key: 'hr', label: 'HR Dashboard', icon: 'userCog' },
-  { key: 'workshop', label: 'Workshop Dashboard', icon: 'wrench' },
+  { key: 'hr', label: 'HR Dashboard', icon: 'userCog', module: 'hr' },
+  { key: 'workshop', label: 'Workshop Dashboard', icon: 'wrench', module: 'workshop' },
   { key: 'map', label: 'Map', icon: 'mapPin' },
 ];
 
@@ -50,11 +51,11 @@ function ProgressRow({ label, value, max, tone }: { label: string; value: number
   );
 }
 
-function TabBar({ active, onChange }: { active: string; onChange: (key: string) => void }) {
+function TabBar({ tabs, active, onChange }: { tabs: typeof TABS; active: string; onChange: (key: string) => void }) {
   const t = useT();
   return (
     <div className="dash-tabs">
-      {TABS.map((tab) => {
+      {tabs.map((tab) => {
         const TabIcon = Icon[tab.icon];
         return (
           <button key={tab.key} type="button" className={`dash-tab${active === tab.key ? ' active' : ''}`} onClick={() => onChange(tab.key)}>
@@ -442,7 +443,8 @@ function MapTab({ token }: { token: string }) {
 }
 
 export default function DashboardPage() {
-  const { user, token } = useAuth();
+  const { user, token, can } = useAuth();
+  const tabs = TABS.filter((tab) => !tab.module || can(tab.module, 'view'));
   const { language } = useLanguage();
   const t = useT();
   const [tab, setTab] = useState('operations');
@@ -469,7 +471,7 @@ export default function DashboardPage() {
         </span>
       </div>
 
-      <TabBar active={tab} onChange={setTab} />
+      <TabBar tabs={tabs} active={tab} onChange={setTab} />
 
       {tab === 'operations' && <OperationsTab summary={summary} />}
       {tab === 'hr' && token && <HrDashboardTab token={token} />}

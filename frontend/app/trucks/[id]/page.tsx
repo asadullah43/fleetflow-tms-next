@@ -20,7 +20,7 @@ import type { RpcError } from '../../../lib/grpc/client';
 export default function TruckDetailPage() {
   const params = useParams<{ id: string }>();
   const truckId = Number(params.id);
-  const { token } = useAuth();
+  const { token, can } = useAuth();
   const t = useT();
   const { language } = useLanguage();
 
@@ -116,7 +116,7 @@ export default function TruckDetailPage() {
   if (error) {
     return (
       <AppShell title="Truck">
-        <div className="error-banner">{error}</div>
+        <div className="error-banner">{t(error)}</div>
       </AppShell>
     );
   }
@@ -190,7 +190,7 @@ export default function TruckDetailPage() {
           <div className="panel" style={{ padding: 20 }}>
             <h3 className="dash-panel-title">{t('Assign a driver')}</h3>
             <p className="dash-panel-sub">{t('Start a new assignment for this truck.')}</p>
-            {formError && <div className="error-banner">{formError}</div>}
+            {formError && <div className="error-banner">{t(formError)}</div>}
             <div className="field">
               <label>{t('Driver')}</label>
               <select value={form.driverId} onChange={(e) => setForm({ ...form, driverId: e.target.value })}>
@@ -215,7 +215,7 @@ export default function TruckDetailPage() {
             <button
               className="btn btn-primary"
               style={{ width: '100%', justifyContent: 'center' }}
-              disabled={saving || !form.driverId || !form.startDate}
+              disabled={saving || !form.driverId || !form.startDate || !can('assignments', 'add')}
               onClick={assignDriver}
             >
               {saving ? t('Saving...') : t('Assign driver')}
@@ -259,12 +259,16 @@ export default function TruckDetailPage() {
                         {a.startDate.slice(0, 10)} → {a.endDate ? a.endDate.slice(0, 10) : t('Ongoing')}
                       </div>
                       <div style={{ display: 'flex', gap: 14, marginTop: 6 }}>
-                        <button className="row-action" onClick={() => openEdit(a)} title={t('Edit')}>
-                          <Icon.pencil size={14} /> {t('Edit')}
-                        </button>
-                        <button className="row-action danger" onClick={() => unassign(a)} title={t('Remove')}>
-                          <Icon.trash size={14} /> {t('Remove')}
-                        </button>
+                        {can('assignments', 'edit') && (
+                          <button className="row-action" onClick={() => openEdit(a)} title={t('Edit')}>
+                            <Icon.pencil size={14} /> {t('Edit')}
+                          </button>
+                        )}
+                        {can('assignments', 'delete') && (
+                          <button className="row-action danger" onClick={() => unassign(a)} title={t('Remove')}>
+                            <Icon.trash size={14} /> {t('Remove')}
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -301,7 +305,7 @@ export default function TruckDetailPage() {
             </>
           }
         >
-          {editError && <div className="error-banner">{editError}</div>}
+          {editError && <div className="error-banner">{t(editError)}</div>}
           <div className="field">
             <label>{t('Driver')}</label>
             <select value={editForm.driverId} onChange={(e) => setEditForm({ ...editForm, driverId: e.target.value })}>

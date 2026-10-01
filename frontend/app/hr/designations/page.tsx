@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { CrudPage } from '../../../components/CrudPage';
-import { AppShell } from '../../../components/AppShell';
+import { PageLoading } from '../../../components/PageLoading';
 import { StatusBadge } from '../../../components/StatusBadge';
 import { useAuth } from '../../../lib/auth-context';
+import { useLookups } from '../../../lib/use-lookups';
 import { useLanguage } from '../../../lib/language-context';
 import { localizedName } from '../../../lib/localized-name';
 import { departmentsClient, designationsClient, DesignationDto } from '../../../lib/grpc/hr';
@@ -19,12 +20,10 @@ const STATUSES = [
 export default function DesignationsPage() {
   const { token } = useAuth();
   const { language } = useLanguage();
-  const [opts, setOpts] = useState<{ departments: Opt } | null>(null);
-
-  useEffect(() => {
-    if (!token) return;
-    departmentsClient.list(token).then((deps) => setOpts({ departments: deps.map((d) => ({ value: String(d.id), label: localizedName(d, language) })) }));
-  }, [token, language]);
+  const { data: opts, error: lookupError } = useLookups<{ departments: Opt }>(async (token) => {
+    const deps = await departmentsClient.list(token);
+    return { departments: deps.map((d) => ({ value: String(d.id), label: localizedName(d, language) })) };
+  }, [language]);
 
   const filterBar = useMemo(
     () => ({
@@ -43,13 +42,7 @@ export default function DesignationsPage() {
     [opts],
   );
 
-  if (!opts) {
-    return (
-      <AppShell title="Designations">
-        <div className="empty-state">Loading...</div>
-      </AppShell>
-    );
-  }
+  if (!opts) return <PageLoading title="Designations" error={lookupError} />;
 
   return (
     <CrudPage<DesignationDto>

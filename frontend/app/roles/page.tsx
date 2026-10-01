@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { AppShell } from '../../components/AppShell';
 import { Modal } from '../../components/Modal';
-import { useAuth } from '../../lib/auth-context';
+import { useAuth, usePagePermissions } from '../../lib/auth-context';
 import { useT } from '../../lib/language-context';
 import { rolesClient, RoleDto, PermissionDto } from '../../lib/grpc/roles';
 import type { RpcError } from '../../lib/grpc/client';
@@ -20,6 +20,7 @@ function formatModule(module: string): string {
 export default function RolesPage() {
   const { token } = useAuth();
   const t = useT();
+  const allowed = usePagePermissions();
   const [modules, setModules] = useState<string[] | null>(null);
   const [roles, setRoles] = useState<RoleDto[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -93,13 +94,15 @@ export default function RolesPage() {
 
   return (
     <AppShell title="Roles">
-      {error && <div className="error-banner">{error}</div>}
+      {error && <div className="error-banner">{t(error)}</div>}
 
       <div className="toolbar">
         <div />
-        <button className="btn btn-primary" onClick={openCreate}>
-          {t('+ Role')}
-        </button>
+        {allowed.add && (
+          <button className="btn btn-primary" onClick={openCreate}>
+            {t('+ Role')}
+          </button>
+        )}
       </div>
 
       <div className="panel">
@@ -125,12 +128,16 @@ export default function RolesPage() {
                   <td>{role.permissions.filter((p) => p.canView).length} of {role.permissions.length}</td>
                   <td>
                     <div className="row-actions">
-                      <button className="row-action" onClick={() => openEdit(role)}>
-                        {t('Edit')}
-                      </button>
-                      <button className="row-action danger" onClick={() => remove(role)}>
-                        {t('Delete')}
-                      </button>
+                      {allowed.edit && (
+                        <button className="row-action" onClick={() => openEdit(role)}>
+                          {t('Edit')}
+                        </button>
+                      )}
+                      {allowed.delete && (
+                        <button className="row-action danger" onClick={() => remove(role)}>
+                          {t('Delete')}
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -155,7 +162,7 @@ export default function RolesPage() {
             </>
           }
         >
-          {formError && <div className="error-banner">{formError}</div>}
+          {formError && <div className="error-banner">{t(formError)}</div>}
           <div className="field">
             <label>{t('Role name')}</label>
             <input value={name} onChange={(e) => setName(e.target.value)} required />

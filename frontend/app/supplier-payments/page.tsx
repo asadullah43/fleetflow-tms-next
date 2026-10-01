@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { CrudPage } from '../../components/CrudPage';
-import { AppShell } from '../../components/AppShell';
+import { PageLoading } from '../../components/PageLoading';
 import { useAuth } from '../../lib/auth-context';
+import { useLookups } from '../../lib/use-lookups';
 import { useLanguage } from '../../lib/language-context';
 import { localizedName, localizedJoinedName } from '../../lib/localized-name';
 import { supplierPaymentsClient, SupplierPaymentDto } from '../../lib/grpc/supplier-payments';
@@ -12,20 +12,12 @@ import { suppliersClient } from '../../lib/grpc/suppliers';
 export default function SupplierPaymentsPage() {
   const { token } = useAuth();
   const { language } = useLanguage();
-  const [suppliers, setSuppliers] = useState<{ value: string; label: string }[] | null>(null);
+  const { data: suppliers, error: lookupError } = useLookups<{ value: string; label: string }[]>(async (token) => {
+    const rows = await suppliersClient.list(token);
+    return rows.map((s) => ({ value: String(s.id), label: localizedName(s, language) }));
+  }, [language]);
 
-  useEffect(() => {
-    if (!token) return;
-    suppliersClient.list(token).then((rows) => setSuppliers(rows.map((s) => ({ value: String(s.id), label: localizedName(s, language) }))));
-  }, [token, language]);
-
-  if (!suppliers) {
-    return (
-      <AppShell title="Supplier Payments">
-        <div className="empty-state">Loading...</div>
-      </AppShell>
-    );
-  }
+  if (!suppliers) return <PageLoading title="Supplier Payments" error={lookupError} />;
 
   function toApi(values: Record<string, string>) {
     return { supplierId: Number(values.supplierId), amount: values.amount, currency: values.currency || 'SAR', paymentDate: values.paymentDate, description: values.description };

@@ -2,7 +2,7 @@
 
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { AppShell } from '../../../components/AppShell';
-import { useAuth } from '../../../lib/auth-context';
+import { useAuth, usePagePermissions } from '../../../lib/auth-context';
 import { useT } from '../../../lib/language-context';
 import { companySettingsClient, CompanySettingsDto } from '../../../lib/grpc/company-settings';
 import { setCompanyBranding } from '../../../lib/use-company-branding';
@@ -63,6 +63,7 @@ function fileToLogoDataUrl(file: File): Promise<string> {
 export default function CompanySettingsPage() {
   const { token } = useAuth();
   const t = useT();
+  const allowed = usePagePermissions();
   const [values, setValues] = useState<Record<string, string> | null>(null);
   const [logoUrl, setLogoUrl] = useState<string>('');
   const [logoError, setLogoError] = useState<string | null>(null);
@@ -126,7 +127,7 @@ export default function CompanySettingsPage() {
 
   return (
     <AppShell title="Company Settings">
-      {error && <div className="error-banner">{error}</div>}
+      {error && <div className="error-banner">{t(error)}</div>}
       <div className="panel" style={{ padding: 24, maxWidth: 640 }}>
         <div className="field">
           <label>{t('Company logo')}</label>
@@ -177,7 +178,7 @@ export default function CompanySettingsPage() {
           </div>
         ))}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <button className="btn btn-primary" onClick={save} disabled={saving}>
+          <button className="btn btn-primary" onClick={save} disabled={saving || !allowed.edit}>
             {saving ? t('Saving...') : t('Save changes')}
           </button>
           {savedAt && <span style={{ color: 'var(--success)', fontSize: 13 }}>{t('Saved.')}</span>}

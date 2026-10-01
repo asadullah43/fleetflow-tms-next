@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { CrudPage } from '../../components/CrudPage';
-import { AppShell } from '../../components/AppShell';
+import { PageLoading } from '../../components/PageLoading';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useAuth } from '../../lib/auth-context';
+import { useLookups } from '../../lib/use-lookups';
 import { useLanguage } from '../../lib/language-context';
 import { localizedName } from '../../lib/localized-name';
 import { sparePartsClient, SparePartDto } from '../../lib/grpc/workshop';
@@ -21,12 +22,10 @@ const STATUSES = [
 export default function InventoryPage() {
   const { token } = useAuth();
   const { language } = useLanguage();
-  const [opts, setOpts] = useState<{ suppliers: Opt } | null>(null);
-
-  useEffect(() => {
-    if (!token) return;
-    suppliersClient.list(token).then((suppliers) => setOpts({ suppliers: suppliers.map((s) => ({ value: String(s.id), label: localizedName(s, language) })) }));
-  }, [token, language]);
+  const { data: opts, error: lookupError } = useLookups<{ suppliers: Opt }>(async (token) => {
+    const suppliers = await suppliersClient.list(token);
+    return { suppliers: suppliers.map((s) => ({ value: String(s.id), label: localizedName(s, language) })) };
+  }, [language]);
 
   const filterBar = useMemo(
     () => ({
@@ -45,13 +44,7 @@ export default function InventoryPage() {
     [],
   );
 
-  if (!opts) {
-    return (
-      <AppShell title="Inventory">
-        <div className="empty-state">Loading...</div>
-      </AppShell>
-    );
-  }
+  if (!opts) return <PageLoading title="Inventory" error={lookupError} />;
 
   return (
     <CrudPage<SparePartDto>

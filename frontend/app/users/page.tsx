@@ -1,29 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { CrudPage } from '../../components/CrudPage';
-import { AppShell } from '../../components/AppShell';
+import { PageLoading } from '../../components/PageLoading';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useAuth } from '../../lib/auth-context';
+import { useLookups } from '../../lib/use-lookups';
 import { usersClient, UserDto } from '../../lib/grpc/users';
 import { rolesClient } from '../../lib/grpc/roles';
 
 export default function UsersPage() {
   const { token } = useAuth();
-  const [roles, setRoles] = useState<{ value: string; label: string }[] | null>(null);
+  const { data: roles, error: lookupError } = useLookups<{ value: string; label: string }[]>(async (token) => {
+    const rows = await rolesClient.list(token);
+    return rows.map((r) => ({ value: String(r.id), label: r.name }));
+  }, []);
 
-  useEffect(() => {
-    if (!token) return;
-    rolesClient.list(token).then((rows) => setRoles(rows.map((r) => ({ value: String(r.id), label: r.name }))));
-  }, [token]);
-
-  if (!roles) {
-    return (
-      <AppShell title="Users">
-        <div className="empty-state">Loading...</div>
-      </AppShell>
-    );
-  }
+  if (!roles) return <PageLoading title="Users" error={lookupError} />;
 
   function toApi(values: Record<string, string>) {
     const dto: Record<string, unknown> = {

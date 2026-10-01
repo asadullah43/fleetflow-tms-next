@@ -8,6 +8,24 @@ const GRPC_WEB_URL = process.env.NEXT_PUBLIC_GRPC_WEB_URL ?? 'http://localhost:8
 
 const client = new GrpcWebClientBase({ format: 'binary' });
 
+/** grpc.status.UNAUTHENTICATED */
+const UNAUTHENTICATED = 16;
+
+export function isUnauthenticated(err: unknown): boolean {
+  return (err as { code?: number } | null)?.code === UNAUTHENTICATED;
+}
+
+let onSessionExpired: ((message: string) => void) | null = null;
+
+/**
+ * Registered by AuthProvider: called when an RPC made *with* a token is
+ * rejected as UNAUTHENTICATED (expired JWT, account deactivated), so the
+ * app signs out once, centrally, instead of every page showing errors.
+ */
+export function setSessionExpiredHandler(handler: ((message: string) => void) | null): void {
+  onSessionExpired = handler;
+}
+
 interface ProtobufjsType<T> {
   encode(message: T): { finish(): Uint8Array };
   decode(bytes: Uint8Array): T;
@@ -48,6 +66,7 @@ export function unaryCall<Req, Res>(opts: {
       methodDescriptor,
       (err: RpcError, response: Res) => {
         if (err) {
+          if (token && isUnauthenticated(err)) onSessionExpired?.(err.message);
           reject(err);
           return;
         }

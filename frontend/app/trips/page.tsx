@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { CrudPage } from '../../components/CrudPage';
-import { AppShell } from '../../components/AppShell';
+import { PageLoading } from '../../components/PageLoading';
 import { useAuth } from '../../lib/auth-context';
+import { useLookups } from '../../lib/use-lookups';
 import { useLanguage } from '../../lib/language-context';
 import { localizedName, localizedJoinedName } from '../../lib/localized-name';
 import { tripsClient, TripDto } from '../../lib/grpc/trips';
@@ -27,29 +28,32 @@ function currentAssignment(assignments: AssignmentDto[], truckId: number): Assig
 export default function TripsPage() {
   const { token } = useAuth();
   const { language } = useLanguage();
-  const [opts, setOpts] = useState<{ customers: Opt; locations: Opt; cargoTypes: Opt; trucks: Opt; drivers: Opt } | null>(null);
-  const [assignments, setAssignments] = useState<AssignmentDto[]>([]);
-
-  useEffect(() => {
-    if (!token) return;
-    Promise.all([
+  const { data: opts, error: lookupError } = useLookups<{
+    customers: Opt;
+    locations: Opt;
+    cargoTypes: Opt;
+    trucks: Opt;
+    drivers: Opt;
+    assignments: AssignmentDto[];
+  }>(async (token) => {
+    const [customers, locations, cargoTypes, trucks, drivers, assignments] = await Promise.all([
       customersClient.list(token),
       locationsClient.list(token),
       cargoTypesClient.list(token),
       trucksClient.list(token),
       driversClient.list(token),
       assignmentsClient.list(token),
-    ]).then(([customers, locations, cargoTypes, trucks, drivers, assignmentList]) => {
-      setOpts({
-        customers: customers.map((c) => ({ value: String(c.id), label: localizedName(c, language) })),
-        locations: locations.map((l) => ({ value: String(l.id), label: localizedName(l, language) })),
-        cargoTypes: cargoTypes.map((c) => ({ value: String(c.id), label: localizedName(c, language) })),
-        trucks: trucks.map((t) => ({ value: String(t.id), label: t.truckNumber })),
-        drivers: drivers.map((d) => ({ value: String(d.id), label: localizedName(d, language) })),
-      });
-      setAssignments(assignmentList);
-    });
-  }, [token, language]);
+    ]);
+    return {
+      customers: customers.map((c) => ({ value: String(c.id), label: localizedName(c, language) })),
+      locations: locations.map((l) => ({ value: String(l.id), label: localizedName(l, language) })),
+      cargoTypes: cargoTypes.map((c) => ({ value: String(c.id), label: localizedName(c, language) })),
+      trucks: trucks.map((t) => ({ value: String(t.id), label: t.truckNumber })),
+      drivers: drivers.map((d) => ({ value: String(d.id), label: localizedName(d, language) })),
+      assignments,
+    };
+  }, [language]);
+  const assignments = opts?.assignments ?? [];
 
   const filterBar = useMemo(
     () => ({
@@ -94,13 +98,7 @@ export default function TripsPage() {
     }
   }
 
-  if (!opts) {
-    return (
-      <AppShell title="Trips">
-        <div className="empty-state">Loading...</div>
-      </AppShell>
-    );
-  }
+  if (!opts) return <PageLoading title="Trips" error={lookupError} />;
 
   function toApi(values: Record<string, string>) {
     return {

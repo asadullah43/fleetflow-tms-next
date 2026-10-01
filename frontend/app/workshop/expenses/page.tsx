@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { CrudPage } from '../../../components/CrudPage';
-import { AppShell } from '../../../components/AppShell';
+import { PageLoading } from '../../../components/PageLoading';
 import { useAuth } from '../../../lib/auth-context';
+import { useLookups } from '../../../lib/use-lookups';
 import { workshopExpensesClient, WorkshopExpenseDto } from '../../../lib/grpc/workshop';
 import { trucksClient } from '../../../lib/grpc/trucks';
 
@@ -11,16 +12,14 @@ type Opt = { value: string; label: string }[];
 
 export default function WorkshopExpensesPage() {
   const { token } = useAuth();
-  const [opts, setOpts] = useState<{ trucks: Opt } | null>(null);
-  const [categories, setCategories] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (!token) return;
-    Promise.all([trucksClient.list(token), workshopExpensesClient.list(token)]).then(([trucks, expenses]) => {
-      setOpts({ trucks: trucks.map((t) => ({ value: String(t.id), label: t.truckNumber })) });
-      setCategories(Array.from(new Set(expenses.map((e) => e.category).filter(Boolean))).sort());
-    });
-  }, [token]);
+  const { data: opts, error: lookupError } = useLookups<{ trucks: Opt; categories: string[] }>(async (token) => {
+    const [trucks, expenses] = await Promise.all([trucksClient.list(token), workshopExpensesClient.list(token)]);
+    return {
+      trucks: trucks.map((t) => ({ value: String(t.id), label: t.truckNumber })),
+      categories: Array.from(new Set(expenses.map((e) => e.category).filter(Boolean))).sort(),
+    };
+  }, []);
+  const categories = opts?.categories ?? [];
 
   const filterBar = useMemo(
     () => ({
@@ -37,13 +36,7 @@ export default function WorkshopExpensesPage() {
     [opts, categories],
   );
 
-  if (!opts) {
-    return (
-      <AppShell title="Expenses">
-        <div className="empty-state">Loading...</div>
-      </AppShell>
-    );
-  }
+  if (!opts) return <PageLoading title="Expenses" error={lookupError} />;
 
   return (
     <CrudPage<WorkshopExpenseDto>

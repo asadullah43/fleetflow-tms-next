@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { CrudPage } from '../../../components/CrudPage';
-import { AppShell } from '../../../components/AppShell';
+import { PageLoading } from '../../../components/PageLoading';
 import { StatusBadge } from '../../../components/StatusBadge';
 import { useAuth } from '../../../lib/auth-context';
+import { useLookups } from '../../../lib/use-lookups';
 import { useLanguage } from '../../../lib/language-context';
 import { localizedName } from '../../../lib/localized-name';
 import { employeesClient, leaveRequestsClient, LeaveRequestDto } from '../../../lib/grpc/hr';
@@ -20,12 +21,10 @@ const STATUSES = [
 export default function LeaveRequestsPage() {
   const { token } = useAuth();
   const { language } = useLanguage();
-  const [opts, setOpts] = useState<{ employees: Opt } | null>(null);
-
-  useEffect(() => {
-    if (!token) return;
-    employeesClient.list(token).then((emps) => setOpts({ employees: emps.map((e) => ({ value: String(e.id), label: localizedName(e, language) })) }));
-  }, [token, language]);
+  const { data: opts, error: lookupError } = useLookups<{ employees: Opt }>(async (token) => {
+    const emps = await employeesClient.list(token);
+    return { employees: emps.map((e) => ({ value: String(e.id), label: localizedName(e, language) })) };
+  }, [language]);
 
   const filterBar = useMemo(
     () => ({
@@ -43,13 +42,7 @@ export default function LeaveRequestsPage() {
     [opts],
   );
 
-  if (!opts) {
-    return (
-      <AppShell title="Leave Requests">
-        <div className="empty-state">Loading...</div>
-      </AppShell>
-    );
-  }
+  if (!opts) return <PageLoading title="Leave Requests" error={lookupError} />;
 
   return (
     <CrudPage<LeaveRequestDto>

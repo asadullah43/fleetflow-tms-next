@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { CrudPage } from '../../components/CrudPage';
-import { AppShell } from '../../components/AppShell';
+import { PageLoading } from '../../components/PageLoading';
 import { Modal } from '../../components/Modal';
 import { AssignmentHistoryTimeline } from '../../components/AssignmentHistoryTimeline';
 import { useAuth } from '../../lib/auth-context';
+import { useLookups } from '../../lib/use-lookups';
 import { useT, useLanguage } from '../../lib/language-context';
 import { localizedName, localizedJoinedName } from '../../lib/localized-name';
 import { assignmentsClient, AssignmentDto } from '../../lib/grpc/assignments';
@@ -16,18 +17,17 @@ export default function AssignmentsPage() {
   const { token } = useAuth();
   const t = useT();
   const { language } = useLanguage();
-  const [options, setOptions] = useState<{ trucks: { value: string; label: string }[]; drivers: { value: string; label: string }[] } | null>(null);
   const [history, setHistory] = useState<{ truckLabel: string; rows: AssignmentDto[] } | null>(null);
-
-  useEffect(() => {
-    if (!token) return;
-    Promise.all([trucksClient.list(token), driversClient.list(token)]).then(([trucks, drivers]) => {
-      setOptions({
+  const { data: options, error: lookupError } = useLookups<{ trucks: { value: string; label: string }[]; drivers: { value: string; label: string }[] }>(
+    async (token) => {
+      const [trucks, drivers] = await Promise.all([trucksClient.list(token), driversClient.list(token)]);
+      return {
         trucks: trucks.map((truck) => ({ value: String(truck.id), label: truck.truckNumber })),
         drivers: drivers.map((d) => ({ value: String(d.id), label: localizedName(d, language) })),
-      });
-    });
-  }, [token, language]);
+      };
+    },
+    [language],
+  );
 
   async function viewHistory(row: AssignmentDto) {
     if (!token) return;
@@ -36,13 +36,7 @@ export default function AssignmentsPage() {
     setHistory({ truckLabel: row.truckNumber ?? `Truck #${row.truckId}`, rows });
   }
 
-  if (!options) {
-    return (
-      <AppShell title="Truck-Driver Assignments">
-        <div className="empty-state">Loading...</div>
-      </AppShell>
-    );
-  }
+  if (!options) return <PageLoading title="Truck-Driver Assignments" error={lookupError} />;
 
   return (
     <>
