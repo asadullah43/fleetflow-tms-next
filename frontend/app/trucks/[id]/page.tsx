@@ -9,6 +9,7 @@ import { StatusBadge } from '../../../components/StatusBadge';
 import { Icon } from '../../../components/icons';
 import { DateField } from '../../../components/DateField';
 import { useAuth } from '../../../lib/auth-context';
+import { useT } from '../../../lib/language-context';
 import { trucksClient, TruckDto } from '../../../lib/grpc/trucks';
 import { driversClient, DriverDto } from '../../../lib/grpc/drivers';
 import { assignmentsClient, AssignmentDto } from '../../../lib/grpc/assignments';
@@ -19,6 +20,7 @@ export default function TruckDetailPage() {
   const params = useParams<{ id: string }>();
   const truckId = Number(params.id);
   const { token } = useAuth();
+  const t = useT();
 
   const [truck, setTruck] = useState<TruckDto | null>(null);
   const [drivers, setDrivers] = useState<DriverDto[]>([]);
@@ -128,7 +130,7 @@ export default function TruckDetailPage() {
   return (
     <AppShell title={truck.truckNumber}>
       <Link href="/trucks" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-muted)', marginBottom: 14, textDecoration: 'none' }}>
-        ← Back to Trucks
+        {t('← Back to Trucks')}
       </Link>
 
       {/* Hero */}
@@ -153,9 +155,9 @@ export default function TruckDetailPage() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap' }}>
-            <HeroStat label="Current driver" value={current?.driverName ?? 'Unassigned'} />
-            <HeroStat label="Assignment history" value={String(history.length)} />
-            <HeroStat label="Status" value={<StatusBadge status={truck.status} />} />
+            <HeroStat label={t('Current driver')} value={current?.driverName ?? t('Unassigned')} />
+            <HeroStat label={t('Assignment history')} value={String(history.length)} />
+            <HeroStat label={t('Status')} value={<StatusBadge status={truck.status} />} />
           </div>
         </div>
       </div>
@@ -172,26 +174,26 @@ export default function TruckDetailPage() {
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 700, fontSize: 15.5 }}>{current.driverName}</div>
                   <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
-                    Current since {current.startDate.slice(0, 10)}
-                    {!current.endDate && ' · Ongoing'}
+                    {t('Current since')} {current.startDate.slice(0, 10)}
+                    {!current.endDate && <> · {t('Ongoing')}</>}
                   </div>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="panel empty-state">No driver currently assigned.</div>
+            <div className="panel empty-state">{t('No driver currently assigned.')}</div>
           )}
 
           {/* Assign driver form */}
           <div className="panel" style={{ padding: 20 }}>
-            <h3 className="dash-panel-title">Assign a driver</h3>
-            <p className="dash-panel-sub">Start a new assignment for this truck.</p>
+            <h3 className="dash-panel-title">{t('Assign a driver')}</h3>
+            <p className="dash-panel-sub">{t('Start a new assignment for this truck.')}</p>
             {formError && <div className="error-banner">{formError}</div>}
             <div className="field">
-              <label>Driver</label>
+              <label>{t('Driver')}</label>
               <select value={form.driverId} onChange={(e) => setForm({ ...form, driverId: e.target.value })}>
                 <option value="" disabled>
-                  Select...
+                  {t('Select...')}
                 </option>
                 {driverOptions.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -201,11 +203,11 @@ export default function TruckDetailPage() {
               </select>
             </div>
             <div className="field">
-              <label>Start date</label>
+              <label>{t('Start date')}</label>
               <DateField value={form.startDate} onChange={(v) => setForm({ ...form, startDate: v })} />
             </div>
             <div className="field">
-              <label>End date (leave blank if ongoing)</label>
+              <label>{t('End date (leave blank if ongoing)')}</label>
               <DateField value={form.endDate} onChange={(v) => setForm({ ...form, endDate: v })} />
             </div>
             <button
@@ -214,16 +216,16 @@ export default function TruckDetailPage() {
               disabled={saving || !form.driverId || !form.startDate}
               onClick={assignDriver}
             >
-              {saving ? 'Saving...' : 'Assign driver'}
+              {saving ? t('Saving...') : t('Assign driver')}
             </button>
           </div>
         </div>
 
         <div className="panel" style={{ padding: 20 }}>
-          <h3 className="dash-panel-title">Assignment history</h3>
-          <p className="dash-panel-sub">Every driver this truck has been assigned to, most recent first.</p>
+          <h3 className="dash-panel-title">{t('Assignment history')}</h3>
+          <p className="dash-panel-sub">{t('Every driver this truck has been assigned to, most recent first.')}</p>
           {history.length === 0 ? (
-            <div style={{ color: 'var(--text-faint)', fontSize: 13 }}>No assignments yet.</div>
+            <div style={{ color: 'var(--text-faint)', fontSize: 13 }}>{t('No assignments yet.')}</div>
           ) : (
             <div>
               {history.map((a, i) => {
@@ -248,18 +250,18 @@ export default function TruckDetailPage() {
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                         <div style={{ fontWeight: 600, fontSize: 13.5 }}>{a.driverName ?? `Driver #${a.driverId}`}</div>
                         <span className={`badge badge-${state === 'active' ? 'success' : state === 'upcoming' ? 'warning' : 'neutral'}`}>
-                          {STATE_LABEL[state]}
+                          {t(STATE_LABEL[state])}
                         </span>
                       </div>
                       <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 2 }}>
-                        {a.startDate.slice(0, 10)} → {a.endDate ? a.endDate.slice(0, 10) : 'Ongoing'}
+                        {a.startDate.slice(0, 10)} → {a.endDate ? a.endDate.slice(0, 10) : t('Ongoing')}
                       </div>
                       <div style={{ display: 'flex', gap: 14, marginTop: 6 }}>
-                        <button className="row-action" onClick={() => openEdit(a)} title="Edit">
-                          <Icon.pencil size={14} /> Edit
+                        <button className="row-action" onClick={() => openEdit(a)} title={t('Edit')}>
+                          <Icon.pencil size={14} /> {t('Edit')}
                         </button>
-                        <button className="row-action danger" onClick={() => unassign(a)} title="Remove">
-                          <Icon.trash size={14} /> Remove
+                        <button className="row-action danger" onClick={() => unassign(a)} title={t('Remove')}>
+                          <Icon.trash size={14} /> {t('Remove')}
                         </button>
                       </div>
                     </div>
@@ -273,33 +275,33 @@ export default function TruckDetailPage() {
 
       {/* Truck details */}
       <div className="panel" style={{ padding: 20 }}>
-        <h3 className="dash-panel-title">Truck details</h3>
+        <h3 className="dash-panel-title">{t('Truck details')}</h3>
         <div className="stat-grid" style={{ marginTop: 14, marginBottom: 0 }}>
-          <InfoTile label="Truck number" value={truck.truckNumber} />
-          <InfoTile label="Type" value={truck.truckType || '—'} />
-          <InfoTile label="Status" value={<StatusBadge status={truck.status} />} />
-          <InfoTile label="Assignment history" value={String(history.length)} />
+          <InfoTile label={t('Truck number')} value={truck.truckNumber} />
+          <InfoTile label={t('Type')} value={truck.truckType || '—'} />
+          <InfoTile label={t('Status')} value={<StatusBadge status={truck.status} />} />
+          <InfoTile label={t('Assignment history')} value={String(history.length)} />
         </div>
       </div>
 
       {editModal && (
         <Modal
-          title="Edit assignment"
+          title={t('Edit assignment')}
           onClose={() => setEditModal(null)}
           footer={
             <>
               <button className="btn btn-secondary" onClick={() => setEditModal(null)}>
-                Cancel
+                {t('Cancel')}
               </button>
               <button className="btn btn-primary" onClick={saveEdit} disabled={editSaving}>
-                {editSaving ? 'Saving...' : 'Save'}
+                {editSaving ? t('Saving...') : t('Save')}
               </button>
             </>
           }
         >
           {editError && <div className="error-banner">{editError}</div>}
           <div className="field">
-            <label>Driver</label>
+            <label>{t('Driver')}</label>
             <select value={editForm.driverId} onChange={(e) => setEditForm({ ...editForm, driverId: e.target.value })}>
               {driverOptions.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -309,11 +311,11 @@ export default function TruckDetailPage() {
             </select>
           </div>
           <div className="field">
-            <label>Start date</label>
+            <label>{t('Start date')}</label>
             <DateField value={editForm.startDate} onChange={(v) => setEditForm({ ...editForm, startDate: v })} />
           </div>
           <div className="field">
-            <label>End date (leave blank if ongoing)</label>
+            <label>{t('End date (leave blank if ongoing)')}</label>
             <DateField value={editForm.endDate} onChange={(v) => setEditForm({ ...editForm, endDate: v })} />
           </div>
         </Modal>

@@ -6,6 +6,7 @@ import { Modal } from '../../components/Modal';
 import { DateField } from '../../components/DateField';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useAuth } from '../../lib/auth-context';
+import { useT } from '../../lib/language-context';
 import { invoicesClient, InvoiceDto, InvoiceLineItemDto } from '../../lib/grpc/invoices';
 import { customersClient } from '../../lib/grpc/customers';
 import type { RpcError } from '../../lib/grpc/client';
@@ -16,6 +17,7 @@ function emptyLine(): InvoiceLineItemDto {
 
 export default function InvoicesPage() {
   const { token } = useAuth();
+  const t = useT();
   const [invoices, setInvoices] = useState<InvoiceDto[] | null>(null);
   const [customers, setCustomers] = useState<{ value: string; label: string }[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -120,25 +122,25 @@ export default function InvoicesPage() {
       <div className="toolbar">
         <div />
         <button className="btn btn-primary" onClick={openCreate} disabled={!customers}>
-          + Invoice
+          {t('+ Invoice')}
         </button>
       </div>
 
       <div className="panel">
         {invoices === null ? (
-          <div className="empty-state">Loading...</div>
+          <div className="empty-state">{t('Loading...')}</div>
         ) : invoices.length === 0 ? (
-          <div className="empty-state">No invoices yet.</div>
+          <div className="empty-state">{t('No invoices yet.')}</div>
         ) : (
           <table className="data-table">
             <thead>
               <tr>
-                <th>Invoice #</th>
-                <th>Customer</th>
-                <th>Due</th>
-                <th style={{ textAlign: 'right' }}>Total</th>
-                <th>Status</th>
-                <th>ZATCA</th>
+                <th>{t('Invoice #')}</th>
+                <th>{t('Customer')}</th>
+                <th>{t('Due')}</th>
+                <th style={{ textAlign: 'right' }}>{t('Total')}</th>
+                <th>{t('Status')}</th>
+                <th>{t('ZATCA')}</th>
                 <th />
               </tr>
             </thead>
@@ -164,7 +166,7 @@ export default function InvoicesPage() {
                   <td>
                     <div className="row-actions">
                       <button className="row-action danger" onClick={() => remove(inv)}>
-                        Delete
+                        {t('Delete')}
                       </button>
                     </div>
                   </td>
@@ -177,25 +179,25 @@ export default function InvoicesPage() {
 
       {modal?.mode === 'create' && customers && (
         <Modal
-          title="New invoice"
+          title={t('New invoice')}
           onClose={() => setModal(null)}
           footer={
             <>
               <button className="btn btn-secondary" onClick={() => setModal(null)}>
-                Cancel
+                {t('Cancel')}
               </button>
               <button className="btn btn-primary" onClick={submit} disabled={saving}>
-                {saving ? 'Saving...' : 'Create invoice'}
+                {saving ? t('Saving...') : t('Create invoice')}
               </button>
             </>
           }
         >
           {formError && <div className="error-banner">{formError}</div>}
           <div className="field">
-            <label>Customer</label>
+            <label>{t('Customer')}</label>
             <select value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
               <option value="" disabled>
-                Select...
+                {t('Select...')}
               </option>
               {customers.map((c) => (
                 <option key={c.value} value={c.value}>
@@ -206,41 +208,41 @@ export default function InvoicesPage() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
             <div className="field">
-              <label>From date</label>
+              <label>{t('From date')}</label>
               <DateField value={fromDate} onChange={setFromDate} />
             </div>
             <div className="field">
-              <label>To date</label>
+              <label>{t('To date')}</label>
               <DateField value={toDate} onChange={setToDate} />
             </div>
             <div className="field">
-              <label>Due date</label>
+              <label>{t('Due date')}</label>
               <DateField value={dueDate} onChange={setDueDate} />
             </div>
           </div>
           <div className="field">
             <label>
               <input type="checkbox" checked={vatEnabled} onChange={(e) => setVatEnabled(e.target.checked)} style={{ width: 'auto', marginRight: 8 }} />
-              Apply 15% VAT
+              {t('Apply 15% VAT')}
             </label>
           </div>
 
           <div className="field">
-            <label>Line items</label>
+            <label>{t('Line items')}</label>
             {lines.map((line, i) => (
               <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: 8, marginBottom: 8 }}>
                 <input
-                  placeholder="Description"
+                  placeholder={t('Description')}
                   value={line.description}
                   onChange={(e) => setLines(lines.map((l, j) => (j === i ? { ...l, description: e.target.value } : l)))}
                 />
                 <input
-                  placeholder="Qty"
+                  placeholder={t('Qty')}
                   value={line.quantity}
                   onChange={(e) => setLines(lines.map((l, j) => (j === i ? { ...l, quantity: e.target.value } : l)))}
                 />
                 <input
-                  placeholder="Rate"
+                  placeholder={t('Rate')}
                   value={line.rate}
                   onChange={(e) => setLines(lines.map((l, j) => (j === i ? { ...l, rate: e.target.value } : l)))}
                 />
@@ -250,14 +252,21 @@ export default function InvoicesPage() {
               </div>
             ))}
             <button className="btn btn-secondary" type="button" onClick={() => setLines([...lines, emptyLine()])}>
-              + Add line
+              {t('+ Add line')}
             </button>
           </div>
 
           <div style={{ textAlign: 'right', fontSize: 13.5, color: 'var(--text-muted)' }}>
-            Subtotal: {subtotal.toFixed(2)} SAR
-            {vatEnabled && <> · VAT: {vatAmount.toFixed(2)} SAR</>}
-            <div style={{ fontWeight: 600, color: 'var(--text)', marginTop: 4 }}>Total: {(subtotal + vatAmount).toFixed(2)} SAR</div>
+            {t('Subtotal:')} {subtotal.toFixed(2)} SAR
+            {vatEnabled && (
+              <>
+                {' '}
+                · {t('VAT:')} {vatAmount.toFixed(2)} SAR
+              </>
+            )}
+            <div style={{ fontWeight: 600, color: 'var(--text)', marginTop: 4 }}>
+              {t('Total:')} {(subtotal + vatAmount).toFixed(2)} SAR
+            </div>
           </div>
         </Modal>
       )}
@@ -270,34 +279,39 @@ export default function InvoicesPage() {
             <>
               {modal.invoice.status !== 'PAID' && (
                 <button className="btn btn-secondary" onClick={() => markPaid(modal.invoice!)}>
-                  Mark as paid
+                  {t('Mark as paid')}
                 </button>
               )}
               {(!modal.invoice.zatcaStatus || modal.invoice.zatcaStatus === 'PENDING_SIGN') && (
                 <button className="btn btn-primary" onClick={() => submitToZatca(modal.invoice!)}>
-                  Submit to ZATCA
+                  {t('Submit to ZATCA')}
                 </button>
               )}
               <button className="btn btn-secondary" onClick={() => setModal(null)}>
-                Close
+                {t('Close')}
               </button>
             </>
           }
         >
           <div style={{ marginBottom: 16 }}>
-            <div>Customer: {modal.invoice.customerName ?? modal.invoice.customerId}</div>
-            <div>Due: {modal.invoice.dueDate?.slice(0, 10)}</div>
             <div>
-              Status: <StatusBadge status={modal.invoice.status} /> &nbsp; ZATCA: <StatusBadge status={modal.invoice.zatcaStatus ?? 'PENDING_SIGN'} />
+              {t('Customer:')} {modal.invoice.customerName ?? modal.invoice.customerId}
+            </div>
+            <div>
+              {t('Due:')} {modal.invoice.dueDate?.slice(0, 10)}
+            </div>
+            <div>
+              {t('Status:')} <StatusBadge status={modal.invoice.status} /> &nbsp; {t('ZATCA:')}{' '}
+              <StatusBadge status={modal.invoice.zatcaStatus ?? 'PENDING_SIGN'} />
             </div>
           </div>
           <table className="data-table" style={{ marginBottom: 16 }}>
             <thead>
               <tr>
-                <th>Description</th>
-                <th style={{ textAlign: 'right' }}>Qty</th>
-                <th style={{ textAlign: 'right' }}>Rate</th>
-                <th style={{ textAlign: 'right' }}>Amount</th>
+                <th>{t('Description')}</th>
+                <th style={{ textAlign: 'right' }}>{t('Qty')}</th>
+                <th style={{ textAlign: 'right' }}>{t('Rate')}</th>
+                <th style={{ textAlign: 'right' }}>{t('Amount')}</th>
               </tr>
             </thead>
             <tbody>
@@ -312,13 +326,19 @@ export default function InvoicesPage() {
             </tbody>
           </table>
           <div style={{ textAlign: 'right' }}>
-            <div>Subtotal: {modal.invoice.subtotal}</div>
-            <div>VAT: {modal.invoice.vatAmount}</div>
-            <div style={{ fontWeight: 600 }}>Total: {modal.invoice.total} {modal.invoice.currency}</div>
+            <div>
+              {t('Subtotal:')} {modal.invoice.subtotal}
+            </div>
+            <div>
+              {t('VAT:')} {modal.invoice.vatAmount}
+            </div>
+            <div style={{ fontWeight: 600 }}>
+              {t('Total:')} {modal.invoice.total} {modal.invoice.currency}
+            </div>
           </div>
           {modal.invoice.qrCode && (
             <div style={{ marginTop: 16, fontSize: 12, color: 'var(--text-muted)', wordBreak: 'break-all' }}>
-              ZATCA QR (base64 TLV): {modal.invoice.qrCode}
+              {t('ZATCA QR (base64 TLV):')} {modal.invoice.qrCode}
             </div>
           )}
         </Modal>

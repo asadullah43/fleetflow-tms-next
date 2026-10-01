@@ -6,12 +6,14 @@ import { AppShell } from '../../components/AppShell';
 import { Modal } from '../../components/Modal';
 import { AssignmentHistoryTimeline } from '../../components/AssignmentHistoryTimeline';
 import { useAuth } from '../../lib/auth-context';
+import { useT } from '../../lib/language-context';
 import { assignmentsClient, AssignmentDto } from '../../lib/grpc/assignments';
 import { trucksClient } from '../../lib/grpc/trucks';
 import { driversClient } from '../../lib/grpc/drivers';
 
 export default function AssignmentsPage() {
   const { token } = useAuth();
+  const t = useT();
   const [options, setOptions] = useState<{ trucks: { value: string; label: string }[]; drivers: { value: string; label: string }[] } | null>(null);
   const [history, setHistory] = useState<{ truckLabel: string; rows: AssignmentDto[] } | null>(null);
 
@@ -84,11 +86,11 @@ export default function AssignmentsPage() {
 
       {history && (
         <Modal
-          title={`Assignment history — ${history.truckLabel}`}
+          title={`${t('Assignment history')} — ${history.truckLabel}`}
           onClose={() => setHistory(null)}
           footer={
             <button className="btn btn-secondary" onClick={() => setHistory(null)}>
-              Close
+              {t('Close')}
             </button>
           }
         >

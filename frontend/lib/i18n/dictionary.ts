@@ -360,6 +360,62 @@ export const AR_STRINGS: Record<string, string> = {
   'Role:': 'الدور:',
   'Language:': 'اللغة:',
   None: 'لا يوجد',
+
+  // ── Invoices page ───────────────────────────────────────────
+  '+ Invoice': '+ فاتورة',
+  'No invoices yet.': 'لا توجد فواتير بعد.',
+  'Invoice #': 'رقم الفاتورة',
+  Due: 'الاستحقاق',
+  Total: 'الإجمالي',
+  'Create invoice': 'إنشاء فاتورة',
+  'From date': 'من تاريخ',
+  'To date': 'إلى تاريخ',
+  'Due date': 'تاريخ الاستحقاق',
+  'Apply 15% VAT': 'تطبيق ضريبة القيمة المضافة 15%',
+  'Line items': 'بنود الفاتورة',
+  '+ Add line': '+ إضافة بند',
+  'Subtotal:': 'المجموع الفرعي:',
+  'VAT:': 'الضريبة:',
+  'Total:': 'الإجمالي:',
+  'Mark as paid': 'تمييز كمدفوعة',
+  'Submit to ZATCA': 'إرسال إلى هيئة الزكاة والضريبة',
+  'Customer:': 'العميل:',
+  'Due:': 'الاستحقاق:',
+  'Status:': 'الحالة:',
+  'ZATCA:': 'هيئة الزكاة والضريبة:',
+  'ZATCA QR (base64 TLV):': 'رمز الاستجابة السريعة لهيئة الزكاة (TLV بترميز base64):',
+
+  // ── Roles page ────────────────────────────────────────────
+  '+ Role': '+ دور',
+  'No roles yet.': 'لا توجد أدوار بعد.',
+  'Modules with access': 'الوحدات التي لديها صلاحية وصول',
+  'Add role': 'إضافة دور',
+  'Role name': 'اسم الدور',
+  Permissions: 'الصلاحيات',
+  Module: 'الوحدة',
+  View: 'عرض',
+  Add: 'إضافة',
+
+  // ── Truck detail page ──────────────────────────────────────
+  '← Back to Trucks': '← العودة إلى الشاحنات',
+  'Current driver': 'السائق الحالي',
+  Unassigned: 'غير معيّن',
+  Ongoing: 'مستمر',
+  'No driver currently assigned.': 'لا يوجد سائق معيّن حاليًا.',
+  'Assign a driver': 'تعيين سائق',
+  'Start a new assignment for this truck.': 'ابدأ تعيينًا جديدًا لهذه الشاحنة.',
+  'Assign driver': 'تعيين السائق',
+  'Every driver this truck has been assigned to, most recent first.': 'كل سائق تم تعيينه لهذه الشاحنة، الأحدث أولًا.',
+  'No assignments yet.': 'لا توجد تعيينات بعد.',
+  'Current since': 'حالي منذ',
+  Upcoming: 'قادم',
+  Remove: 'إزالة',
+  'Truck details': 'تفاصيل الشاحنة',
+  'Edit assignment': 'تعديل التعيين',
+
+  // ── Roles page: formatModule() output (PERMISSION_MODULES) ─
+  Assignments: 'التعيينات',
+  Hr: 'الموارد البشرية',
 };
 
 /**

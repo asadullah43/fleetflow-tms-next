@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { AppShell } from '../../components/AppShell';
 import { Modal } from '../../components/Modal';
 import { useAuth } from '../../lib/auth-context';
+import { useT } from '../../lib/language-context';
 import { rolesClient, RoleDto, PermissionDto } from '../../lib/grpc/roles';
 import type { RpcError } from '../../lib/grpc/client';
 
@@ -18,6 +19,7 @@ function formatModule(module: string): string {
 
 export default function RolesPage() {
   const { token } = useAuth();
+  const t = useT();
   const [modules, setModules] = useState<string[] | null>(null);
   const [roles, setRoles] = useState<RoleDto[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -96,22 +98,22 @@ export default function RolesPage() {
       <div className="toolbar">
         <div />
         <button className="btn btn-primary" onClick={openCreate}>
-          + Role
+          {t('+ Role')}
         </button>
       </div>
 
       <div className="panel">
         {roles === null ? (
-          <div className="empty-state">Loading...</div>
+          <div className="empty-state">{t('Loading...')}</div>
         ) : roles.length === 0 ? (
-          <div className="empty-state">No roles yet.</div>
+          <div className="empty-state">{t('No roles yet.')}</div>
         ) : (
           <table className="data-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Modules with access</th>
+                <th>{t('Name')}</th>
+                <th>{t('Description')}</th>
+                <th>{t('Modules with access')}</th>
                 <th />
               </tr>
             </thead>
@@ -124,10 +126,10 @@ export default function RolesPage() {
                   <td>
                     <div className="row-actions">
                       <button className="row-action" onClick={() => openEdit(role)}>
-                        Edit
+                        {t('Edit')}
                       </button>
                       <button className="row-action danger" onClick={() => remove(role)}>
-                        Delete
+                        {t('Delete')}
                       </button>
                     </div>
                   </td>
@@ -140,44 +142,44 @@ export default function RolesPage() {
 
       {modal && (
         <Modal
-          title={modal.mode === 'create' ? 'Add role' : `Edit ${modal.role?.name}`}
+          title={modal.mode === 'create' ? t('Add role') : `${t('Edit')} ${modal.role?.name}`}
           onClose={() => setModal(null)}
           footer={
             <>
               <button className="btn btn-secondary" onClick={() => setModal(null)}>
-                Cancel
+                {t('Cancel')}
               </button>
               <button className="btn btn-primary" onClick={submit} disabled={saving}>
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? t('Saving...') : t('Save')}
               </button>
             </>
           }
         >
           {formError && <div className="error-banner">{formError}</div>}
           <div className="field">
-            <label>Role name</label>
+            <label>{t('Role name')}</label>
             <input value={name} onChange={(e) => setName(e.target.value)} required />
           </div>
           <div className="field">
-            <label>Description</label>
+            <label>{t('Description')}</label>
             <textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
           <div className="field">
-            <label>Permissions</label>
+            <label>{t('Permissions')}</label>
             <table className="data-table" style={{ fontSize: 12.5 }}>
               <thead>
                 <tr>
-                  <th>Module</th>
-                  <th style={{ textAlign: 'center' }}>View</th>
-                  <th style={{ textAlign: 'center' }}>Add</th>
-                  <th style={{ textAlign: 'center' }}>Edit</th>
-                  <th style={{ textAlign: 'center' }}>Delete</th>
+                  <th>{t('Module')}</th>
+                  <th style={{ textAlign: 'center' }}>{t('View')}</th>
+                  <th style={{ textAlign: 'center' }}>{t('Add')}</th>
+                  <th style={{ textAlign: 'center' }}>{t('Edit')}</th>
+                  <th style={{ textAlign: 'center' }}>{t('Delete')}</th>
                 </tr>
               </thead>
               <tbody>
                 {permissions.map((p) => (
                   <tr key={p.module}>
-                    <td>{formatModule(p.module)}</td>
+                    <td>{t(formatModule(p.module))}</td>
                     {(['canView', 'canAdd', 'canEdit', 'canDelete'] as const).map((field) => (
                       <td key={field} style={{ textAlign: 'center' }}>
                         <input type="checkbox" checked={p[field]} onChange={() => togglePerm(p.module, field)} />
