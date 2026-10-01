@@ -22,10 +22,15 @@ import { AppProviders } from '../providers/AppProviders';
 // Plex Mono is used for tabular data (plate numbers, amounts, dates).
 
 // The tab title ("<page> · <company>") and the tab icon (the company logo)
-// come from features/branding/BrandingEffects.tsx; this is only the fallback icon.
+// are both rendered by features/branding/BrandingEffects.tsx as plain JSX
+// (React hoists <title>/<link> into <head> itself). Deliberately no `icons`
+// here: Next's own metadata-icon reconciler would then be managing the same
+// <link rel="icon"> node as BrandingEffects, and the two fighting over one
+// node during a client-side route change is what used to crash navigation
+// (a "Cannot read properties of null (reading 'removeChild')" error that
+// aborted the render, leaving the page needing a second click to catch up).
 export const metadata: Metadata = {
   description: 'Transport Management System',
-  icons: { icon: '/icon.svg' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
