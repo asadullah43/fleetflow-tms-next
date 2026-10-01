@@ -30,6 +30,15 @@ export class AppError extends Error {
     this.errorFilter = params.errorFilter;
     this.errorDescription = params.errorDescription;
     this.statusCode = params.statusCode ?? 500;
+
+    // The client only ever sees `errorDescription` (a safe, generic
+    // message) — log the real underlying cause server-side so a 500
+    // is actually diagnosable from `docker compose logs api` instead
+    // of a dead end.
+    if (this.statusCode >= 500) {
+      // eslint-disable-next-line no-console
+      console.error(`[AppError ${this.errorCode}]`, params.cause ?? this);
+    }
   }
 
   toResponse(): ErrorResponse {
