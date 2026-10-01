@@ -8,10 +8,10 @@ function fail(code: { code: string; filter: any; description: string }, statusCo
   throw new AppError({ errorCode: code.code, errorFilter: code.filter, errorDescription: code.description, statusCode, cause: cause as Error });
 }
 
-const INVOICE_INCLUDE = { customer: { select: { name: true } }, lineItems: true } as const;
+const INVOICE_INCLUDE = { customer: { select: { name: true, nameAr: true } }, lineItems: true } as const;
 
 function mapOut(row: any) {
-  return { ...row, customerName: row.customer?.name };
+  return { ...row, customerName: row.customer?.name, customerNameAr: row.customer?.nameAr };
 }
 
 async function generateInvoiceNumber(): Promise<string> {

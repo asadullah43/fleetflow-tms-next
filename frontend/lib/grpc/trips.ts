@@ -23,6 +23,12 @@ export interface TripDto {
   cargoTypeName?: string;
   truckNumber?: string;
   driverName?: string;
+  supplierNameAr?: string;
+  customerNameAr?: string;
+  pickupLocationNameAr?: string;
+  deliveryLocationNameAr?: string;
+  cargoTypeNameAr?: string;
+  driverNameAr?: string;
 }
 
 export const tripsClient = createCrudClient<TripDto>('fleetflow.trips.TripsService', {

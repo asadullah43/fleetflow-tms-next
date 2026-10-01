@@ -5,7 +5,7 @@ import { CrudPage } from '../../components/CrudPage';
 import { AppShell } from '../../components/AppShell';
 import { useAuth } from '../../lib/auth-context';
 import { useLanguage } from '../../lib/language-context';
-import { localizedName } from '../../lib/localized-name';
+import { localizedName, localizedJoinedName } from '../../lib/localized-name';
 import { supplierPaymentsClient, SupplierPaymentDto } from '../../lib/grpc/supplier-payments';
 import { suppliersClient } from '../../lib/grpc/suppliers';
 
@@ -37,7 +37,7 @@ export default function SupplierPaymentsPage() {
       addLabel="Payment"
       emptyLabel="No supplier payments recorded yet."
       columns={[
-        { header: 'Supplier', render: (r) => r.supplierName ?? r.supplierId },
+        { header: 'Supplier', render: (r) => localizedJoinedName(r.supplierName, r.supplierNameAr, language) ?? r.supplierId },
         { header: 'Amount', render: (r) => `${r.amount} ${r.currency}`, align: 'right' },
         { header: 'Date', render: (r) => r.paymentDate?.slice(0, 10) },
         { header: 'Description', render: (r) => r.description ?? '—' },

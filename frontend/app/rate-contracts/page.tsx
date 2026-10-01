@@ -5,7 +5,7 @@ import { CrudPage } from '../../components/CrudPage';
 import { AppShell } from '../../components/AppShell';
 import { useAuth } from '../../lib/auth-context';
 import { useLanguage } from '../../lib/language-context';
-import { localizedName } from '../../lib/localized-name';
+import { localizedName, localizedJoinedName } from '../../lib/localized-name';
 import { rateContractsClient, RateContractDto } from '../../lib/grpc/rate-contracts';
 import { customersClient } from '../../lib/grpc/customers';
 import { locationsClient } from '../../lib/grpc/locations';
@@ -56,9 +56,13 @@ export default function RateContractsPage() {
       searchPlaceholder="Customer, route, or cargo"
       emptyLabel="No negotiated rates yet."
       columns={[
-        { header: 'Customer', render: (r) => r.customerName ?? r.customerId },
-        { header: 'Route', render: (r) => `${r.pickupLocationName ?? r.pickupLocationId} → ${r.deliveryLocationName ?? r.deliveryLocationId}` },
-        { header: 'Cargo', render: (r) => r.cargoTypeName ?? r.cargoTypeId },
+        { header: 'Customer', render: (r) => localizedJoinedName(r.customerName, r.customerNameAr, language) ?? r.customerId },
+        {
+          header: 'Route',
+          render: (r) =>
+            `${localizedJoinedName(r.pickupLocationName, r.pickupLocationNameAr, language) ?? r.pickupLocationId} → ${localizedJoinedName(r.deliveryLocationName, r.deliveryLocationNameAr, language) ?? r.deliveryLocationId}`,
+        },
+        { header: 'Cargo', render: (r) => localizedJoinedName(r.cargoTypeName, r.cargoTypeNameAr, language) ?? r.cargoTypeId },
         { header: 'Rate', render: (r) => `${r.rate} ${r.currency}`, align: 'right' },
       ]}
       fetchAll={() => rateContractsClient.list(token!)}

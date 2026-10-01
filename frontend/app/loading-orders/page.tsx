@@ -5,7 +5,7 @@ import { AppShell } from '../../components/AppShell';
 import { Icon } from '../../components/icons';
 import { useAuth } from '../../lib/auth-context';
 import { useLanguage } from '../../lib/language-context';
-import { localizedName } from '../../lib/localized-name';
+import { localizedName, localizedJoinedName } from '../../lib/localized-name';
 import { loadingOrdersClient, LoadingOrderBatchDto } from '../../lib/grpc/loading-orders';
 import { locationsClient } from '../../lib/grpc/locations';
 import { customersClient } from '../../lib/grpc/customers';
@@ -228,10 +228,10 @@ export default function LoadingOrdersPage() {
               {batches.map((b) => (
                 <tr key={b.batchId}>
                   <td className="mono">{b.quantity > 1 ? `${b.firstSerialNumber} - ${b.lastSerialNumber}` : b.firstSerialNumber}</td>
-                  <td>{b.pickupLocationName}</td>
-                  <td>{b.deliveryLocationName}</td>
-                  <td>{b.customerName}</td>
-                  <td>{b.cargoTypeName}</td>
+                  <td>{localizedJoinedName(b.pickupLocationName, b.pickupLocationNameAr, language)}</td>
+                  <td>{localizedJoinedName(b.deliveryLocationName, b.deliveryLocationNameAr, language)}</td>
+                  <td>{localizedJoinedName(b.customerName, b.customerNameAr, language)}</td>
+                  <td>{localizedJoinedName(b.cargoTypeName, b.cargoTypeNameAr, language)}</td>
                   <td style={{ textAlign: 'right', fontWeight: 700 }}>{b.quantity}</td>
                   <td>{new Date(b.createdAt).toLocaleDateString()}</td>
                   <td>

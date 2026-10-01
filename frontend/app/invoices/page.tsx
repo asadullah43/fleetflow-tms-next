@@ -7,7 +7,7 @@ import { DateField } from '../../components/DateField';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useAuth } from '../../lib/auth-context';
 import { useT, useLanguage } from '../../lib/language-context';
-import { localizedName } from '../../lib/localized-name';
+import { localizedName, localizedJoinedName } from '../../lib/localized-name';
 import { invoicesClient, InvoiceDto, InvoiceLineItemDto } from '../../lib/grpc/invoices';
 import { customersClient } from '../../lib/grpc/customers';
 import type { RpcError } from '../../lib/grpc/client';
@@ -154,7 +154,7 @@ export default function InvoicesPage() {
                       <span className="mono">{inv.invoiceNumber}</span>
                     </button>
                   </td>
-                  <td>{inv.customerName ?? inv.customerId}</td>
+                  <td>{localizedJoinedName(inv.customerName, inv.customerNameAr, language) ?? inv.customerId}</td>
                   <td>{inv.dueDate?.slice(0, 10)}</td>
                   <td style={{ textAlign: 'right' }} className="mono">
                     {inv.total} {inv.currency}
@@ -297,7 +297,7 @@ export default function InvoicesPage() {
         >
           <div style={{ marginBottom: 16 }}>
             <div>
-              {t('Customer:')} {modal.invoice.customerName ?? modal.invoice.customerId}
+              {t('Customer:')} {localizedJoinedName(modal.invoice.customerName, modal.invoice.customerNameAr, language) ?? modal.invoice.customerId}
             </div>
             <div>
               {t('Due:')} {modal.invoice.dueDate?.slice(0, 10)}

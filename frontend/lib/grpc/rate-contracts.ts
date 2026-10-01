@@ -16,6 +16,10 @@ export interface RateContractDto {
   pickupLocationName?: string;
   deliveryLocationName?: string;
   cargoTypeName?: string;
+  customerNameAr?: string;
+  pickupLocationNameAr?: string;
+  deliveryLocationNameAr?: string;
+  cargoTypeNameAr?: string;
 }
 
 export const rateContractsClient = createCrudClient<RateContractDto>('fleetflow.ratecontracts.RateContractsService', {

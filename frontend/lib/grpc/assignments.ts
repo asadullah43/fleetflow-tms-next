@@ -11,6 +11,7 @@ export interface AssignmentDto {
   endDate?: string;
   truckNumber?: string;
   driverName?: string;
+  driverNameAr?: string;
 }
 
 export const assignmentsClient = createCrudClient<AssignmentDto>('fleetflow.assignments.AssignmentsService', {

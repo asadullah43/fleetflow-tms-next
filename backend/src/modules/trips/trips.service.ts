@@ -3,13 +3,13 @@ import { AppError } from '../../common/errors/app-error.js';
 import { ErrorCode } from '../../common/errors/error-codes.js';
 
 const INCLUDE = {
-  supplier: { select: { name: true } },
-  customer: { select: { name: true } },
-  pickupLocation: { select: { name: true } },
-  deliveryLocation: { select: { name: true } },
-  cargoType: { select: { name: true } },
+  supplier: { select: { name: true, nameAr: true } },
+  customer: { select: { name: true, nameAr: true } },
+  pickupLocation: { select: { name: true, nameAr: true } },
+  deliveryLocation: { select: { name: true, nameAr: true } },
+  cargoType: { select: { name: true, nameAr: true } },
   truck: { select: { truckNumber: true } },
-  driver: { select: { name: true } },
+  driver: { select: { name: true, nameAr: true } },
 } as const;
 
 function mapOut(row: any) {
@@ -33,6 +33,12 @@ function mapOut(row: any) {
     cargoTypeName: row.cargoType?.name,
     truckNumber: row.truck?.truckNumber,
     driverName: row.driver?.name,
+    supplierNameAr: row.supplier?.nameAr,
+    customerNameAr: row.customer?.nameAr,
+    pickupLocationNameAr: row.pickupLocation?.nameAr,
+    deliveryLocationNameAr: row.deliveryLocation?.nameAr,
+    cargoTypeNameAr: row.cargoType?.nameAr,
+    driverNameAr: row.driver?.nameAr,
   };
 }
 

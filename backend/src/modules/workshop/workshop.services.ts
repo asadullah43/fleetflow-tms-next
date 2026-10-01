@@ -11,9 +11,9 @@ async function generateOrderNumber(): Promise<string> {
   return `WO-${String(count + 1).padStart(5, '0')}`;
 }
 
-const WO_INCLUDE = { truck: { select: { truckNumber: true } }, driver: { select: { name: true } } } as const;
+const WO_INCLUDE = { truck: { select: { truckNumber: true } }, driver: { select: { name: true, nameAr: true } } } as const;
 function mapWorkOrder(row: any) {
-  return { ...row, truckNumber: row.truck?.truckNumber, driverName: row.driver?.name };
+  return { ...row, truckNumber: row.truck?.truckNumber, driverName: row.driver?.name, driverNameAr: row.driver?.nameAr };
 }
 
 export const workOrdersService = {
@@ -205,23 +205,23 @@ export const vehicleInspectionsService = {
   },
 };
 
-const SPARE_INCLUDE = { supplier: { select: { name: true } } } as const;
+const SPARE_INCLUDE = { supplier: { select: { name: true, nameAr: true } } } as const;
 export const sparePartsService = {
   async findAll() {
     const rows = await prisma.sparePart.findMany({ include: SPARE_INCLUDE, orderBy: { id: 'desc' } });
-    return rows.map((r: any) => ({ ...r, supplierName: r.supplier?.name }));
+    return rows.map((r: any) => ({ ...r, supplierName: r.supplier?.name, supplierNameAr: r.supplier?.nameAr }));
   },
   async findOne(id: number) {
     const row = await prisma.sparePart.findUnique({ where: { id }, include: SPARE_INCLUDE });
     if (!row) fail(ErrorCode.WKS_SPK_NOT_FOUND, 404);
-    return { ...row, supplierName: (row as any).supplier?.name };
+    return { ...row, supplierName: (row as any).supplier?.name, supplierNameAr: (row as any).supplier?.nameAr };
   },
   async create(dto: Record<string, any>) {
     const { buildLocalizedWriteData } = await import('../../common/localization/language.util.js');
     try {
       const data = buildLocalizedWriteData(dto, true) as any;
       const row = await prisma.sparePart.create({ data, include: SPARE_INCLUDE });
-      return { ...row, supplierName: (row as any).supplier?.name };
+      return { ...row, supplierName: (row as any).supplier?.name, supplierNameAr: (row as any).supplier?.nameAr };
     } catch (error) {
       fail(ErrorCode.WKS_SPK_CREATE_FAILED, 500, error);
     }
@@ -231,7 +231,7 @@ export const sparePartsService = {
     await this.findOne(id);
     try {
       const row = await prisma.sparePart.update({ where: { id }, data: buildLocalizedWriteData(dto, false) as any, include: SPARE_INCLUDE });
-      return { ...row, supplierName: (row as any).supplier?.name };
+      return { ...row, supplierName: (row as any).supplier?.name, supplierNameAr: (row as any).supplier?.nameAr };
     } catch (error) {
       fail(ErrorCode.WKS_SPK_UPDATE_FAILED, 500, error);
     }

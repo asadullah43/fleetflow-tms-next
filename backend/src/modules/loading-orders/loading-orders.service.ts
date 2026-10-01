@@ -3,10 +3,10 @@ import { AppError } from '../../common/errors/app-error.js';
 import { ErrorCode } from '../../common/errors/error-codes.js';
 
 const INCLUDE = {
-  pickupLocation: { select: { name: true } },
-  deliveryLocation: { select: { name: true } },
-  customer: { select: { name: true } },
-  cargoType: { select: { name: true } },
+  pickupLocation: { select: { name: true, nameAr: true } },
+  deliveryLocation: { select: { name: true, nameAr: true } },
+  customer: { select: { name: true, nameAr: true } },
+  cargoType: { select: { name: true, nameAr: true } },
 } as const;
 
 function mapOut(row: any) {
@@ -23,6 +23,10 @@ function mapOut(row: any) {
     deliveryLocationName: row.deliveryLocation?.name,
     customerName: row.customer?.name,
     cargoTypeName: row.cargoType?.name,
+    pickupLocationNameAr: row.pickupLocation?.nameAr,
+    deliveryLocationNameAr: row.deliveryLocation?.nameAr,
+    customerNameAr: row.customer?.nameAr,
+    cargoTypeNameAr: row.cargoType?.nameAr,
   };
 }
 
@@ -58,6 +62,10 @@ export const loadingOrdersService = {
       deliveryLocationName: string;
       customerName: string;
       cargoTypeName: string;
+      pickupLocationNameAr: string;
+      deliveryLocationNameAr: string;
+      customerNameAr: string;
+      cargoTypeNameAr: string;
       createdAt: string;
     }
 
@@ -75,6 +83,10 @@ export const loadingOrdersService = {
           deliveryLocationName: mapped.deliveryLocationName ?? '',
           customerName: mapped.customerName ?? '',
           cargoTypeName: mapped.cargoTypeName ?? '',
+          pickupLocationNameAr: mapped.pickupLocationNameAr ?? '',
+          deliveryLocationNameAr: mapped.deliveryLocationNameAr ?? '',
+          customerNameAr: mapped.customerNameAr ?? '',
+          cargoTypeNameAr: mapped.cargoTypeNameAr ?? '',
           createdAt: mapped.createdAt,
         });
       } else {

@@ -18,6 +18,10 @@ export interface LoadingOrderDto {
   deliveryLocationName?: string;
   customerName?: string;
   cargoTypeName?: string;
+  pickupLocationNameAr?: string;
+  deliveryLocationNameAr?: string;
+  customerNameAr?: string;
+  cargoTypeNameAr?: string;
 }
 
 export interface LoadingOrderBatchDto {
@@ -29,6 +33,10 @@ export interface LoadingOrderBatchDto {
   deliveryLocationName: string;
   customerName: string;
   cargoTypeName: string;
+  pickupLocationNameAr?: string;
+  deliveryLocationNameAr?: string;
+  customerNameAr?: string;
+  cargoTypeNameAr?: string;
   createdAt: string;
 }
 

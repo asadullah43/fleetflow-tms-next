@@ -36,6 +36,7 @@ message WorkOrder {
   optional string notes = 18;
   optional string truck_number = 19;
   optional string driver_name = 20;
+  optional string driver_name_ar = 21;
 }
 message WorkOrderList { repeated WorkOrder items = 1; }
 message CreateWorkOrderRequest {
@@ -184,6 +185,7 @@ message SparePart {
   optional int32 supplier_id = 9;
   string status = 10;
   optional string supplier_name = 11;
+  optional string supplier_name_ar = 12;
 }
 message SparePartList { repeated SparePart items = 1; }
 message CreateSparePartRequest {

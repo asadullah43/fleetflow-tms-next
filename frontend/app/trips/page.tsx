@@ -5,7 +5,7 @@ import { CrudPage } from '../../components/CrudPage';
 import { AppShell } from '../../components/AppShell';
 import { useAuth } from '../../lib/auth-context';
 import { useLanguage } from '../../lib/language-context';
-import { localizedName } from '../../lib/localized-name';
+import { localizedName, localizedJoinedName } from '../../lib/localized-name';
 import { tripsClient, TripDto } from '../../lib/grpc/trips';
 import { customersClient } from '../../lib/grpc/customers';
 import { locationsClient } from '../../lib/grpc/locations';
@@ -89,7 +89,7 @@ export default function TripsPage() {
       const assignment = value ? currentAssignment(assignments, Number(value)) : undefined;
       return {
         driverId: assignment ? String(assignment.driverId) : '',
-        driverName: assignment?.driverName ?? (value ? 'No driver currently assigned to this truck' : ''),
+        driverName: (assignment ? localizedJoinedName(assignment.driverName, assignment.driverNameAr, language) : undefined) ?? (value ? 'No driver currently assigned to this truck' : ''),
       };
     }
   }
@@ -125,8 +125,12 @@ export default function TripsPage() {
       onValuesChange={onValuesChange}
       columns={[
         { header: 'Transaction #', render: (r) => <span className="mono">{r.transactionNumber}</span> },
-        { header: 'Route', render: (r) => `${r.pickupLocationName ?? r.pickupLocationId} → ${r.deliveryLocationName ?? r.deliveryLocationId}` },
-        { header: 'Cargo', render: (r) => r.cargoTypeName ?? r.cargoTypeId },
+        {
+          header: 'Route',
+          render: (r) =>
+            `${localizedJoinedName(r.pickupLocationName, r.pickupLocationNameAr, language) ?? r.pickupLocationId} → ${localizedJoinedName(r.deliveryLocationName, r.deliveryLocationNameAr, language) ?? r.deliveryLocationId}`,
+        },
+        { header: 'Cargo', render: (r) => localizedJoinedName(r.cargoTypeName, r.cargoTypeNameAr, language) ?? r.cargoTypeId },
         { header: 'Qty', render: (r) => r.quantity, align: 'right' },
         { header: 'Truck', render: (r) => r.truckNumber ?? r.truckId },
         { header: 'Date', render: (r) => r.tripDate?.slice(0, 10) },
@@ -168,7 +172,7 @@ export default function TripsPage() {
         tripDate: r.tripDate?.slice(0, 10) ?? '',
         truckId: String(r.truckId),
         driverId: r.driverId ? String(r.driverId) : '',
-        driverName: r.driverName ?? '',
+        driverName: localizedJoinedName(r.driverName, r.driverNameAr, language) ?? '',
       })}
     />
   );

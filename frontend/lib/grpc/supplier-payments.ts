@@ -12,6 +12,7 @@ export interface SupplierPaymentDto {
   paymentDate: string;
   description?: string;
   supplierName?: string;
+  supplierNameAr?: string;
 }
 
 export const supplierPaymentsClient = createCrudClient<SupplierPaymentDto>('fleetflow.supplierpayments.SupplierPaymentsService', {

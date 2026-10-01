@@ -36,6 +36,13 @@ message Trip {
   optional string cargo_type_name = 24;
   optional string truck_number = 25;
   optional string driver_name = 26;
+
+  optional string supplier_name_ar = 30;
+  optional string customer_name_ar = 31;
+  optional string pickup_location_name_ar = 32;
+  optional string delivery_location_name_ar = 33;
+  optional string cargo_type_name_ar = 34;
+  optional string driver_name_ar = 35;
 }
 
 message TripList { repeated Trip items = 1; }

@@ -3,10 +3,10 @@ import { AppError } from '../../common/errors/app-error.js';
 import { ErrorCode } from '../../common/errors/error-codes.js';
 
 const INCLUDE = {
-  customer: { select: { name: true } },
-  pickupLocation: { select: { name: true } },
-  deliveryLocation: { select: { name: true } },
-  cargoType: { select: { name: true } },
+  customer: { select: { name: true, nameAr: true } },
+  pickupLocation: { select: { name: true, nameAr: true } },
+  deliveryLocation: { select: { name: true, nameAr: true } },
+  cargoType: { select: { name: true, nameAr: true } },
 } as const;
 
 function mapOut(row: any) {
@@ -22,6 +22,10 @@ function mapOut(row: any) {
     pickupLocationName: row.pickupLocation?.name,
     deliveryLocationName: row.deliveryLocation?.name,
     cargoTypeName: row.cargoType?.name,
+    customerNameAr: row.customer?.nameAr,
+    pickupLocationNameAr: row.pickupLocation?.nameAr,
+    deliveryLocationNameAr: row.deliveryLocation?.nameAr,
+    cargoTypeNameAr: row.cargoType?.nameAr,
   };
 }
 

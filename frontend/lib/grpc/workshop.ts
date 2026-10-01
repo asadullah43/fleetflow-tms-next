@@ -25,6 +25,7 @@ export interface WorkOrderDto {
   notes?: string;
   truckNumber?: string;
   driverName?: string;
+  driverNameAr?: string;
 }
 export const workOrdersClient = createCrudClient<WorkOrderDto>('fleetflow.workshop.WorkOrdersService', {
   ListRequest: ws.ListRequest,
@@ -93,6 +94,7 @@ export interface SparePartDto {
   supplierId?: number;
   status: string;
   supplierName?: string;
+  supplierNameAr?: string;
 }
 export const sparePartsClient = createCrudClient<SparePartDto>('fleetflow.workshop.SparePartsService', {
   ListRequest: ws.ListRequest,

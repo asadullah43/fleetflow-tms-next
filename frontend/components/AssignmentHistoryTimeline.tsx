@@ -2,7 +2,8 @@
 
 import type { AssignmentDto } from '../lib/grpc/assignments';
 import { assignmentState, STATE_BADGE, STATE_LABEL } from '../lib/assignment-state';
-import { useT } from '../lib/language-context';
+import { useT, useLanguage } from '../lib/language-context';
+import { localizedJoinedName } from '../lib/localized-name';
 
 /**
  * Read-only dot-and-line timeline of assignment history — the same visual
@@ -12,6 +13,7 @@ import { useT } from '../lib/language-context';
  */
 export function AssignmentHistoryTimeline({ history, subjectLabel = 'driver' }: { history: AssignmentDto[]; subjectLabel?: 'driver' | 'truck' }) {
   const t = useT();
+  const { language } = useLanguage();
   if (history.length === 0) {
     return <div style={{ color: 'var(--text-faint)', fontSize: 13 }}>{t('No assignment history yet.')}</div>;
   }
@@ -20,7 +22,8 @@ export function AssignmentHistoryTimeline({ history, subjectLabel = 'driver' }: 
     <div>
       {history.map((a, i) => {
         const state = assignmentState(a);
-        const subject = subjectLabel === 'truck' ? (a.truckNumber ?? `Truck #${a.truckId}`) : (a.driverName ?? `Driver #${a.driverId}`);
+        const subject =
+          subjectLabel === 'truck' ? (a.truckNumber ?? `Truck #${a.truckId}`) : (localizedJoinedName(a.driverName, a.driverNameAr, language) ?? `Driver #${a.driverId}`);
         return (
           <div key={a.id} style={{ display: 'flex', gap: 14 }}>
             <div style={{ width: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>

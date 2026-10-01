@@ -23,6 +23,7 @@ message SupplierPayment {
   optional string description = 6;
 
   optional string supplier_name = 20;
+  optional string supplier_name_ar = 21;
 }
 
 message SupplierPaymentList { repeated SupplierPayment items = 1; }

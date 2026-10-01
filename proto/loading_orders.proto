@@ -30,6 +30,11 @@ message LoadingOrder {
   optional string delivery_location_name = 21;
   optional string customer_name = 22;
   optional string cargo_type_name = 23;
+
+  optional string pickup_location_name_ar = 24;
+  optional string delivery_location_name_ar = 25;
+  optional string customer_name_ar = 26;
+  optional string cargo_type_name_ar = 27;
 }
 
 message LoadingOrderList { repeated LoadingOrder items = 1; }
@@ -44,6 +49,11 @@ message LoadingOrderBatch {
   string customer_name = 7;
   string cargo_type_name = 8;
   string created_at = 9;
+
+  optional string pickup_location_name_ar = 10;
+  optional string delivery_location_name_ar = 11;
+  optional string customer_name_ar = 12;
+  optional string cargo_type_name_ar = 13;
 }
 
 message LoadingOrderBatchList { repeated LoadingOrderBatch items = 1; }

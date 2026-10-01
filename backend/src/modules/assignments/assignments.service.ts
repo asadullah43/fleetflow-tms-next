@@ -2,7 +2,7 @@ import { prisma } from '../../lib/prisma.js';
 import { AppError } from '../../common/errors/app-error.js';
 import { ErrorCode } from '../../common/errors/error-codes.js';
 
-const INCLUDE = { truck: { select: { truckNumber: true } }, driver: { select: { name: true } } } as const;
+const INCLUDE = { truck: { select: { truckNumber: true } }, driver: { select: { name: true, nameAr: true } } } as const;
 
 function mapOut(row: any) {
   return {
@@ -13,6 +13,7 @@ function mapOut(row: any) {
     endDate: row.endDate,
     truckNumber: row.truck?.truckNumber,
     driverName: row.driver?.name,
+    driverNameAr: row.driver?.nameAr,
   };
 }
 

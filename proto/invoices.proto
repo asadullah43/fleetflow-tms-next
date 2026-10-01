@@ -61,6 +61,7 @@ message Invoice {
   optional string paid_at = 17;
   repeated InvoiceLineItem line_items = 18;
   optional string customer_name = 19;
+  optional string customer_name_ar = 20;
 
   optional string zatca_status = 30;
   optional string qr_code = 31;

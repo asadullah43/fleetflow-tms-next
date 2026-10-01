@@ -36,6 +36,7 @@ export interface InvoiceDto {
   paidAt?: string;
   lineItems: InvoiceLineItemDto[];
   customerName?: string;
+  customerNameAr?: string;
   zatcaStatus?: string;
   qrCode?: string;
   invoiceUuid?: string;

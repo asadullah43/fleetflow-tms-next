@@ -10,7 +10,7 @@ import { Icon } from '../../../components/icons';
 import { DateField } from '../../../components/DateField';
 import { useAuth } from '../../../lib/auth-context';
 import { useT, useLanguage } from '../../../lib/language-context';
-import { localizedName } from '../../../lib/localized-name';
+import { localizedName, localizedJoinedName } from '../../../lib/localized-name';
 import { trucksClient, TruckDto } from '../../../lib/grpc/trucks';
 import { driversClient, DriverDto } from '../../../lib/grpc/drivers';
 import { assignmentsClient, AssignmentDto } from '../../../lib/grpc/assignments';
@@ -104,7 +104,7 @@ export default function TruckDetailPage() {
 
   async function unassign(a: AssignmentDto) {
     if (!token) return;
-    if (!confirm(`Remove this assignment for ${a.driverName ?? 'this driver'}? This cannot be undone.`)) return;
+    if (!confirm(`Remove this assignment for ${localizedJoinedName(a.driverName, a.driverNameAr, language) ?? 'this driver'}? This cannot be undone.`)) return;
     try {
       await assignmentsClient.remove(a.id, token);
       load();
@@ -157,7 +157,7 @@ export default function TruckDetailPage() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap' }}>
-            <HeroStat label={t('Current driver')} value={current?.driverName ?? t('Unassigned')} />
+            <HeroStat label={t('Current driver')} value={(current && localizedJoinedName(current.driverName, current.driverNameAr, language)) ?? t('Unassigned')} />
             <HeroStat label={t('Assignment history')} value={String(history.length)} />
             <HeroStat label={t('Status')} value={<StatusBadge status={truck.status} />} />
           </div>
@@ -174,7 +174,7 @@ export default function TruckDetailPage() {
                   <Icon.driver size={20} />
                 </span>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: 15.5 }}>{current.driverName}</div>
+                  <div style={{ fontWeight: 700, fontSize: 15.5 }}>{localizedJoinedName(current.driverName, current.driverNameAr, language)}</div>
                   <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
                     {t('Current since')} {current.startDate.slice(0, 10)}
                     {!current.endDate && <> · {t('Ongoing')}</>}
@@ -250,7 +250,7 @@ export default function TruckDetailPage() {
                     </div>
                     <div style={{ paddingBottom: 20, flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                        <div style={{ fontWeight: 600, fontSize: 13.5 }}>{a.driverName ?? `Driver #${a.driverId}`}</div>
+                        <div style={{ fontWeight: 600, fontSize: 13.5 }}>{localizedJoinedName(a.driverName, a.driverNameAr, language) ?? `Driver #${a.driverId}`}</div>
                         <span className={`badge badge-${state === 'active' ? 'success' : state === 'upcoming' ? 'warning' : 'neutral'}`}>
                           {t(STATE_LABEL[state])}
                         </span>

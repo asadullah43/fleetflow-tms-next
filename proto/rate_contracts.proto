@@ -27,6 +27,11 @@ message RateContract {
   optional string pickup_location_name = 21;
   optional string delivery_location_name = 22;
   optional string cargo_type_name = 23;
+
+  optional string customer_name_ar = 24;
+  optional string pickup_location_name_ar = 25;
+  optional string delivery_location_name_ar = 26;
+  optional string cargo_type_name_ar = 27;
 }
 
 message RateContractList { repeated RateContract items = 1; }

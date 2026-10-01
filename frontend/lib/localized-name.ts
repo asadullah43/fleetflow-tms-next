@@ -29,3 +29,16 @@ export function localizedDescription(row: Described, language: Language): string
   if (language === 'ar') return row.descriptionAr?.trim() ? row.descriptionAr : row.description;
   return row.description;
 }
+
+/**
+ * Same picking logic as `localizedName`, but for the denormalized
+ * `xNameAr` fields the backend attaches to a *different* entity's joined
+ * display name (e.g. a Trip's `customerName`/`customerNameAr`, an
+ * Invoice's `customerName`/`customerNameAr`) rather than an entity's own
+ * `name`/`nameAr` pair. Takes the two strings directly since the field
+ * names vary per join.
+ */
+export function localizedJoinedName(name: string | undefined, nameAr: string | undefined, language: Language): string | undefined {
+  if (language === 'ar') return nameAr?.trim() ? nameAr : name;
+  return name;
+}

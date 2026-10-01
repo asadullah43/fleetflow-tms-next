@@ -23,6 +23,7 @@ message Assignment {
   optional string end_date = 5;
   optional string truck_number = 6; // denormalized for display
   optional string driver_name = 7;  // denormalized for display
+  optional string driver_name_ar = 8;
 }
 
 message AssignmentList { repeated Assignment items = 1; }

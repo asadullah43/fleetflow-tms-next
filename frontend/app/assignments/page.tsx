@@ -7,7 +7,7 @@ import { Modal } from '../../components/Modal';
 import { AssignmentHistoryTimeline } from '../../components/AssignmentHistoryTimeline';
 import { useAuth } from '../../lib/auth-context';
 import { useT, useLanguage } from '../../lib/language-context';
-import { localizedName } from '../../lib/localized-name';
+import { localizedName, localizedJoinedName } from '../../lib/localized-name';
 import { assignmentsClient, AssignmentDto } from '../../lib/grpc/assignments';
 import { trucksClient } from '../../lib/grpc/trucks';
 import { driversClient } from '../../lib/grpc/drivers';
@@ -54,7 +54,7 @@ export default function AssignmentsPage() {
         emptyLabel="No assignments yet — assign a driver to a truck to start tracking runs."
         columns={[
           { header: 'Truck', render: (r) => r.truckNumber ?? r.truckId },
-          { header: 'Driver', render: (r) => r.driverName ?? r.driverId },
+          { header: 'Driver', render: (r) => localizedJoinedName(r.driverName, r.driverNameAr, language) ?? r.driverId },
           { header: 'Start', render: (r) => r.startDate?.slice(0, 10) },
           { header: 'End', render: (r) => (r.endDate ? r.endDate.slice(0, 10) : 'Ongoing') },
         ]}
