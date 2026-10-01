@@ -109,3 +109,29 @@ docker compose up -d --build
 
 Mirrors the legacy repo's deployment shape (Postgres + backend + frontend
 + nginx), with an added `envoy` service for the grpc-web bridge.
+
+### First run only: create the schema and an admin login
+
+The `database` container starts with an empty Postgres — nothing runs
+`prisma migrate`/`db push` or the seed script inside the containers (the
+production backend image strips `prisma`/`tsx` as devDependencies, so
+there's no Prisma CLI inside it to do this with). Do it once from the
+host, against the Postgres port Docker publishes (`5433` by default):
+
+```bash
+cd backend
+npm install                 # if you haven't already (needs the prisma CLI + tsx)
+
+# PowerShell:
+$env:DATABASE_URL="postgresql://postgres:changeme_use_strong_password@localhost:5433/fleetflow?schema=public"
+# bash:
+export DATABASE_URL="postgresql://postgres:changeme_use_strong_password@localhost:5433/fleetflow?schema=public"
+
+npx prisma db push          # creates all tables from schema.prisma
+npm run seed                # creates the admin login (admin / Admin123!)
+```
+
+Only needed again if you reset the `database_data` volume (`docker
+compose down -v`) or change `schema.prisma`. The app is then reachable
+at `http://localhost:8889` (nginx's published port) — log in with
+`admin` / `Admin123!` and change the password after.
