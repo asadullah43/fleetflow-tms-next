@@ -92,6 +92,7 @@ export function CrudPanel<T extends { id: number }>({
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [filterDraft, setFilterDraft] = useState<Record<string, string>>({});
   const [filters, setFilters] = useState<Record<string, string>>({});
 
   function load() {
@@ -120,6 +121,15 @@ export function CrudPanel<T extends { id: number }>({
     return result;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows, query, columns, filters, hasActiveFilters]);
+
+  function applyFilters() {
+    setFilters(filterDraft);
+  }
+
+  function clearFilters() {
+    setFilterDraft({});
+    setFilters({});
+  }
 
   function updateField(name: string, value: string) {
     setValues((prev) => {
@@ -198,8 +208,9 @@ export function CrudPanel<T extends { id: number }>({
                   type="date"
                   placeholder={f.label}
                   aria-label={f.label}
-                  value={filters[f.name] ?? ''}
-                  onChange={(e) => setFilters({ ...filters, [f.name]: e.target.value })}
+                  value={filterDraft[f.name] ?? ''}
+                  onChange={(e) => setFilterDraft({ ...filterDraft, [f.name]: e.target.value })}
+                  onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
                 />
               </div>
             ) : (
@@ -207,31 +218,40 @@ export function CrudPanel<T extends { id: number }>({
                 <Icon.search size={15} />
                 <input
                   placeholder={f.label}
-                  value={filters[f.name] ?? ''}
-                  onChange={(e) => setFilters({ ...filters, [f.name]: e.target.value })}
+                  value={filterDraft[f.name] ?? ''}
+                  onChange={(e) => setFilterDraft({ ...filterDraft, [f.name]: e.target.value })}
+                  onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
                 />
               </div>
             )
-          )}
-          {hasActiveFilters && (
-            <button type="button" className="btn btn-secondary" onClick={() => setFilters({})}>
-              Clear filters
-            </button>
           )}
         </div>
       )}
 
       <div className="toolbar">
-        <div className="field" style={{ margin: 0, maxWidth: 280, flex: 1 }}>
-          <div className="search-field">
-            <Icon.search size={15} />
-            <input
-              placeholder={searchPlaceholder ?? 'Search...'}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
+        {filterBar ? (
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button className="btn btn-primary" onClick={applyFilters} type="button">
+              <Icon.search size={15} /> Search
+            </button>
+            {hasActiveFilters && (
+              <button className="btn btn-secondary" onClick={clearFilters} type="button">
+                Clear filters
+              </button>
+            )}
           </div>
-        </div>
+        ) : (
+          <div className="field" style={{ margin: 0, maxWidth: 280, flex: 1 }}>
+            <div className="search-field">
+              <Icon.search size={15} />
+              <input
+                placeholder={searchPlaceholder ?? 'Search...'}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn btn-excel" onClick={() => exportRows('csv')} type="button">
             <Icon.gridLayers size={15} /> Excel

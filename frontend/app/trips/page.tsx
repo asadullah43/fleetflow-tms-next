@@ -5,7 +5,6 @@ import { CrudPage } from '../../components/CrudPage';
 import { AppShell } from '../../components/AppShell';
 import { useAuth } from '../../lib/auth-context';
 import { tripsClient, TripDto } from '../../lib/grpc/trips';
-import { suppliersClient } from '../../lib/grpc/suppliers';
 import { customersClient } from '../../lib/grpc/customers';
 import { locationsClient } from '../../lib/grpc/locations';
 import { cargoTypesClient } from '../../lib/grpc/cargo-types';
@@ -25,22 +24,20 @@ function currentAssignment(assignments: AssignmentDto[], truckId: number): Assig
 
 export default function TripsPage() {
   const { token } = useAuth();
-  const [opts, setOpts] = useState<{ suppliers: Opt; customers: Opt; locations: Opt; cargoTypes: Opt; trucks: Opt; drivers: Opt } | null>(null);
+  const [opts, setOpts] = useState<{ customers: Opt; locations: Opt; cargoTypes: Opt; trucks: Opt; drivers: Opt } | null>(null);
   const [assignments, setAssignments] = useState<AssignmentDto[]>([]);
 
   useEffect(() => {
     if (!token) return;
     Promise.all([
-      suppliersClient.list(token),
       customersClient.list(token),
       locationsClient.list(token),
       cargoTypesClient.list(token),
       trucksClient.list(token),
       driversClient.list(token),
       assignmentsClient.list(token),
-    ]).then(([suppliers, customers, locations, cargoTypes, trucks, drivers, assignmentList]) => {
+    ]).then(([customers, locations, cargoTypes, trucks, drivers, assignmentList]) => {
       setOpts({
-        suppliers: suppliers.map((s) => ({ value: String(s.id), label: s.name })),
         customers: customers.map((c) => ({ value: String(c.id), label: c.name })),
         locations: locations.map((l) => ({ value: String(l.id), label: l.name })),
         cargoTypes: cargoTypes.map((c) => ({ value: String(c.id), label: c.name })),
@@ -104,7 +101,6 @@ export default function TripsPage() {
 
   function toApi(values: Record<string, string>) {
     return {
-      supplierId: values.supplierId ? Number(values.supplierId) : undefined,
       customerId: values.customerId ? Number(values.customerId) : undefined,
       pickupLocationId: Number(values.pickupLocationId),
       deliveryLocationId: Number(values.deliveryLocationId),
@@ -137,7 +133,6 @@ export default function TripsPage() {
       onDelete={(id) => tripsClient.remove(id, token!)}
       formFields={[
         { name: 'customerId', label: 'Customer', type: 'select', options: opts.customers },
-        { name: 'supplierId', label: 'Supplier', type: 'select', options: opts.suppliers },
         { name: 'pickupLocationId', label: 'Pickup location', type: 'select', options: opts.locations, required: true },
         { name: 'deliveryLocationId', label: 'Delivery location', type: 'select', options: opts.locations, required: true },
         { name: 'cargoTypeId', label: 'Cargo type', type: 'select', options: opts.cargoTypes, required: true },
@@ -148,7 +143,6 @@ export default function TripsPage() {
       ]}
       emptyValues={{
         customerId: '',
-        supplierId: '',
         pickupLocationId: '',
         deliveryLocationId: '',
         cargoTypeId: '',
@@ -160,7 +154,6 @@ export default function TripsPage() {
       }}
       toFormValues={(r) => ({
         customerId: r.customerId ? String(r.customerId) : '',
-        supplierId: r.supplierId ? String(r.supplierId) : '',
         pickupLocationId: String(r.pickupLocationId),
         deliveryLocationId: String(r.deliveryLocationId),
         cargoTypeId: String(r.cargoTypeId),
