@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { CrudPage } from '../../components/CrudPage';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useAuth } from '../../lib/auth-context';
@@ -16,7 +17,14 @@ export default function TrucksPage() {
       searchPlaceholder="Truck number"
       emptyLabel="No trucks yet — add your first vehicle to start scheduling trips."
       columns={[
-        { header: 'Truck number', render: (r) => <span className="mono">{r.truckNumber}</span> },
+        {
+          header: 'Truck number',
+          render: (r) => (
+            <Link href={`/trucks/${r.id}`} className="mono" style={{ color: 'var(--accent-strong)', fontWeight: 600, textDecoration: 'none' }}>
+              {r.truckNumber}
+            </Link>
+          ),
+        },
         { header: 'Type', render: (r) => r.truckType ?? '—' },
         { header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
       ]}

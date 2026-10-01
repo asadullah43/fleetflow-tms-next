@@ -21,6 +21,31 @@ function mapOut(row: any) {
  * which driver is running which truck over a date range, with an
  * overlap check (a truck can't have two active assignments at once).
  */
+/**
+ * A truck can't have two assignments covering the same day — this is
+ * what the legacy backend called assertNoOverlap. endDate === null
+ * means open-ended (ongoing), so it overlaps anything that starts
+ * before it ends or is itself still open.
+ */
+async function assertNoOverlap(truckId: number, startDate: Date, endDate: Date | null, excludeId?: number) {
+  const overlap = await prisma.truckDriverAssignment.findFirst({
+    where: {
+      truckId,
+      ...(excludeId !== undefined ? { id: { not: excludeId } } : {}),
+      ...(endDate !== null ? { startDate: { lte: endDate } } : {}),
+      OR: [{ endDate: { gte: startDate } }, { endDate: null }],
+    },
+  });
+  if (overlap) {
+    throw new AppError({
+      errorCode: ErrorCode.TRK_ASSIGNMENT_OVERLAP.code,
+      errorFilter: ErrorCode.TRK_ASSIGNMENT_OVERLAP.filter,
+      errorDescription: ErrorCode.TRK_ASSIGNMENT_OVERLAP.description,
+      statusCode: 400,
+    });
+  }
+}
+
 export const assignmentsService = {
   async findAll() {
     const rows = await prisma.truckDriverAssignment.findMany({ include: INCLUDE, orderBy: { id: 'desc' } });
@@ -49,18 +74,22 @@ export const assignmentsService = {
         statusCode: 400,
       });
     }
+    const startDate = new Date(dto.startDate);
+    const endDate = dto.endDate ? new Date(dto.endDate) : null;
+    await assertNoOverlap(dto.truckId, startDate, endDate);
     try {
       const row = await prisma.truckDriverAssignment.create({
         data: {
           truckId: dto.truckId,
           driverId: dto.driverId,
-          startDate: new Date(dto.startDate),
-          endDate: dto.endDate ? new Date(dto.endDate) : null,
+          startDate,
+          endDate,
         },
         include: INCLUDE,
       });
       return mapOut(row);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       throw new AppError({
         errorCode: ErrorCode.TRK_ASSIGNMENT_CREATE_FAILED.code,
         errorFilter: ErrorCode.TRK_ASSIGNMENT_CREATE_FAILED.filter,
@@ -72,20 +101,25 @@ export const assignmentsService = {
   },
 
   async update(id: number, dto: { truckId?: number; driverId?: number; startDate?: string; endDate?: string }) {
-    await this.findOne(id);
+    const existing = await this.findOne(id);
+    const truckId = dto.truckId ?? existing.truckId;
+    const startDate = dto.startDate ? new Date(dto.startDate) : new Date(existing.startDate);
+    const endDate = dto.endDate !== undefined ? (dto.endDate ? new Date(dto.endDate) : null) : existing.endDate ? new Date(existing.endDate) : null;
+    await assertNoOverlap(truckId, startDate, endDate, id);
     try {
       const row = await prisma.truckDriverAssignment.update({
         where: { id },
         data: {
           truckId: dto.truckId,
           driverId: dto.driverId,
-          startDate: dto.startDate ? new Date(dto.startDate) : undefined,
-          endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+          startDate: dto.startDate ? startDate : undefined,
+          endDate: dto.endDate !== undefined ? endDate : undefined,
         },
         include: INCLUDE,
       });
       return mapOut(row);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       throw new AppError({
         errorCode: ErrorCode.TRK_ASSIGNMENT_UPDATE_FAILED.code,
         errorFilter: ErrorCode.TRK_ASSIGNMENT_UPDATE_FAILED.filter,
