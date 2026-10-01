@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
+import { sanitizeService } from './lib/grpc-sanitize.js';
 
 import { authGrpcImpl } from './modules/auth/auth.grpc.js';
 import { locationsGrpcImpl } from './modules/locations/locations.grpc.js';
@@ -82,40 +83,40 @@ const proto = grpc.loadPackageDefinition(packageDefinition) as any;
 
 const server = new grpc.Server();
 
-server.addService(proto.fleetflow.auth.AuthService.service, authGrpcImpl);
-server.addService(proto.fleetflow.locations.LocationsService.service, locationsGrpcImpl);
-server.addService(proto.fleetflow.cargotypes.CargoTypesService.service, cargoTypesGrpcImpl);
-server.addService(proto.fleetflow.customers.CustomersService.service, customersGrpcImpl);
-server.addService(proto.fleetflow.suppliers.SuppliersService.service, suppliersGrpcImpl);
-server.addService(proto.fleetflow.trucks.TrucksService.service, trucksGrpcImpl);
-server.addService(proto.fleetflow.drivers.DriversService.service, driversGrpcImpl);
-server.addService(proto.fleetflow.assignments.AssignmentsService.service, assignmentsGrpcImpl);
-server.addService(proto.fleetflow.trips.TripsService.service, tripsGrpcImpl);
-server.addService(proto.fleetflow.ratecontracts.RateContractsService.service, rateContractsGrpcImpl);
-server.addService(proto.fleetflow.loadingorders.LoadingOrdersService.service, loadingOrdersGrpcImpl);
-server.addService(proto.fleetflow.supplierpayments.SupplierPaymentsService.service, supplierPaymentsGrpcImpl);
-server.addService(proto.fleetflow.companysettings.CompanySettingsService.service, companySettingsGrpcImpl);
-server.addService(proto.fleetflow.roles.RolesService.service, rolesGrpcImpl);
-server.addService(proto.fleetflow.users.UsersService.service, usersGrpcImpl);
-server.addService(proto.fleetflow.invoices.InvoicesService.service, invoicesGrpcImpl);
-server.addService(proto.fleetflow.dashboard.DashboardService.service, dashboardGrpcImpl);
+server.addService(proto.fleetflow.auth.AuthService.service, sanitizeService(authGrpcImpl));
+server.addService(proto.fleetflow.locations.LocationsService.service, sanitizeService(locationsGrpcImpl));
+server.addService(proto.fleetflow.cargotypes.CargoTypesService.service, sanitizeService(cargoTypesGrpcImpl));
+server.addService(proto.fleetflow.customers.CustomersService.service, sanitizeService(customersGrpcImpl));
+server.addService(proto.fleetflow.suppliers.SuppliersService.service, sanitizeService(suppliersGrpcImpl));
+server.addService(proto.fleetflow.trucks.TrucksService.service, sanitizeService(trucksGrpcImpl));
+server.addService(proto.fleetflow.drivers.DriversService.service, sanitizeService(driversGrpcImpl));
+server.addService(proto.fleetflow.assignments.AssignmentsService.service, sanitizeService(assignmentsGrpcImpl));
+server.addService(proto.fleetflow.trips.TripsService.service, sanitizeService(tripsGrpcImpl));
+server.addService(proto.fleetflow.ratecontracts.RateContractsService.service, sanitizeService(rateContractsGrpcImpl));
+server.addService(proto.fleetflow.loadingorders.LoadingOrdersService.service, sanitizeService(loadingOrdersGrpcImpl));
+server.addService(proto.fleetflow.supplierpayments.SupplierPaymentsService.service, sanitizeService(supplierPaymentsGrpcImpl));
+server.addService(proto.fleetflow.companysettings.CompanySettingsService.service, sanitizeService(companySettingsGrpcImpl));
+server.addService(proto.fleetflow.roles.RolesService.service, sanitizeService(rolesGrpcImpl));
+server.addService(proto.fleetflow.users.UsersService.service, sanitizeService(usersGrpcImpl));
+server.addService(proto.fleetflow.invoices.InvoicesService.service, sanitizeService(invoicesGrpcImpl));
+server.addService(proto.fleetflow.dashboard.DashboardService.service, sanitizeService(dashboardGrpcImpl));
 
-server.addService(proto.fleetflow.hr.DepartmentsService.service, departmentsGrpcImpl);
-server.addService(proto.fleetflow.hr.DesignationsService.service, designationsGrpcImpl);
-server.addService(proto.fleetflow.hr.EmployeesService.service, employeesGrpcImpl);
-server.addService(proto.fleetflow.hr.AttendanceService.service, attendanceGrpcImpl);
-server.addService(proto.fleetflow.hr.LeaveRequestsService.service, leaveRequestsGrpcImpl);
-server.addService(proto.fleetflow.hr.EmployeeDocumentsService.service, employeeDocumentsGrpcImpl);
-server.addService(proto.fleetflow.hr.EmploymentContractsService.service, employmentContractsGrpcImpl);
+server.addService(proto.fleetflow.hr.DepartmentsService.service, sanitizeService(departmentsGrpcImpl));
+server.addService(proto.fleetflow.hr.DesignationsService.service, sanitizeService(designationsGrpcImpl));
+server.addService(proto.fleetflow.hr.EmployeesService.service, sanitizeService(employeesGrpcImpl));
+server.addService(proto.fleetflow.hr.AttendanceService.service, sanitizeService(attendanceGrpcImpl));
+server.addService(proto.fleetflow.hr.LeaveRequestsService.service, sanitizeService(leaveRequestsGrpcImpl));
+server.addService(proto.fleetflow.hr.EmployeeDocumentsService.service, sanitizeService(employeeDocumentsGrpcImpl));
+server.addService(proto.fleetflow.hr.EmploymentContractsService.service, sanitizeService(employmentContractsGrpcImpl));
 
-server.addService(proto.fleetflow.workshop.WorkOrdersService.service, workOrdersGrpcImpl);
-server.addService(proto.fleetflow.workshop.MaintenanceSchedulesService.service, maintenanceSchedulesGrpcImpl);
-server.addService(proto.fleetflow.workshop.VehicleInspectionsService.service, vehicleInspectionsGrpcImpl);
-server.addService(proto.fleetflow.workshop.SparePartsService.service, sparePartsGrpcImpl);
-server.addService(proto.fleetflow.workshop.WorkshopExpensesService.service, workshopExpensesGrpcImpl);
-server.addService(proto.fleetflow.workshop.WorkOrderPartsService.service, workOrderPartsGrpcImpl);
-server.addService(proto.fleetflow.workshop.InspectionItemsService.service, inspectionItemsGrpcImpl);
-server.addService(proto.fleetflow.workshop.SparePartTransactionsService.service, sparePartTransactionsGrpcImpl);
+server.addService(proto.fleetflow.workshop.WorkOrdersService.service, sanitizeService(workOrdersGrpcImpl));
+server.addService(proto.fleetflow.workshop.MaintenanceSchedulesService.service, sanitizeService(maintenanceSchedulesGrpcImpl));
+server.addService(proto.fleetflow.workshop.VehicleInspectionsService.service, sanitizeService(vehicleInspectionsGrpcImpl));
+server.addService(proto.fleetflow.workshop.SparePartsService.service, sanitizeService(sparePartsGrpcImpl));
+server.addService(proto.fleetflow.workshop.WorkshopExpensesService.service, sanitizeService(workshopExpensesGrpcImpl));
+server.addService(proto.fleetflow.workshop.WorkOrderPartsService.service, sanitizeService(workOrderPartsGrpcImpl));
+server.addService(proto.fleetflow.workshop.InspectionItemsService.service, sanitizeService(inspectionItemsGrpcImpl));
+server.addService(proto.fleetflow.workshop.SparePartTransactionsService.service, sanitizeService(sparePartTransactionsGrpcImpl));
 
 server.bindAsync(`0.0.0.0:${PORT}`, grpc.ServerCredentials.createInsecure(), (err, boundPort) => {
   if (err) {
