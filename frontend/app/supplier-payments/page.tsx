@@ -47,7 +47,7 @@ export default function SupplierPaymentsPage() {
         { name: 'supplierId', label: 'Supplier', type: 'select', options: suppliers, required: true },
         { name: 'amount', label: 'Amount', required: true },
         { name: 'currency', label: 'Currency' },
-        { name: 'paymentDate', label: 'Payment date', required: true },
+        { name: 'paymentDate', label: 'Payment date', type: 'date', required: true },
         { name: 'description', label: 'Description', type: 'textarea' },
       ]}
       emptyValues={{ supplierId: '', amount: '', currency: 'SAR', paymentDate: '', description: '' }}

@@ -150,7 +150,7 @@ export default function HrPage() {
             { name: 'language', label: 'Language', type: 'select', options: [{ value: 'en', label: 'English' }, { value: 'ar', label: 'Arabic' }] },
             { name: 'email', label: 'Email' },
             { name: 'phone', label: 'Phone' },
-            { name: 'joiningDate', label: 'Joining date', required: true },
+            { name: 'joiningDate', label: 'Joining date', type: 'date', required: true },
             { name: 'departmentId', label: 'Department', type: 'select', options: opts.departments, required: true },
             { name: 'designationId', label: 'Designation', type: 'select', options: opts.designations },
             {
@@ -196,7 +196,7 @@ export default function HrPage() {
           onDelete={(id) => attendanceClient.remove(id, token!)}
           formFields={[
             { name: 'employeeId', label: 'Employee', type: 'select', options: opts.employees, required: true },
-            { name: 'attendDate', label: 'Date', required: true },
+            { name: 'attendDate', label: 'Date', type: 'date', required: true },
             {
               name: 'status',
               label: 'Status',
@@ -228,8 +228,8 @@ export default function HrPage() {
           formFields={[
             { name: 'employeeId', label: 'Employee', type: 'select', options: opts.employees, required: true },
             { name: 'leaveType', label: 'Leave type', required: true },
-            { name: 'startDate', label: 'Start date', required: true },
-            { name: 'endDate', label: 'End date', required: true },
+            { name: 'startDate', label: 'Start date', type: 'date', required: true },
+            { name: 'endDate', label: 'End date', type: 'date', required: true },
             { name: 'days', label: 'Number of days', required: true },
             { name: 'reason', label: 'Reason', type: 'textarea' },
             {
@@ -269,8 +269,8 @@ export default function HrPage() {
             { name: 'employeeId', label: 'Employee', type: 'select', options: opts.employees, required: true },
             { name: 'documentType', label: 'Document type', required: true },
             { name: 'documentNumber', label: 'Document number' },
-            { name: 'issueDate', label: 'Issue date' },
-            { name: 'expiryDate', label: 'Expiry date' },
+            { name: 'issueDate', label: 'Issue date', type: 'date' },
+            { name: 'expiryDate', label: 'Expiry date', type: 'date' },
             { name: 'fileUrl', label: 'File URL' },
             { name: 'notes', label: 'Notes', type: 'textarea' },
           ]}
@@ -310,8 +310,8 @@ export default function HrPage() {
               type: 'select',
               options: [{ value: 'FIXED_TERM', label: 'Fixed term' }, { value: 'UNLIMITED', label: 'Unlimited' }],
             },
-            { name: 'startDate', label: 'Start date', required: true },
-            { name: 'endDate', label: 'End date' },
+            { name: 'startDate', label: 'Start date', type: 'date', required: true },
+            { name: 'endDate', label: 'End date', type: 'date' },
             { name: 'salary', label: 'Salary' },
             {
               name: 'status',

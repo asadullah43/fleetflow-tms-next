@@ -35,7 +35,7 @@ interface CrudPageProps<T extends { id: number }> extends CrudPanelProps<T> {
 export interface FormFieldDef {
   name: string;
   label: string;
-  type?: 'text' | 'number' | 'select' | 'textarea';
+  type?: 'text' | 'number' | 'date' | 'select' | 'textarea';
   options?: { value: string; label: string }[];
   required?: boolean;
 }
@@ -266,7 +266,7 @@ export function CrudPanel<T extends { id: number }>({
               ) : (
                 <input
                   id={field.name}
-                  type={field.type === 'number' ? 'number' : 'text'}
+                  type={field.type === 'number' || field.type === 'date' ? field.type : 'text'}
                   value={values[field.name] ?? ''}
                   onChange={(e) => setValues({ ...values, [field.name]: e.target.value })}
                   required={field.required}

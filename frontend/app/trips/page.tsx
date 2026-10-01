@@ -85,7 +85,7 @@ export default function TripsPage() {
         { name: 'deliveryLocationId', label: 'Delivery location', type: 'select', options: opts.locations, required: true },
         { name: 'cargoTypeId', label: 'Cargo type', type: 'select', options: opts.cargoTypes, required: true },
         { name: 'quantity', label: 'Quantity', required: true },
-        { name: 'tripDate', label: 'Trip date', required: true },
+        { name: 'tripDate', label: 'Trip date', type: 'date', required: true },
         { name: 'truckId', label: 'Truck', type: 'select', options: opts.trucks, required: true },
         { name: 'driverId', label: 'Driver', type: 'select', options: opts.drivers },
       ]}

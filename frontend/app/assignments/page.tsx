@@ -58,8 +58,8 @@ export default function AssignmentsPage() {
       formFields={[
         { name: 'truckId', label: 'Truck', type: 'select', options: options.trucks, required: true },
         { name: 'driverId', label: 'Driver', type: 'select', options: options.drivers, required: true },
-        { name: 'startDate', label: 'Start date', type: 'text', required: true },
-        { name: 'endDate', label: 'End date (leave blank if ongoing)' },
+        { name: 'startDate', label: 'Start date', type: 'date', required: true },
+        { name: 'endDate', label: 'End date (leave blank if ongoing)', type: 'date' },
       ]}
       emptyValues={{ truckId: '', driverId: '', startDate: '', endDate: '' }}
       toFormValues={(r) => ({

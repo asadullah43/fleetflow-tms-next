@@ -144,8 +144,8 @@ export default function WorkshopPage() {
             { name: 'truckId', label: 'Truck', type: 'select', options: opts.trucks, required: true },
             { name: 'maintenanceType', label: 'Maintenance type', required: true },
             { name: 'description', label: 'Description', type: 'textarea' },
-            { name: 'lastService', label: 'Last service date' },
-            { name: 'nextService', label: 'Next service date' },
+            { name: 'lastService', label: 'Last service date', type: 'date' },
+            { name: 'nextService', label: 'Next service date', type: 'date' },
             { name: 'status', label: 'Status', type: 'select', options: [{ value: 'ACTIVE', label: 'Active' }, { value: 'DONE', label: 'Done' }, { value: 'OVERDUE', label: 'Overdue' }] },
             { name: 'notes', label: 'Notes', type: 'textarea' },
           ]}
@@ -178,7 +178,7 @@ export default function WorkshopPage() {
           formFields={[
             { name: 'truckId', label: 'Truck', type: 'select', options: opts.trucks, required: true },
             { name: 'inspectorId', label: 'Inspector (user ID)', required: true },
-            { name: 'inspectDate', label: 'Inspection date', required: true },
+            { name: 'inspectDate', label: 'Inspection date', type: 'date', required: true },
             { name: 'result', label: 'Result', type: 'select', options: [{ value: 'PASS', label: 'Pass' }, { value: 'FAIL', label: 'Fail' }] },
             { name: 'notes', label: 'Notes', type: 'textarea' },
           ]}
@@ -253,7 +253,7 @@ export default function WorkshopPage() {
             { name: 'truckId', label: 'Truck', type: 'select', options: opts.trucks, required: true },
             { name: 'category', label: 'Category', required: true },
             { name: 'amount', label: 'Amount', required: true },
-            { name: 'expenseDate', label: 'Expense date' },
+            { name: 'expenseDate', label: 'Expense date', type: 'date' },
             { name: 'description', label: 'Description', type: 'textarea' },
           ]}
           emptyValues={{ truckId: '', category: '', amount: '', expenseDate: '', description: '' }}
