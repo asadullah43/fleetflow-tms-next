@@ -42,7 +42,17 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Workshop',
     icon: 'wrench',
-    items: [{ label: 'Workshop', href: '/workshop', icon: 'wrench' }],
+    items: [
+      { label: 'Work Orders', href: '/workshop/work-orders', icon: 'wrench' },
+      { label: 'Maintenance', href: '/workshop/maintenance', icon: 'userCog' },
+      { label: 'Inspections', href: '/workshop/inspections', icon: 'fileCheck' },
+      { label: 'Expenses', href: '/workshop/expenses', icon: 'invoice' },
+    ],
+  },
+  {
+    label: 'Inventory',
+    icon: 'box',
+    items: [{ label: 'Inventory', href: '/inventory', icon: 'box' }],
   },
   {
     label: 'Master Data',
