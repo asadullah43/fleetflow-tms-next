@@ -71,7 +71,15 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Human Resources',
     icon: 'userCog',
-    items: [{ label: 'HR', href: '/hr', icon: 'userCog' }],
+    items: [
+      { label: 'Departments', href: '/hr/departments', icon: 'building' },
+      { label: 'Designations', href: '/hr/designations', icon: 'fileText' },
+      { label: 'Employees', href: '/hr/employees', icon: 'users' },
+      { label: 'Attendance', href: '/hr/attendance', icon: 'calendar' },
+      { label: 'Leave Requests', href: '/hr/leave-requests', icon: 'clipboard' },
+      { label: 'Documents', href: '/hr/documents', icon: 'fileCheck' },
+      { label: 'Contracts', href: '/hr/contracts', icon: 'fileText' },
+    ],
   },
   {
     label: 'Administration',
