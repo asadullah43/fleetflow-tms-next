@@ -10,18 +10,24 @@ export interface NavGroup {
   label: string;
   icon: IconName;
   items: NavItem[];
+  /** Renders as a single plain link (no header/chevron/collapse) instead
+   *  of a collapsible section — for a group that's just one page, where
+   *  the group wrapper adds a click with nothing to show for it. */
+  standalone?: boolean;
 }
 
 /**
  * Sidebar nav grouped the way a dispatcher actually thinks about the
  * business, not an alphabetical dump of all 20 modules. Each group is a
- * collapsible section (header icon + label + chevron) in the sidebar.
+ * collapsible section (header icon + label + chevron) in the sidebar,
+ * except a `standalone` one, which is just a direct link.
  */
 export const NAV_GROUPS: NavGroup[] = [
   {
-    label: 'Overview',
+    label: 'Dashboard',
     icon: 'dashboard',
     items: [{ label: 'Dashboard', href: '/dashboard', icon: 'dashboard' }],
+    standalone: true,
   },
   {
     label: 'Operations',

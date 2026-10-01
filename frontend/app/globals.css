@@ -166,6 +166,38 @@ svg {
   padding: 10px 0 20px;
 }
 
+.sidebar-link-top {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 11px 20px;
+  border-bottom: 1px solid var(--sidebar-border);
+  color: var(--sidebar-text);
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.sidebar-link-top svg {
+  color: var(--sidebar-text-muted);
+  flex-shrink: 0;
+}
+
+.sidebar-link-top:hover {
+  color: #fff;
+}
+
+.sidebar-link-top.active {
+  color: #fff;
+  background: var(--sidebar-active-bg);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.sidebar-link-top.active svg {
+  color: var(--accent);
+}
+
 .sidebar-group-header {
   display: flex;
   align-items: center;

@@ -68,6 +68,22 @@ export function AppShell({ title, children }: { title: string; children: React.R
           {NAV_GROUPS.map((group) => {
             const GroupIcon = Icon[group.icon];
             const isOpen = openGroups[group.label] ?? false;
+
+            if (group.standalone) {
+              const item = group.items[0];
+              const ItemIcon = Icon[item.icon];
+              return (
+                <Link
+                  key={group.label}
+                  href={item.href}
+                  className={`sidebar-link-top${pathname.startsWith(item.href) ? ' active' : ''}`}
+                >
+                  <ItemIcon size={16} />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            }
+
             return (
               <div key={group.label}>
                 <button
