@@ -219,7 +219,7 @@ export const sparePartsService = {
   async create(dto: Record<string, any>) {
     const { buildLocalizedWriteData } = await import('../../common/localization/language.util.js');
     try {
-      const data = buildLocalizedWriteData(dto, true) as Record<string, any>;
+      const data = buildLocalizedWriteData(dto, true) as any;
       const row = await prisma.sparePart.create({ data, include: SPARE_INCLUDE });
       return { ...row, supplierName: (row as any).supplier?.name };
     } catch (error) {

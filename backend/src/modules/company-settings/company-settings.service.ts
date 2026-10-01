@@ -30,7 +30,7 @@ export const companySettingsService = {
   async update(dto: Record<string, unknown>) {
     try {
       const existing = await this.getOrCreate();
-      return await prisma.companySettings.update({ where: { id: existing.id }, data: dto });
+      return await prisma.companySettings.update({ where: { id: existing.id }, data: dto as any });
     } catch (error) {
       if (error instanceof AppError) throw error;
       throw new AppError({
