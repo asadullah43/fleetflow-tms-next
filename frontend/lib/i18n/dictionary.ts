@@ -416,6 +416,14 @@ export const AR_STRINGS: Record<string, string> = {
   // ── Roles page: formatModule() output (PERMISSION_MODULES) ─
   Assignments: 'التعيينات',
   Hr: 'الموارد البشرية',
+
+  // ── Bilingual name/description field labels ─────────────────
+  'Name (English)': 'الاسم (بالإنجليزية)',
+  'Name (Arabic)': 'الاسم (بالعربية)',
+  'Description (English)': 'الوصف (بالإنجليزية)',
+  'Description (Arabic)': 'الوصف (بالعربية)',
+  'Full name (English)': 'الاسم الكامل (بالإنجليزية)',
+  'Full name (Arabic)': 'الاسم الكامل (بالعربية)',
 };
 
 /**

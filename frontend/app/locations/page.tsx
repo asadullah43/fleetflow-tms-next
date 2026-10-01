@@ -3,10 +3,13 @@
 import { CrudPage } from '../../components/CrudPage';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useAuth } from '../../lib/auth-context';
+import { useLanguage } from '../../lib/language-context';
+import { localizedName, localizedDescription } from '../../lib/localized-name';
 import { locationsClient, LocationDto } from '../../lib/grpc/locations';
 
 export default function LocationsPage() {
   const { token } = useAuth();
+  const { language } = useLanguage();
 
   return (
     <CrudPage<LocationDto>
@@ -16,9 +19,8 @@ export default function LocationsPage() {
       searchPlaceholder="Location name"
       emptyLabel="No locations yet — add pickup and delivery points to use them on trips."
       columns={[
-        { header: 'Name', render: (r) => r.name },
-        { header: 'Arabic name', render: (r) => r.nameAr ?? '—' },
-        { header: 'Description', render: (r) => r.description ?? '—' },
+        { header: 'Name', render: (r) => localizedName(r, language) },
+        { header: 'Description', render: (r) => localizedDescription(r, language) ?? '—' },
         { header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
       ]}
       fetchAll={() => locationsClient.list(token!)}
@@ -26,17 +28,10 @@ export default function LocationsPage() {
       onUpdate={(id, values) => locationsClient.update(id, values, token!)}
       onDelete={(id) => locationsClient.remove(id, token!)}
       formFields={[
-        { name: 'name', label: 'Name', required: true },
-        {
-          name: 'language',
-          label: 'Language of name/description above',
-          type: 'select',
-          options: [
-            { value: 'en', label: 'English' },
-            { value: 'ar', label: 'Arabic' },
-          ],
-        },
-        { name: 'description', label: 'Description', type: 'textarea' },
+        { name: 'name', label: 'Name (English)', required: true },
+        { name: 'nameAr', label: 'Name (Arabic)' },
+        { name: 'description', label: 'Description (English)', type: 'textarea' },
+        { name: 'descriptionAr', label: 'Description (Arabic)', type: 'textarea' },
         {
           name: 'status',
           label: 'Status',
@@ -47,8 +42,14 @@ export default function LocationsPage() {
           ],
         },
       ]}
-      emptyValues={{ name: '', language: 'en', description: '', status: 'ACTIVE' }}
-      toFormValues={(r) => ({ name: r.name, language: 'en', description: r.description ?? '', status: r.status })}
+      emptyValues={{ name: '', nameAr: '', description: '', descriptionAr: '', status: 'ACTIVE' }}
+      toFormValues={(r) => ({
+        name: r.name,
+        nameAr: r.nameAr ?? '',
+        description: r.description ?? '',
+        descriptionAr: r.descriptionAr ?? '',
+        status: r.status,
+      })}
     />
   );
 }

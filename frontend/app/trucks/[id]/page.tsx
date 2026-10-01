@@ -9,7 +9,8 @@ import { StatusBadge } from '../../../components/StatusBadge';
 import { Icon } from '../../../components/icons';
 import { DateField } from '../../../components/DateField';
 import { useAuth } from '../../../lib/auth-context';
-import { useT } from '../../../lib/language-context';
+import { useT, useLanguage } from '../../../lib/language-context';
+import { localizedName } from '../../../lib/localized-name';
 import { trucksClient, TruckDto } from '../../../lib/grpc/trucks';
 import { driversClient, DriverDto } from '../../../lib/grpc/drivers';
 import { assignmentsClient, AssignmentDto } from '../../../lib/grpc/assignments';
@@ -21,6 +22,7 @@ export default function TruckDetailPage() {
   const truckId = Number(params.id);
   const { token } = useAuth();
   const t = useT();
+  const { language } = useLanguage();
 
   const [truck, setTruck] = useState<TruckDto | null>(null);
   const [drivers, setDrivers] = useState<DriverDto[]>([]);
@@ -55,7 +57,7 @@ export default function TruckDetailPage() {
 
   const current = useMemo(() => history.find((a) => assignmentState(a) === 'active') ?? null, [history]);
 
-  const driverOptions = drivers.map((d) => ({ value: String(d.id), label: d.name }));
+  const driverOptions = drivers.map((d) => ({ value: String(d.id), label: localizedName(d, language) }));
 
   async function assignDriver() {
     if (!token) return;

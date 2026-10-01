@@ -4,17 +4,20 @@ import { useEffect, useState } from 'react';
 import { CrudPage } from '../../components/CrudPage';
 import { AppShell } from '../../components/AppShell';
 import { useAuth } from '../../lib/auth-context';
+import { useLanguage } from '../../lib/language-context';
+import { localizedName } from '../../lib/localized-name';
 import { supplierPaymentsClient, SupplierPaymentDto } from '../../lib/grpc/supplier-payments';
 import { suppliersClient } from '../../lib/grpc/suppliers';
 
 export default function SupplierPaymentsPage() {
   const { token } = useAuth();
+  const { language } = useLanguage();
   const [suppliers, setSuppliers] = useState<{ value: string; label: string }[] | null>(null);
 
   useEffect(() => {
     if (!token) return;
-    suppliersClient.list(token).then((rows) => setSuppliers(rows.map((s) => ({ value: String(s.id), label: s.name }))));
-  }, [token]);
+    suppliersClient.list(token).then((rows) => setSuppliers(rows.map((s) => ({ value: String(s.id), label: localizedName(s, language) }))));
+  }, [token, language]);
 
   if (!suppliers) {
     return (

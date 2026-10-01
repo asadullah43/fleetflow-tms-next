@@ -4,6 +4,8 @@ import { useMemo } from 'react';
 import { CrudPage } from '../../../components/CrudPage';
 import { StatusBadge } from '../../../components/StatusBadge';
 import { useAuth } from '../../../lib/auth-context';
+import { useLanguage } from '../../../lib/language-context';
+import { localizedName } from '../../../lib/localized-name';
 import { departmentsClient, DepartmentDto } from '../../../lib/grpc/hr';
 
 const STATUSES = [
@@ -13,6 +15,7 @@ const STATUSES = [
 
 export default function DepartmentsPage() {
   const { token } = useAuth();
+  const { language } = useLanguage();
 
   const filterBar = useMemo(
     () => ({
@@ -38,7 +41,7 @@ export default function DepartmentsPage() {
       emptyLabel="No departments yet."
       filterBar={filterBar}
       columns={[
-        { header: 'Name', render: (r) => r.name },
+        { header: 'Name', render: (r) => localizedName(r, language) },
         { header: 'Description', render: (r) => r.description ?? '—' },
         { header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
       ]}
@@ -47,13 +50,13 @@ export default function DepartmentsPage() {
       onUpdate={(id, v) => departmentsClient.update(id, v, token!)}
       onDelete={(id) => departmentsClient.remove(id, token!)}
       formFields={[
-        { name: 'name', label: 'Name', required: true },
-        { name: 'language', label: 'Language', type: 'select', options: [{ value: 'en', label: 'English' }, { value: 'ar', label: 'Arabic' }] },
+        { name: 'name', label: 'Name (English)', required: true },
+        { name: 'nameAr', label: 'Name (Arabic)' },
         { name: 'description', label: 'Description', type: 'textarea' },
         { name: 'status', label: 'Status', type: 'select', options: STATUSES },
       ]}
-      emptyValues={{ name: '', language: 'en', description: '', status: 'ACTIVE' }}
-      toFormValues={(r) => ({ name: r.name, language: 'en', description: r.description ?? '', status: r.status })}
+      emptyValues={{ name: '', nameAr: '', description: '', status: 'ACTIVE' }}
+      toFormValues={(r) => ({ name: r.name, nameAr: r.nameAr ?? '', description: r.description ?? '', status: r.status })}
     />
   );
 }

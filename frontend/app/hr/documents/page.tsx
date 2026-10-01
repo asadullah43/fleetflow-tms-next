@@ -4,22 +4,25 @@ import { useEffect, useMemo, useState } from 'react';
 import { CrudPage } from '../../../components/CrudPage';
 import { AppShell } from '../../../components/AppShell';
 import { useAuth } from '../../../lib/auth-context';
+import { useLanguage } from '../../../lib/language-context';
+import { localizedName } from '../../../lib/localized-name';
 import { employeesClient, employeeDocumentsClient, EmployeeDocumentDto } from '../../../lib/grpc/hr';
 
 type Opt = { value: string; label: string }[];
 
 export default function EmployeeDocumentsPage() {
   const { token } = useAuth();
+  const { language } = useLanguage();
   const [opts, setOpts] = useState<{ employees: Opt } | null>(null);
   const [docTypes, setDocTypes] = useState<string[]>([]);
 
   useEffect(() => {
     if (!token) return;
     Promise.all([employeesClient.list(token), employeeDocumentsClient.list(token)]).then(([emps, docs]) => {
-      setOpts({ employees: emps.map((e) => ({ value: String(e.id), label: e.name })) });
+      setOpts({ employees: emps.map((e) => ({ value: String(e.id), label: localizedName(e, language) })) });
       setDocTypes(Array.from(new Set(docs.map((d) => d.documentType).filter(Boolean))).sort());
     });
-  }, [token]);
+  }, [token, language]);
 
   const filterBar = useMemo(
     () => ({

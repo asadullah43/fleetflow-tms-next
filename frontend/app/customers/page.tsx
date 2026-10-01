@@ -3,10 +3,13 @@
 import { CrudPage } from '../../components/CrudPage';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useAuth } from '../../lib/auth-context';
+import { useLanguage } from '../../lib/language-context';
+import { localizedName } from '../../lib/localized-name';
 import { customersClient, CustomerDto } from '../../lib/grpc/customers';
 
 export default function CustomersPage() {
   const { token } = useAuth();
+  const { language } = useLanguage();
 
   return (
     <CrudPage<CustomerDto>
@@ -16,7 +19,7 @@ export default function CustomersPage() {
       searchPlaceholder="Customer name"
       emptyLabel="No customers yet."
       columns={[
-        { header: 'Name', render: (r) => r.name },
+        { header: 'Name', render: (r) => localizedName(r, language) },
         { header: 'Contact', render: (r) => r.contactPerson ?? '—' },
         { header: 'Phone', render: (r) => r.phone ?? '—' },
         { header: 'City', render: (r) => r.city ?? '—' },
@@ -27,16 +30,8 @@ export default function CustomersPage() {
       onUpdate={(id, values) => customersClient.update(id, values, token!)}
       onDelete={(id) => customersClient.remove(id, token!)}
       formFields={[
-        { name: 'name', label: 'Name', required: true },
-        {
-          name: 'language',
-          label: 'Language of name above',
-          type: 'select',
-          options: [
-            { value: 'en', label: 'English' },
-            { value: 'ar', label: 'Arabic' },
-          ],
-        },
+        { name: 'name', label: 'Name (English)', required: true },
+        { name: 'nameAr', label: 'Name (Arabic)' },
         { name: 'contactPerson', label: 'Contact person' },
         { name: 'phone', label: 'Phone' },
         { name: 'email', label: 'Email' },
@@ -60,7 +55,7 @@ export default function CustomersPage() {
       ]}
       emptyValues={{
         name: '',
-        language: 'en',
+        nameAr: '',
         contactPerson: '',
         phone: '',
         email: '',
@@ -76,7 +71,7 @@ export default function CustomersPage() {
       }}
       toFormValues={(r) => ({
         name: r.name,
-        language: 'en',
+        nameAr: r.nameAr ?? '',
         contactPerson: r.contactPerson ?? '',
         phone: r.phone ?? '',
         email: r.email ?? '',

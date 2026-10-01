@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { CrudPage } from '../../components/CrudPage';
 import { AppShell } from '../../components/AppShell';
 import { useAuth } from '../../lib/auth-context';
+import { useLanguage } from '../../lib/language-context';
+import { localizedName } from '../../lib/localized-name';
 import { rateContractsClient, RateContractDto } from '../../lib/grpc/rate-contracts';
 import { customersClient } from '../../lib/grpc/customers';
 import { locationsClient } from '../../lib/grpc/locations';
@@ -13,18 +15,19 @@ type Opt = { value: string; label: string }[];
 
 export default function RateContractsPage() {
   const { token } = useAuth();
+  const { language } = useLanguage();
   const [opts, setOpts] = useState<{ customers: Opt; locations: Opt; cargoTypes: Opt } | null>(null);
 
   useEffect(() => {
     if (!token) return;
     Promise.all([customersClient.list(token), locationsClient.list(token), cargoTypesClient.list(token)]).then(([customers, locations, cargoTypes]) => {
       setOpts({
-        customers: customers.map((c) => ({ value: String(c.id), label: c.name })),
-        locations: locations.map((l) => ({ value: String(l.id), label: l.name })),
-        cargoTypes: cargoTypes.map((c) => ({ value: String(c.id), label: c.name })),
+        customers: customers.map((c) => ({ value: String(c.id), label: localizedName(c, language) })),
+        locations: locations.map((l) => ({ value: String(l.id), label: localizedName(l, language) })),
+        cargoTypes: cargoTypes.map((c) => ({ value: String(c.id), label: localizedName(c, language) })),
       });
     });
-  }, [token]);
+  }, [token, language]);
 
   if (!opts) {
     return (

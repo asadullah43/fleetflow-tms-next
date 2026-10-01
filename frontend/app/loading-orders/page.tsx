@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { AppShell } from '../../components/AppShell';
 import { Icon } from '../../components/icons';
 import { useAuth } from '../../lib/auth-context';
+import { useLanguage } from '../../lib/language-context';
+import { localizedName } from '../../lib/localized-name';
 import { loadingOrdersClient, LoadingOrderBatchDto } from '../../lib/grpc/loading-orders';
 import { locationsClient } from '../../lib/grpc/locations';
 import { customersClient } from '../../lib/grpc/customers';
@@ -23,6 +25,7 @@ type Opt = { value: string; label: string }[];
  */
 export default function LoadingOrdersPage() {
   const { token } = useAuth();
+  const { language } = useLanguage();
   const [opts, setOpts] = useState<{ locations: Opt; customers: Opt; cargoTypes: Opt } | null>(null);
   const [batches, setBatches] = useState<LoadingOrderBatchDto[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -49,15 +52,15 @@ export default function LoadingOrdersPage() {
     Promise.all([locationsClient.list(token), customersClient.list(token), cargoTypesClient.list(token)]).then(
       ([locations, customers, cargoTypes]) => {
         setOpts({
-          locations: locations.map((l) => ({ value: String(l.id), label: l.name })),
-          customers: customers.map((c) => ({ value: String(c.id), label: c.name })),
-          cargoTypes: cargoTypes.map((c) => ({ value: String(c.id), label: c.name })),
+          locations: locations.map((l) => ({ value: String(l.id), label: localizedName(l, language) })),
+          customers: customers.map((c) => ({ value: String(c.id), label: localizedName(c, language) })),
+          cargoTypes: cargoTypes.map((c) => ({ value: String(c.id), label: localizedName(c, language) })),
         });
       },
     );
     loadBatches();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [token, language]);
 
   async function handleGenerate() {
     setFormError(null);

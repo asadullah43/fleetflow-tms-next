@@ -5,6 +5,8 @@ import { CrudPage } from '../../../components/CrudPage';
 import { AppShell } from '../../../components/AppShell';
 import { StatusBadge } from '../../../components/StatusBadge';
 import { useAuth } from '../../../lib/auth-context';
+import { useLanguage } from '../../../lib/language-context';
+import { localizedName } from '../../../lib/localized-name';
 import { workOrdersClient, WorkOrderDto } from '../../../lib/grpc/workshop';
 import { trucksClient } from '../../../lib/grpc/trucks';
 import { driversClient } from '../../../lib/grpc/drivers';
@@ -27,6 +29,7 @@ const STATUSES = [
 
 export default function WorkOrdersPage() {
   const { token } = useAuth();
+  const { language } = useLanguage();
   const [opts, setOpts] = useState<{ trucks: Opt; drivers: Opt; suppliers: Opt } | null>(null);
 
   useEffect(() => {
@@ -34,11 +37,11 @@ export default function WorkOrdersPage() {
     Promise.all([trucksClient.list(token), driversClient.list(token), suppliersClient.list(token)]).then(([trucks, drivers, suppliers]) => {
       setOpts({
         trucks: trucks.map((t) => ({ value: String(t.id), label: t.truckNumber })),
-        drivers: drivers.map((d) => ({ value: String(d.id), label: d.name })),
-        suppliers: suppliers.map((s) => ({ value: String(s.id), label: s.name })),
+        drivers: drivers.map((d) => ({ value: String(d.id), label: localizedName(d, language) })),
+        suppliers: suppliers.map((s) => ({ value: String(s.id), label: localizedName(s, language) })),
       });
     });
-  }, [token]);
+  }, [token, language]);
 
   const filterBar = useMemo(
     () => ({

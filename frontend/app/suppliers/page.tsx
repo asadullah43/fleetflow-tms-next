@@ -3,10 +3,13 @@
 import { CrudPage } from '../../components/CrudPage';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useAuth } from '../../lib/auth-context';
+import { useLanguage } from '../../lib/language-context';
+import { localizedName } from '../../lib/localized-name';
 import { suppliersClient, SupplierDto } from '../../lib/grpc/suppliers';
 
 export default function SuppliersPage() {
   const { token } = useAuth();
+  const { language } = useLanguage();
 
   return (
     <CrudPage<SupplierDto>
@@ -16,7 +19,7 @@ export default function SuppliersPage() {
       searchPlaceholder="Supplier name"
       emptyLabel="No suppliers yet."
       columns={[
-        { header: 'Name', render: (r) => r.name },
+        { header: 'Name', render: (r) => localizedName(r, language) },
         { header: 'Contact', render: (r) => r.contactPerson ?? '—' },
         { header: 'Phone', render: (r) => r.phone ?? '—' },
         { header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
@@ -26,16 +29,8 @@ export default function SuppliersPage() {
       onUpdate={(id, values) => suppliersClient.update(id, values, token!)}
       onDelete={(id) => suppliersClient.remove(id, token!)}
       formFields={[
-        { name: 'name', label: 'Name', required: true },
-        {
-          name: 'language',
-          label: 'Language of name above',
-          type: 'select',
-          options: [
-            { value: 'en', label: 'English' },
-            { value: 'ar', label: 'Arabic' },
-          ],
-        },
+        { name: 'name', label: 'Name (English)', required: true },
+        { name: 'nameAr', label: 'Name (Arabic)' },
         { name: 'contactPerson', label: 'Contact person' },
         { name: 'phone', label: 'Phone' },
         { name: 'email', label: 'Email' },
@@ -49,10 +44,10 @@ export default function SuppliersPage() {
           ],
         },
       ]}
-      emptyValues={{ name: '', language: 'en', contactPerson: '', phone: '', email: '', status: 'ACTIVE' }}
+      emptyValues={{ name: '', nameAr: '', contactPerson: '', phone: '', email: '', status: 'ACTIVE' }}
       toFormValues={(r) => ({
         name: r.name,
-        language: 'en',
+        nameAr: r.nameAr ?? '',
         contactPerson: r.contactPerson ?? '',
         phone: r.phone ?? '',
         email: r.email ?? '',

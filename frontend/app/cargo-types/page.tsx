@@ -3,10 +3,14 @@
 import { CrudPage } from '../../components/CrudPage';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useAuth } from '../../lib/auth-context';
+import { useLanguage, useT } from '../../lib/language-context';
+import { localizedName } from '../../lib/localized-name';
 import { cargoTypesClient, CargoTypeDto } from '../../lib/grpc/cargo-types';
 
 export default function CargoTypesPage() {
   const { token } = useAuth();
+  const { language } = useLanguage();
+  const t = useT();
 
   return (
     <CrudPage<CargoTypeDto>
@@ -16,8 +20,8 @@ export default function CargoTypesPage() {
       searchPlaceholder="Cargo type name"
       emptyLabel="No cargo types yet."
       columns={[
-        { header: 'Name', render: (r) => r.name },
-        { header: 'Pricing mode', render: (r) => (r.pricingMode === 'PER_MT' ? 'Per metric ton' : 'Per trip') },
+        { header: 'Name', render: (r) => localizedName(r, language) },
+        { header: 'Pricing mode', render: (r) => t(r.pricingMode === 'PER_MT' ? 'Per metric ton' : 'Per trip') },
         { header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
       ]}
       fetchAll={() => cargoTypesClient.list(token!)}
@@ -25,16 +29,8 @@ export default function CargoTypesPage() {
       onUpdate={(id, values) => cargoTypesClient.update(id, values, token!)}
       onDelete={(id) => cargoTypesClient.remove(id, token!)}
       formFields={[
-        { name: 'name', label: 'Name', required: true },
-        {
-          name: 'language',
-          label: 'Language of name above',
-          type: 'select',
-          options: [
-            { value: 'en', label: 'English' },
-            { value: 'ar', label: 'Arabic' },
-          ],
-        },
+        { name: 'name', label: 'Name (English)', required: true },
+        { name: 'nameAr', label: 'Name (Arabic)' },
         { name: 'description', label: 'Description', type: 'textarea' },
         {
           name: 'pricingMode',
@@ -55,8 +51,8 @@ export default function CargoTypesPage() {
           ],
         },
       ]}
-      emptyValues={{ name: '', language: 'en', description: '', pricingMode: 'PER_MT', status: 'ACTIVE' }}
-      toFormValues={(r) => ({ name: r.name, language: 'en', description: r.description ?? '', pricingMode: r.pricingMode, status: r.status })}
+      emptyValues={{ name: '', nameAr: '', description: '', pricingMode: 'PER_MT', status: 'ACTIVE' }}
+      toFormValues={(r) => ({ name: r.name, nameAr: r.nameAr ?? '', description: r.description ?? '', pricingMode: r.pricingMode, status: r.status })}
     />
   );
 }

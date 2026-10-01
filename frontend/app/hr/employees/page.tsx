@@ -5,6 +5,8 @@ import { CrudPage } from '../../../components/CrudPage';
 import { AppShell } from '../../../components/AppShell';
 import { StatusBadge } from '../../../components/StatusBadge';
 import { useAuth } from '../../../lib/auth-context';
+import { useLanguage } from '../../../lib/language-context';
+import { localizedName } from '../../../lib/localized-name';
 import { departmentsClient, designationsClient, employeesClient, EmployeeDto } from '../../../lib/grpc/hr';
 
 type Opt = { value: string; label: string }[];
@@ -17,17 +19,18 @@ const STATUSES = [
 
 export default function EmployeesPage() {
   const { token } = useAuth();
+  const { language } = useLanguage();
   const [opts, setOpts] = useState<{ departments: Opt; designations: Opt } | null>(null);
 
   useEffect(() => {
     if (!token) return;
     Promise.all([departmentsClient.list(token), designationsClient.list(token)]).then(([deps, desigs]) => {
       setOpts({
-        departments: deps.map((d) => ({ value: String(d.id), label: d.name })),
-        designations: desigs.map((d) => ({ value: String(d.id), label: d.name })),
+        departments: deps.map((d) => ({ value: String(d.id), label: localizedName(d, language) })),
+        designations: desigs.map((d) => ({ value: String(d.id), label: localizedName(d, language) })),
       });
     });
-  }, [token]);
+  }, [token, language]);
 
   const filterBar = useMemo(
     () => ({
@@ -69,7 +72,7 @@ export default function EmployeesPage() {
       filterBar={filterBar}
       columns={[
         { header: 'Employee #', render: (r) => <span className="mono">{r.employeeNumber}</span> },
-        { header: 'Name', render: (r) => r.name },
+        { header: 'Name', render: (r) => localizedName(r, language) },
         { header: 'Department', render: (r) => r.departmentName ?? r.departmentId },
         { header: 'Status', render: (r) => <StatusBadge status={r.employmentStatus} /> },
       ]}
@@ -89,8 +92,8 @@ export default function EmployeesPage() {
       }
       onDelete={(id) => employeesClient.remove(id, token!)}
       formFields={[
-        { name: 'name', label: 'Full name', required: true },
-        { name: 'language', label: 'Language', type: 'select', options: [{ value: 'en', label: 'English' }, { value: 'ar', label: 'Arabic' }] },
+        { name: 'name', label: 'Full name (English)', required: true },
+        { name: 'nameAr', label: 'Full name (Arabic)' },
         { name: 'email', label: 'Email' },
         { name: 'phone', label: 'Phone' },
         { name: 'joiningDate', label: 'Joining date', type: 'date', required: true },
@@ -104,10 +107,10 @@ export default function EmployeesPage() {
         },
         { name: 'employmentStatus', label: 'Status', type: 'select', options: STATUSES },
       ]}
-      emptyValues={{ name: '', language: 'en', email: '', phone: '', joiningDate: '', departmentId: '', designationId: '', employmentType: 'FULL_TIME', employmentStatus: 'ACTIVE' }}
+      emptyValues={{ name: '', nameAr: '', email: '', phone: '', joiningDate: '', departmentId: '', designationId: '', employmentType: 'FULL_TIME', employmentStatus: 'ACTIVE' }}
       toFormValues={(r) => ({
         name: r.name,
-        language: 'en',
+        nameAr: r.nameAr ?? '',
         email: r.email ?? '',
         phone: r.phone ?? '',
         joiningDate: r.joiningDate?.slice(0, 10) ?? '',

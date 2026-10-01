@@ -6,7 +6,8 @@ import { Modal } from '../../components/Modal';
 import { DateField } from '../../components/DateField';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useAuth } from '../../lib/auth-context';
-import { useT } from '../../lib/language-context';
+import { useT, useLanguage } from '../../lib/language-context';
+import { localizedName } from '../../lib/localized-name';
 import { invoicesClient, InvoiceDto, InvoiceLineItemDto } from '../../lib/grpc/invoices';
 import { customersClient } from '../../lib/grpc/customers';
 import type { RpcError } from '../../lib/grpc/client';
@@ -18,6 +19,7 @@ function emptyLine(): InvoiceLineItemDto {
 export default function InvoicesPage() {
   const { token } = useAuth();
   const t = useT();
+  const { language } = useLanguage();
   const [invoices, setInvoices] = useState<InvoiceDto[] | null>(null);
   const [customers, setCustomers] = useState<{ value: string; label: string }[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,12 +38,12 @@ export default function InvoicesPage() {
     Promise.all([invoicesClient.list(token), customersClient.list(token)])
       .then(([inv, cust]) => {
         setInvoices(inv);
-        setCustomers(cust.map((c) => ({ value: String(c.id), label: c.name })));
+        setCustomers(cust.map((c) => ({ value: String(c.id), label: localizedName(c, language) })));
       })
       .catch((err) => setError((err as RpcError).message ?? 'Failed to load invoices.'));
   }
 
-  useEffect(load, [token]);
+  useEffect(load, [token, language]);
 
   function openCreate() {
     setCustomerId('');

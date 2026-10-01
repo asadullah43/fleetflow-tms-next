@@ -5,6 +5,8 @@ import { CrudPage } from '../../../components/CrudPage';
 import { AppShell } from '../../../components/AppShell';
 import { StatusBadge } from '../../../components/StatusBadge';
 import { useAuth } from '../../../lib/auth-context';
+import { useLanguage } from '../../../lib/language-context';
+import { localizedName } from '../../../lib/localized-name';
 import { employeesClient, attendanceClient, AttendanceDto } from '../../../lib/grpc/hr';
 
 type Opt = { value: string; label: string }[];
@@ -18,12 +20,13 @@ const STATUSES = [
 
 export default function AttendancePage() {
   const { token } = useAuth();
+  const { language } = useLanguage();
   const [opts, setOpts] = useState<{ employees: Opt } | null>(null);
 
   useEffect(() => {
     if (!token) return;
-    employeesClient.list(token).then((emps) => setOpts({ employees: emps.map((e) => ({ value: String(e.id), label: e.name })) }));
-  }, [token]);
+    employeesClient.list(token).then((emps) => setOpts({ employees: emps.map((e) => ({ value: String(e.id), label: localizedName(e, language) })) }));
+  }, [token, language]);
 
   const filterBar = useMemo(
     () => ({

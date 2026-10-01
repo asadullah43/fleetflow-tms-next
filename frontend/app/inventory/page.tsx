@@ -5,6 +5,8 @@ import { CrudPage } from '../../components/CrudPage';
 import { AppShell } from '../../components/AppShell';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useAuth } from '../../lib/auth-context';
+import { useLanguage } from '../../lib/language-context';
+import { localizedName } from '../../lib/localized-name';
 import { sparePartsClient, SparePartDto } from '../../lib/grpc/workshop';
 import { suppliersClient } from '../../lib/grpc/suppliers';
 
@@ -18,12 +20,13 @@ const STATUSES = [
 /** Spare parts stock, moved out of Workshop into its own top-level module. */
 export default function InventoryPage() {
   const { token } = useAuth();
+  const { language } = useLanguage();
   const [opts, setOpts] = useState<{ suppliers: Opt } | null>(null);
 
   useEffect(() => {
     if (!token) return;
-    suppliersClient.list(token).then((suppliers) => setOpts({ suppliers: suppliers.map((s) => ({ value: String(s.id), label: s.name })) }));
-  }, [token]);
+    suppliersClient.list(token).then((suppliers) => setOpts({ suppliers: suppliers.map((s) => ({ value: String(s.id), label: localizedName(s, language) })) }));
+  }, [token, language]);
 
   const filterBar = useMemo(
     () => ({
@@ -58,7 +61,7 @@ export default function InventoryPage() {
       emptyLabel="No spare parts in inventory yet."
       filterBar={filterBar}
       columns={[
-        { header: 'Name', render: (r) => r.name },
+        { header: 'Name', render: (r) => localizedName(r, language) },
         { header: 'Part #', render: (r) => r.partNumber ?? '—' },
         { header: 'Qty', render: (r) => r.quantity, align: 'right' },
         { header: 'Min stock', render: (r) => r.minimumStock, align: 'right' },
@@ -70,8 +73,8 @@ export default function InventoryPage() {
       onUpdate={(id, v) => sparePartsClient.update(id, { ...v, quantity: Number(v.quantity), minimumStock: Number(v.minimumStock), supplierId: v.supplierId ? Number(v.supplierId) : undefined }, token!)}
       onDelete={(id) => sparePartsClient.remove(id, token!)}
       formFields={[
-        { name: 'name', label: 'Name', required: true },
-        { name: 'language', label: 'Language', type: 'select', options: [{ value: 'en', label: 'English' }, { value: 'ar', label: 'Arabic' }] },
+        { name: 'name', label: 'Name (English)', required: true },
+        { name: 'nameAr', label: 'Name (Arabic)' },
         { name: 'partNumber', label: 'Part number' },
         { name: 'category', label: 'Category' },
         { name: 'quantity', label: 'Quantity in stock', required: true },
@@ -80,10 +83,10 @@ export default function InventoryPage() {
         { name: 'supplierId', label: 'Supplier', type: 'select', options: opts.suppliers },
         { name: 'status', label: 'Status', type: 'select', options: STATUSES },
       ]}
-      emptyValues={{ name: '', language: 'en', partNumber: '', category: '', quantity: '0', minimumStock: '0', unitCost: '0', supplierId: '', status: 'ACTIVE' }}
+      emptyValues={{ name: '', nameAr: '', partNumber: '', category: '', quantity: '0', minimumStock: '0', unitCost: '0', supplierId: '', status: 'ACTIVE' }}
       toFormValues={(r) => ({
         name: r.name,
-        language: 'en',
+        nameAr: r.nameAr ?? '',
         partNumber: r.partNumber ?? '',
         category: r.category ?? '',
         quantity: String(r.quantity),

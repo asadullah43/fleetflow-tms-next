@@ -5,6 +5,8 @@ import { CrudPage } from '../../../components/CrudPage';
 import { AppShell } from '../../../components/AppShell';
 import { StatusBadge } from '../../../components/StatusBadge';
 import { useAuth } from '../../../lib/auth-context';
+import { useLanguage } from '../../../lib/language-context';
+import { localizedName } from '../../../lib/localized-name';
 import { departmentsClient, designationsClient, DesignationDto } from '../../../lib/grpc/hr';
 
 type Opt = { value: string; label: string }[];
@@ -16,12 +18,13 @@ const STATUSES = [
 
 export default function DesignationsPage() {
   const { token } = useAuth();
+  const { language } = useLanguage();
   const [opts, setOpts] = useState<{ departments: Opt } | null>(null);
 
   useEffect(() => {
     if (!token) return;
-    departmentsClient.list(token).then((deps) => setOpts({ departments: deps.map((d) => ({ value: String(d.id), label: d.name })) }));
-  }, [token]);
+    departmentsClient.list(token).then((deps) => setOpts({ departments: deps.map((d) => ({ value: String(d.id), label: localizedName(d, language) })) }));
+  }, [token, language]);
 
   const filterBar = useMemo(
     () => ({
@@ -56,7 +59,7 @@ export default function DesignationsPage() {
       emptyLabel="No designations yet."
       filterBar={filterBar}
       columns={[
-        { header: 'Name', render: (r) => r.name },
+        { header: 'Name', render: (r) => localizedName(r, language) },
         { header: 'Department', render: (r) => r.departmentName ?? r.departmentId },
         { header: 'Level', render: (r) => r.level ?? '—' },
         { header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
@@ -66,14 +69,14 @@ export default function DesignationsPage() {
       onUpdate={(id, v) => designationsClient.update(id, { ...v, departmentId: Number(v.departmentId) }, token!)}
       onDelete={(id) => designationsClient.remove(id, token!)}
       formFields={[
-        { name: 'name', label: 'Name', required: true },
-        { name: 'language', label: 'Language', type: 'select', options: [{ value: 'en', label: 'English' }, { value: 'ar', label: 'Arabic' }] },
+        { name: 'name', label: 'Name (English)', required: true },
+        { name: 'nameAr', label: 'Name (Arabic)' },
         { name: 'departmentId', label: 'Department', type: 'select', options: opts.departments, required: true },
         { name: 'level', label: 'Level' },
         { name: 'status', label: 'Status', type: 'select', options: STATUSES },
       ]}
-      emptyValues={{ name: '', language: 'en', departmentId: '', level: '', status: 'ACTIVE' }}
-      toFormValues={(r) => ({ name: r.name, language: 'en', departmentId: String(r.departmentId), level: r.level ?? '', status: r.status })}
+      emptyValues={{ name: '', nameAr: '', departmentId: '', level: '', status: 'ACTIVE' }}
+      toFormValues={(r) => ({ name: r.name, nameAr: r.nameAr ?? '', departmentId: String(r.departmentId), level: r.level ?? '', status: r.status })}
     />
   );
 }

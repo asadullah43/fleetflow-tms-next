@@ -6,7 +6,8 @@ import { AppShell } from '../../components/AppShell';
 import { Modal } from '../../components/Modal';
 import { AssignmentHistoryTimeline } from '../../components/AssignmentHistoryTimeline';
 import { useAuth } from '../../lib/auth-context';
-import { useT } from '../../lib/language-context';
+import { useT, useLanguage } from '../../lib/language-context';
+import { localizedName } from '../../lib/localized-name';
 import { assignmentsClient, AssignmentDto } from '../../lib/grpc/assignments';
 import { trucksClient } from '../../lib/grpc/trucks';
 import { driversClient } from '../../lib/grpc/drivers';
@@ -14,6 +15,7 @@ import { driversClient } from '../../lib/grpc/drivers';
 export default function AssignmentsPage() {
   const { token } = useAuth();
   const t = useT();
+  const { language } = useLanguage();
   const [options, setOptions] = useState<{ trucks: { value: string; label: string }[]; drivers: { value: string; label: string }[] } | null>(null);
   const [history, setHistory] = useState<{ truckLabel: string; rows: AssignmentDto[] } | null>(null);
 
@@ -21,11 +23,11 @@ export default function AssignmentsPage() {
     if (!token) return;
     Promise.all([trucksClient.list(token), driversClient.list(token)]).then(([trucks, drivers]) => {
       setOptions({
-        trucks: trucks.map((t) => ({ value: String(t.id), label: t.truckNumber })),
-        drivers: drivers.map((d) => ({ value: String(d.id), label: d.name })),
+        trucks: trucks.map((truck) => ({ value: String(truck.id), label: truck.truckNumber })),
+        drivers: drivers.map((d) => ({ value: String(d.id), label: localizedName(d, language) })),
       });
     });
-  }, [token]);
+  }, [token, language]);
 
   async function viewHistory(row: AssignmentDto) {
     if (!token) return;

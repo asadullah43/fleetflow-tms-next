@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { CrudPage } from '../../components/CrudPage';
 import { AppShell } from '../../components/AppShell';
 import { useAuth } from '../../lib/auth-context';
+import { useLanguage } from '../../lib/language-context';
+import { localizedName } from '../../lib/localized-name';
 import { tripsClient, TripDto } from '../../lib/grpc/trips';
 import { customersClient } from '../../lib/grpc/customers';
 import { locationsClient } from '../../lib/grpc/locations';
@@ -24,6 +26,7 @@ function currentAssignment(assignments: AssignmentDto[], truckId: number): Assig
 
 export default function TripsPage() {
   const { token } = useAuth();
+  const { language } = useLanguage();
   const [opts, setOpts] = useState<{ customers: Opt; locations: Opt; cargoTypes: Opt; trucks: Opt; drivers: Opt } | null>(null);
   const [assignments, setAssignments] = useState<AssignmentDto[]>([]);
 
@@ -38,15 +41,15 @@ export default function TripsPage() {
       assignmentsClient.list(token),
     ]).then(([customers, locations, cargoTypes, trucks, drivers, assignmentList]) => {
       setOpts({
-        customers: customers.map((c) => ({ value: String(c.id), label: c.name })),
-        locations: locations.map((l) => ({ value: String(l.id), label: l.name })),
-        cargoTypes: cargoTypes.map((c) => ({ value: String(c.id), label: c.name })),
+        customers: customers.map((c) => ({ value: String(c.id), label: localizedName(c, language) })),
+        locations: locations.map((l) => ({ value: String(l.id), label: localizedName(l, language) })),
+        cargoTypes: cargoTypes.map((c) => ({ value: String(c.id), label: localizedName(c, language) })),
         trucks: trucks.map((t) => ({ value: String(t.id), label: t.truckNumber })),
-        drivers: drivers.map((d) => ({ value: String(d.id), label: d.name })),
+        drivers: drivers.map((d) => ({ value: String(d.id), label: localizedName(d, language) })),
       });
       setAssignments(assignmentList);
     });
-  }, [token]);
+  }, [token, language]);
 
   const filterBar = useMemo(
     () => ({

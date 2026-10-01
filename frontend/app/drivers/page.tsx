@@ -3,10 +3,13 @@
 import { CrudPage } from '../../components/CrudPage';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useAuth } from '../../lib/auth-context';
+import { useLanguage } from '../../lib/language-context';
+import { localizedName } from '../../lib/localized-name';
 import { driversClient, DriverDto } from '../../lib/grpc/drivers';
 
 export default function DriversPage() {
   const { token } = useAuth();
+  const { language } = useLanguage();
 
   return (
     <CrudPage<DriverDto>
@@ -16,7 +19,7 @@ export default function DriversPage() {
       searchPlaceholder="Driver name"
       emptyLabel="No drivers yet."
       columns={[
-        { header: 'Name', render: (r) => r.name },
+        { header: 'Name', render: (r) => localizedName(r, language) },
         { header: 'Phone', render: (r) => r.phone ?? '—' },
         { header: 'License no.', render: (r) => r.licenseNo ?? '—' },
         { header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
@@ -26,16 +29,8 @@ export default function DriversPage() {
       onUpdate={(id, values) => driversClient.update(id, values, token!)}
       onDelete={(id) => driversClient.remove(id, token!)}
       formFields={[
-        { name: 'name', label: 'Name', required: true },
-        {
-          name: 'language',
-          label: 'Language of name above',
-          type: 'select',
-          options: [
-            { value: 'en', label: 'English' },
-            { value: 'ar', label: 'Arabic' },
-          ],
-        },
+        { name: 'name', label: 'Name (English)', required: true },
+        { name: 'nameAr', label: 'Name (Arabic)' },
         { name: 'phone', label: 'Phone' },
         { name: 'licenseNo', label: 'License number' },
         { name: 'idNumber', label: 'ID number' },
@@ -50,10 +45,10 @@ export default function DriversPage() {
           ],
         },
       ]}
-      emptyValues={{ name: '', language: 'en', phone: '', licenseNo: '', idNumber: '', status: 'ACTIVE' }}
+      emptyValues={{ name: '', nameAr: '', phone: '', licenseNo: '', idNumber: '', status: 'ACTIVE' }}
       toFormValues={(r) => ({
         name: r.name,
-        language: 'en',
+        nameAr: r.nameAr ?? '',
         phone: r.phone ?? '',
         licenseNo: r.licenseNo ?? '',
         idNumber: r.idNumber ?? '',
