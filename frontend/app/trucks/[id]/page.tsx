@@ -7,6 +7,7 @@ import { AppShell } from '../../../components/AppShell';
 import { Modal } from '../../../components/Modal';
 import { StatusBadge } from '../../../components/StatusBadge';
 import { Icon } from '../../../components/icons';
+import { DateField } from '../../../components/DateField';
 import { useAuth } from '../../../lib/auth-context';
 import { trucksClient, TruckDto } from '../../../lib/grpc/trucks';
 import { driversClient, DriverDto } from '../../../lib/grpc/drivers';
@@ -214,11 +215,11 @@ export default function TruckDetailPage() {
             </div>
             <div className="field">
               <label>Start date</label>
-              <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
+              <DateField value={form.startDate} onChange={(v) => setForm({ ...form, startDate: v })} />
             </div>
             <div className="field">
               <label>End date (leave blank if ongoing)</label>
-              <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
+              <DateField value={form.endDate} onChange={(v) => setForm({ ...form, endDate: v })} />
             </div>
             <button
               className="btn btn-primary"
@@ -322,11 +323,11 @@ export default function TruckDetailPage() {
           </div>
           <div className="field">
             <label>Start date</label>
-            <input type="date" value={editForm.startDate} onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })} />
+            <DateField value={editForm.startDate} onChange={(v) => setEditForm({ ...editForm, startDate: v })} />
           </div>
           <div className="field">
             <label>End date (leave blank if ongoing)</label>
-            <input type="date" value={editForm.endDate} onChange={(e) => setEditForm({ ...editForm, endDate: e.target.value })} />
+            <DateField value={editForm.endDate} onChange={(v) => setEditForm({ ...editForm, endDate: v })} />
           </div>
         </Modal>
       )}

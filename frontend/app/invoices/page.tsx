@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { AppShell } from '../../components/AppShell';
 import { Modal } from '../../components/Modal';
+import { DateField } from '../../components/DateField';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useAuth } from '../../lib/auth-context';
 import { invoicesClient, InvoiceDto, InvoiceLineItemDto } from '../../lib/grpc/invoices';
@@ -206,15 +207,15 @@ export default function InvoicesPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
             <div className="field">
               <label>From date</label>
-              <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+              <DateField value={fromDate} onChange={setFromDate} />
             </div>
             <div className="field">
               <label>To date</label>
-              <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+              <DateField value={toDate} onChange={setToDate} />
             </div>
             <div className="field">
               <label>Due date</label>
-              <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+              <DateField value={dueDate} onChange={setDueDate} />
             </div>
           </div>
           <div className="field">

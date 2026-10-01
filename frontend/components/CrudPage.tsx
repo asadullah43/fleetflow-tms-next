@@ -4,6 +4,8 @@ import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { AppShell } from './AppShell';
 import { Modal } from './Modal';
 import { Icon } from './icons';
+import { DateField } from './DateField';
+import { SearchSelect } from './SearchSelect';
 import { cellText, exportCsv, printTable } from '../lib/export-table';
 import type { RpcError } from '../lib/grpc/client';
 
@@ -17,6 +19,8 @@ export interface FilterFieldDef {
   name: string;
   label: string;
   type?: 'text' | 'date';
+  /** Known values for this column (e.g. every location already added) — renders a searchable dropdown instead of a plain text box. */
+  options?: string[];
 }
 
 export interface FilterBarDef<T> {
@@ -203,16 +207,23 @@ export function CrudPanel<T extends { id: number }>({
           {filterBar.fields.map((f) =>
             f.type === 'date' ? (
               <div className="search-field filter-field" key={f.name}>
-                <Icon.calendar size={15} />
-                <input
-                  type="date"
-                  placeholder={f.label}
-                  aria-label={f.label}
+                <DateField
+                  variant="inline"
+                  ariaLabel={f.label}
                   value={filterDraft[f.name] ?? ''}
-                  onChange={(e) => setFilterDraft({ ...filterDraft, [f.name]: e.target.value })}
+                  onChange={(v) => setFilterDraft({ ...filterDraft, [f.name]: v })}
                   onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
                 />
               </div>
+            ) : f.options ? (
+              <SearchSelect
+                key={f.name}
+                placeholder={f.label}
+                options={f.options}
+                value={filterDraft[f.name] ?? ''}
+                onChange={(v) => setFilterDraft({ ...filterDraft, [f.name]: v })}
+                onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+              />
             ) : (
               <div className="search-field filter-field" key={f.name}>
                 <Icon.search size={15} />
@@ -337,6 +348,14 @@ export function CrudPanel<T extends { id: number }>({
               <label htmlFor={field.name}>{field.label}</label>
               {field.readOnly ? (
                 <input id={field.name} type="text" value={values[field.name] ?? ''} disabled readOnly />
+              ) : field.type === 'date' ? (
+                <DateField
+                  id={field.name}
+                  value={values[field.name] ?? ''}
+                  onChange={(v) => updateField(field.name, v)}
+                  required={field.required}
+                  disabled={modal.mode === 'view'}
+                />
               ) : field.type === 'select' ? (
                 <select
                   id={field.name}
@@ -364,7 +383,7 @@ export function CrudPanel<T extends { id: number }>({
               ) : (
                 <input
                   id={field.name}
-                  type={field.type === 'number' || field.type === 'date' ? field.type : 'text'}
+                  type={field.type === 'number' ? field.type : 'text'}
                   value={values[field.name] ?? ''}
                   onChange={(e) => updateField(field.name, e.target.value)}
                   required={field.required}

@@ -54,12 +54,12 @@ export default function TripsPage() {
         { name: 'fromDate', label: 'From Date', type: 'date' as const },
         { name: 'toDate', label: 'To Date', type: 'date' as const },
         { name: 'transactionNumber', label: 'Transaction #' },
-        { name: 'customer', label: 'Customer' },
-        { name: 'driver', label: 'Driver' },
-        { name: 'truck', label: 'Truck' },
-        { name: 'pickup', label: 'Pickup Location' },
-        { name: 'delivery', label: 'Delivery Location' },
-        { name: 'cargoType', label: 'Cargo Type' },
+        { name: 'customer', label: 'Customer', options: opts?.customers.map((o) => o.label) ?? [] },
+        { name: 'driver', label: 'Driver', options: opts?.drivers.map((o) => o.label) ?? [] },
+        { name: 'truck', label: 'Truck', options: opts?.trucks.map((o) => o.label) ?? [] },
+        { name: 'pickup', label: 'Pickup Location', options: opts?.locations.map((o) => o.label) ?? [] },
+        { name: 'delivery', label: 'Delivery Location', options: opts?.locations.map((o) => o.label) ?? [] },
+        { name: 'cargoType', label: 'Cargo Type', options: opts?.cargoTypes.map((o) => o.label) ?? [] },
       ],
       apply: (r: TripDto, f: Record<string, string>) => {
         const day = r.tripDate?.slice(0, 10) ?? '';
@@ -78,7 +78,7 @@ export default function TripsPage() {
         );
       },
     }),
-    []
+    [opts]
   );
 
   function onValuesChange(name: string, value: string) {
