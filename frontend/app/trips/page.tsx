@@ -101,6 +101,7 @@ export default function TripsPage() {
 
   function toApi(values: Record<string, string>) {
     return {
+      transactionNumber: values.transactionNumber,
       customerId: values.customerId ? Number(values.customerId) : undefined,
       pickupLocationId: Number(values.pickupLocationId),
       deliveryLocationId: Number(values.deliveryLocationId),
@@ -132,6 +133,7 @@ export default function TripsPage() {
       onUpdate={(id, values) => tripsClient.update(id, toApi(values), token!)}
       onDelete={(id) => tripsClient.remove(id, token!)}
       formFields={[
+        { name: 'transactionNumber', label: 'Transaction #', required: true },
         { name: 'customerId', label: 'Customer', type: 'select', options: opts.customers },
         { name: 'pickupLocationId', label: 'Pickup location', type: 'select', options: opts.locations, required: true },
         { name: 'deliveryLocationId', label: 'Delivery location', type: 'select', options: opts.locations, required: true },
@@ -142,6 +144,7 @@ export default function TripsPage() {
         { name: 'driverName', label: 'Assigned driver', readOnly: true },
       ]}
       emptyValues={{
+        transactionNumber: '',
         customerId: '',
         pickupLocationId: '',
         deliveryLocationId: '',
@@ -153,6 +156,7 @@ export default function TripsPage() {
         driverName: '',
       }}
       toFormValues={(r) => ({
+        transactionNumber: r.transactionNumber,
         customerId: r.customerId ? String(r.customerId) : '',
         pickupLocationId: String(r.pickupLocationId),
         deliveryLocationId: String(r.deliveryLocationId),

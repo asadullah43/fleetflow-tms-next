@@ -36,11 +36,9 @@ function mapOut(row: any) {
   };
 }
 
-/** Generates a sequential-looking transaction number, e.g. TRX-20261001-0007. */
-async function generateTransactionNumber(): Promise<string> {
-  const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const countToday = await prisma.trip.count();
-  return `TRX-${today}-${String(countToday + 1).padStart(4, '0')}`;
+/** Duck-types Prisma's unique-constraint error (P2002) without importing the generated client namespace. */
+function isUniqueConstraintError(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && (error as { code?: string }).code === 'P2002';
 }
 
 function fail(code: { code: string; filter: any; description: string }, statusCode: number, cause?: unknown): never {
@@ -54,6 +52,7 @@ function fail(code: { code: string; filter: any; description: string }, statusCo
 }
 
 interface TripDto {
+  transactionNumber: string;
   supplierId?: number;
   customerId?: number;
   pickupLocationId: number;
@@ -68,8 +67,10 @@ interface TripDto {
 /**
  * Direct port of the legacy TripsService: the central transaction record
  * linking a truck/driver run between two locations for a customer or
- * supplier and a cargo type. `transactionNumber` is generated the same
- * way the legacy service did (sequential, date-stamped).
+ * supplier and a cargo type. `transactionNumber` is entered by the user
+ * (matches the legacy app — it was never auto-generated server-side) and
+ * is enforced unique at the database level; a clash maps to
+ * TRP_DUPLICATE_TRANSACTION instead of a generic failure.
  */
 export const tripsService = {
   async findAll() {
@@ -84,14 +85,13 @@ export const tripsService = {
   },
 
   async create(dto: Partial<TripDto>) {
-    if (!dto.pickupLocationId || !dto.deliveryLocationId || !dto.cargoTypeId || !dto.truckId || !dto.quantity || !dto.tripDate) {
+    if (!dto.transactionNumber || !dto.pickupLocationId || !dto.deliveryLocationId || !dto.cargoTypeId || !dto.truckId || !dto.quantity || !dto.tripDate) {
       fail(ErrorCode.TRP_INVALID_RELATIONS, 400);
     }
     try {
-      const transactionNumber = await generateTransactionNumber();
       const row = await prisma.trip.create({
         data: {
-          transactionNumber,
+          transactionNumber: dto.transactionNumber!,
           supplierId: dto.supplierId ?? null,
           customerId: dto.customerId ?? null,
           pickupLocationId: dto.pickupLocationId!,
@@ -106,6 +106,9 @@ export const tripsService = {
       });
       return mapOut(row);
     } catch (error) {
+      if (isUniqueConstraintError(error)) {
+        fail(ErrorCode.TRP_DUPLICATE_TRANSACTION, 409, error);
+      }
       fail(ErrorCode.TRP_CREATE_FAILED, 500, error);
     }
   },
@@ -116,6 +119,7 @@ export const tripsService = {
       const row = await prisma.trip.update({
         where: { id },
         data: {
+          transactionNumber: dto.transactionNumber,
           supplierId: dto.supplierId,
           customerId: dto.customerId,
           pickupLocationId: dto.pickupLocationId,
@@ -130,6 +134,9 @@ export const tripsService = {
       });
       return mapOut(row);
     } catch (error) {
+      if (isUniqueConstraintError(error)) {
+        fail(ErrorCode.TRP_DUPLICATE_TRANSACTION, 409, error);
+      }
       fail(ErrorCode.TRP_UPDATE_FAILED, 500, error);
     }
   },

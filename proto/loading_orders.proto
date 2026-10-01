@@ -2,16 +2,18 @@ syntax = "proto3";
 
 package fleetflow.loadingorders;
 
+// Matches the legacy app: a "Generate Loading Order" run creates `quantity`
+// individually-serialled slips (LO-0001, LO-0002, ...) sharing one batch,
+// the list view shows one row per batch (serial range + quantity), and the
+// only delete is "remove this whole batch" — there is no per-row edit.
 service LoadingOrdersService {
-  rpc List(ListRequest) returns (LoadingOrderList);
-  rpc Get(IdRequest) returns (LoadingOrder);
-  rpc Create(CreateLoadingOrderRequest) returns (LoadingOrder);
-  rpc Update(UpdateLoadingOrderRequest) returns (LoadingOrder);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc ListGrouped(ListRequest) returns (LoadingOrderBatchList);
+  rpc GetBatch(DeleteBatchRequest) returns (LoadingOrderList);
+  rpc Create(CreateLoadingOrderRequest) returns (LoadingOrderList);
+  rpc DeleteBatch(DeleteBatchRequest) returns (DeleteResponse);
 }
 
 message ListRequest {}
-message IdRequest { int32 id = 1; }
 message DeleteResponse {}
 
 message LoadingOrder {
@@ -22,6 +24,7 @@ message LoadingOrder {
   int32 delivery_location_id = 5;
   int32 customer_id = 6;
   int32 cargo_type_id = 7;
+  string created_at = 8;
 
   optional string pickup_location_name = 20;
   optional string delivery_location_name = 21;
@@ -31,19 +34,26 @@ message LoadingOrder {
 
 message LoadingOrderList { repeated LoadingOrder items = 1; }
 
-message CreateLoadingOrderRequest {
+message LoadingOrderBatch {
   int32 batch_id = 1;
-  int32 pickup_location_id = 2;
-  int32 delivery_location_id = 3;
-  int32 customer_id = 4;
-  int32 cargo_type_id = 5;
+  string first_serial_number = 2;
+  string last_serial_number = 3;
+  int32 quantity = 4;
+  string pickup_location_name = 5;
+  string delivery_location_name = 6;
+  string customer_name = 7;
+  string cargo_type_name = 8;
+  string created_at = 9;
 }
 
-message UpdateLoadingOrderRequest {
-  int32 id = 1;
-  optional int32 batch_id = 2;
-  optional int32 pickup_location_id = 3;
-  optional int32 delivery_location_id = 4;
-  optional int32 customer_id = 5;
-  optional int32 cargo_type_id = 6;
+message LoadingOrderBatchList { repeated LoadingOrderBatch items = 1; }
+
+message CreateLoadingOrderRequest {
+  int32 pickup_location_id = 1;
+  int32 delivery_location_id = 2;
+  int32 customer_id = 3;
+  int32 cargo_type_id = 4;
+  int32 quantity = 5;
 }
+
+message DeleteBatchRequest { int32 batch_id = 1; }

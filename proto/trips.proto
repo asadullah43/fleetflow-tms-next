@@ -41,26 +41,28 @@ message Trip {
 message TripList { repeated Trip items = 1; }
 
 message CreateTripRequest {
-  optional int32 supplier_id = 1;
-  optional int32 customer_id = 2;
-  int32 pickup_location_id = 3;
-  int32 delivery_location_id = 4;
-  int32 cargo_type_id = 5;
-  string quantity = 6;
-  string trip_date = 7;
-  int32 truck_id = 8;
-  optional int32 driver_id = 9;
+  string transaction_number = 1;
+  optional int32 supplier_id = 2;
+  optional int32 customer_id = 3;
+  int32 pickup_location_id = 4;
+  int32 delivery_location_id = 5;
+  int32 cargo_type_id = 6;
+  string quantity = 7;
+  string trip_date = 8;
+  int32 truck_id = 9;
+  optional int32 driver_id = 10;
 }
 
 message UpdateTripRequest {
   int32 id = 1;
-  optional int32 supplier_id = 2;
-  optional int32 customer_id = 3;
-  optional int32 pickup_location_id = 4;
-  optional int32 delivery_location_id = 5;
-  optional int32 cargo_type_id = 6;
-  optional string quantity = 7;
-  optional string trip_date = 8;
-  optional int32 truck_id = 9;
-  optional int32 driver_id = 10;
+  optional string transaction_number = 2;
+  optional int32 supplier_id = 3;
+  optional int32 customer_id = 4;
+  optional int32 pickup_location_id = 5;
+  optional int32 delivery_location_id = 6;
+  optional int32 cargo_type_id = 7;
+  optional string quantity = 8;
+  optional string trip_date = 9;
+  optional int32 truck_id = 10;
+  optional int32 driver_id = 11;
 }

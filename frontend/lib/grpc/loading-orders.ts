@@ -1,8 +1,9 @@
 import { fleetflow } from '../generated/proto/messages.js';
-import { createCrudClient } from './crud-client';
+import { unaryCall } from './client';
 
-const { LoadingOrder, LoadingOrderList, ListRequest, IdRequest, CreateLoadingOrderRequest, UpdateLoadingOrderRequest, DeleteResponse } =
-  fleetflow.loadingorders;
+const { ListRequest, LoadingOrderBatchList, CreateLoadingOrderRequest, LoadingOrderList, DeleteBatchRequest, DeleteResponse } = fleetflow.loadingorders;
+
+const SERVICE = 'fleetflow.loadingorders.LoadingOrdersService';
 
 export interface LoadingOrderDto {
   id: number;
@@ -12,18 +13,71 @@ export interface LoadingOrderDto {
   deliveryLocationId: number;
   customerId: number;
   cargoTypeId: number;
+  createdAt: string;
   pickupLocationName?: string;
   deliveryLocationName?: string;
   customerName?: string;
   cargoTypeName?: string;
 }
 
-export const loadingOrdersClient = createCrudClient<LoadingOrderDto>('fleetflow.loadingorders.LoadingOrdersService', {
-  ListRequest,
-  ItemList: LoadingOrderList,
-  Item: LoadingOrder,
-  IdRequest,
-  CreateRequest: CreateLoadingOrderRequest,
-  UpdateRequest: UpdateLoadingOrderRequest,
-  DeleteResponse,
-});
+export interface LoadingOrderBatchDto {
+  batchId: number;
+  firstSerialNumber: string;
+  lastSerialNumber: string;
+  quantity: number;
+  pickupLocationName: string;
+  deliveryLocationName: string;
+  customerName: string;
+  cargoTypeName: string;
+  createdAt: string;
+}
+
+export const loadingOrdersClient = {
+  listGrouped(token: string): Promise<LoadingOrderBatchDto[]> {
+    return unaryCall({
+      serviceName: SERVICE,
+      methodName: 'ListGrouped',
+      request: ListRequest.create({}),
+      RequestType: ListRequest,
+      ResponseType: LoadingOrderBatchList,
+      token,
+    }).then((res: any) => (res.items ?? []) as LoadingOrderBatchDto[]);
+  },
+
+  getBatch(batchId: number, token: string): Promise<LoadingOrderDto[]> {
+    return unaryCall({
+      serviceName: SERVICE,
+      methodName: 'GetBatch',
+      request: DeleteBatchRequest.create({ batchId }),
+      RequestType: DeleteBatchRequest,
+      ResponseType: LoadingOrderList,
+      token,
+    }).then((res: any) => (res.items ?? []) as LoadingOrderDto[]);
+  },
+
+  /** Creates `quantity` individually-serialled orders in one batch; returns every row created (for the printable slip). */
+  create(
+    values: { pickupLocationId: number; deliveryLocationId: number; customerId: number; cargoTypeId: number; quantity: number },
+    token: string,
+  ): Promise<LoadingOrderDto[]> {
+    return unaryCall({
+      serviceName: SERVICE,
+      methodName: 'Create',
+      request: CreateLoadingOrderRequest.create(values),
+      RequestType: CreateLoadingOrderRequest,
+      ResponseType: LoadingOrderList,
+      token,
+    }).then((res: any) => (res.items ?? []) as LoadingOrderDto[]);
+  },
+
+  removeBatch(batchId: number, token: string): Promise<void> {
+    return unaryCall({
+      serviceName: SERVICE,
+      methodName: 'DeleteBatch',
+      request: DeleteBatchRequest.create({ batchId }),
+      RequestType: DeleteBatchRequest,
+      ResponseType: DeleteResponse,
+      token,
+    }).then(() => undefined);
+  },
+};
