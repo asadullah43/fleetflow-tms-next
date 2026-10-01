@@ -6,11 +6,11 @@
  */
 import { describe, test, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { ADDR, ADMIN_PASSWORD, ADMIN_USER, call, client, loginAs, must } from './client.js';
+import { ADMIN_PASSWORD, ADMIN_USER, SKIP, call, client, loginAs, must } from './client.js';
 
 const cents = (value: string) => Math.round(Number(value) * 100);
 
-describe('data integrity', { skip: !ADDR && 'set INTEGRATION_GRPC_ADDR to run' }, () => {
+describe('data integrity', { skip: SKIP }, () => {
   const stamp = Date.now();
   let token = '';
   let customerId = 0;
@@ -30,7 +30,7 @@ describe('data integrity', { skip: !ADDR && 'set INTEGRATION_GRPC_ADDR to run' }
     must(await newInvoice([{ description: 'Haul', quantity: '1', rate: '100' }]));
     must(await call(invoices(), 'delete', { id: first.id }, token));
     const next = await newInvoice([{ description: 'Haul', quantity: '1', rate: '100' }]);
-    assert.ok(next.ok, next.err?.details);
+    assert.ok(next.ok, next.err?.description);
   });
 
   test('invoice totals are cent-exact sums of rounded lines', async () => {
@@ -41,9 +41,9 @@ describe('data integrity', { skip: !ADDR && 'set INTEGRATION_GRPC_ADDR to run' }
     assert.equal(inv.lineItems.reduce((sum: number, l: any) => sum + cents(l.taxAmount), 0), cents(inv.vatAmount));
   });
 
-  test('invalid invoices are rejected as INVALID_ARGUMENT', async () => {
-    assert.equal((await newInvoice([])).err?.code, 'INVALID_ARGUMENT');
-    assert.equal((await newInvoice([{ description: 'x', quantity: 'abc', rate: '1' }])).err?.code, 'INVALID_ARGUMENT');
+  test('invalid invoices are rejected as INVALID_REQUEST', async () => {
+    assert.equal((await newInvoice([])).err?.errorFilter, 'INVALID_REQUEST');
+    assert.equal((await newInvoice([{ description: 'x', quantity: 'abc', rate: '1' }])).err?.errorFilter, 'INVALID_REQUEST');
   });
 
   test('a ZATCA-signed invoice can no longer change its amounts', async () => {
@@ -67,20 +67,21 @@ describe('data integrity', { skip: !ADDR && 'set INTEGRATION_GRPC_ADDR to run' }
   test('database constraint errors come back as clear client errors', async () => {
     const trucks = client('trucks', 'TrucksService');
     const dup = await call(trucks, 'create', { truckNumber: `IT-${stamp}` }, token);
-    assert.equal(dup.err?.code, 'ALREADY_EXISTS');
+    assert.equal(dup.err?.errorFilter, 'INVALID_REQUEST');
+    assert.match(dup.err?.errorCode ?? '', /^FLEET-(SYS005|TRK)/);
     const badRef = await call(
       client('trips', 'TripsService'),
       'create',
       { transactionNumber: `T${stamp}`, pickupLocationId: 999999, deliveryLocationId: 999999, cargoTypeId: 999999, quantity: '1', tripDate: '2026-01-01', truckId: 999999 },
       token,
     );
-    assert.equal(badRef.err?.code, 'INVALID_ARGUMENT');
+    assert.equal(badRef.err?.errorFilter, 'INVALID_REQUEST');
   });
 
   test('assignment edits cannot end before they start', async () => {
     const driver = must(await call(client('drivers', 'DriversService'), 'create', { name: `Driver ${stamp}` }, token));
     const as = client('assignments', 'AssignmentsService');
     const asg = must(await call(as, 'create', { truckId, driverId: driver.id, startDate: '2026-01-10' }, token));
-    assert.equal((await call(as, 'update', { id: asg.id, endDate: '2026-01-01' }, token)).err?.code, 'INVALID_ARGUMENT');
+    assert.equal((await call(as, 'update', { id: asg.id, endDate: '2026-01-01' }, token)).err?.errorFilter, 'INVALID_REQUEST');
   });
 });

@@ -2,17 +2,25 @@ syntax = "proto3";
 
 package fleetflow.suppliers;
 
+import "common.proto";
+
 service SuppliersService {
-  rpc List(ListRequest) returns (SupplierList);
-  rpc Get(IdRequest) returns (Supplier);
-  rpc Create(CreateSupplierRequest) returns (Supplier);
-  rpc Update(UpdateSupplierRequest) returns (Supplier);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: SupplierList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Supplier
+  rpc Create(CreateSupplierRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Supplier
+  rpc Update(UpdateSupplierRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Supplier
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
-message ListRequest {}
+message ListRequest {
+  int32 page = 1;        // 1-based; default 1
+  int32 page_size = 2;   // default 20, max 100
+  string search = 3;     // server-side, case-insensitive partial match
+  string sort_by = 4;    // one of the service's sortable fields
+  string sort_order = 5; // asc | desc
+  map<string, string> filters = 6; // service-specific exact/range filters
+}
 message IdRequest { int32 id = 1; }
-message DeleteResponse {}
 
 message Supplier {
   int32 id = 1;
@@ -24,7 +32,10 @@ message Supplier {
   string status = 7;
 }
 
-message SupplierList { repeated Supplier items = 1; }
+message SupplierList {
+  repeated Supplier items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 
 message CreateSupplierRequest {
   string name = 1;
@@ -33,6 +44,8 @@ message CreateSupplierRequest {
   optional string phone = 4;
   optional string email = 5;
   optional string status = 6;
+  // Arabic value entered alongside the English one (preferred over the legacy `language` tag).
+  optional string name_ar = 50;
 }
 
 message UpdateSupplierRequest {
@@ -43,4 +56,6 @@ message UpdateSupplierRequest {
   optional string phone = 5;
   optional string email = 6;
   optional string status = 7;
+  // Arabic value entered alongside the English one (preferred over the legacy `language` tag).
+  optional string name_ar = 50;
 }

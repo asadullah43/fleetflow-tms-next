@@ -1,24 +1,4 @@
-import { renderToStaticMarkup } from 'react-dom/server';
-import type { ReactNode } from 'react';
-
-/** Rough plain-text extraction from a rendered cell (handles plain strings,
- *  numbers, and simple JSX like <StatusBadge>/<span className="mono">) —
- *  good enough for export/search, not a full DOM-to-text engine. */
-export function cellText(node: ReactNode): string {
-  if (node === null || node === undefined) return '';
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
-  try {
-    const html = renderToStaticMarkup(node as React.ReactElement);
-    return html
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/\s+/g, ' ')
-      .trim();
-  } catch {
-    return '';
-  }
-}
+/** Table exports. Callers pass plain text cells; nothing here touches the DOM of the page. */
 
 function downloadBlob(filename: string, content: string, mime: string) {
   const blob = new Blob([content], { type: mime });
@@ -47,14 +27,14 @@ export function printTable(title: string, headers: string[], rows: string[][]) {
   const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   win.document.write(`
     <!doctype html>
-    <html>
+    <html dir="${document.documentElement.dir === 'rtl' ? 'rtl' : 'ltr'}">
       <head>
         <title>${esc(title)}</title>
         <style>
           body { font-family: -apple-system, system-ui, sans-serif; padding: 24px; color: #22262f; }
           h1 { font-size: 18px; margin-bottom: 16px; }
           table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-          th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #e6e1d6; }
+          th, td { text-align: start; padding: 8px 10px; border-bottom: 1px solid #e6e1d6; }
           th { color: #6b7180; font-weight: 600; text-transform: uppercase; font-size: 10.5px; }
         </style>
       </head>

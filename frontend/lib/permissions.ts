@@ -1,6 +1,6 @@
 /**
- * Frontend mirror of the backend permission matrix (backend/src/common/
- * auth/permissions.ts). The backend is the real gate — every RPC is
+ * Frontend mirror of the backend permission matrix (backend/utils/
+ * permissions.ts). The backend is the real gate — every RPC is
  * checked there — this only decides what to *show*, so users aren't
  * offered pages and buttons that would just fail with "permission denied".
  */
@@ -51,6 +51,7 @@ const PAGE_MODULES: [prefix: string, module: string][] = [
   ['/users', 'users'],
   ['/roles', 'roles'],
   ['/settings', 'settings'],
+  ['/settings/api-keys', 'apiKeys'],
 ];
 
 export function moduleForPath(pathname: string): string | null {
@@ -60,4 +61,10 @@ export function moduleForPath(pathname: string): string | null {
     if ((pathname === prefix || pathname.startsWith(prefix + '/')) && (!best || prefix.length > best[0].length)) best = entry;
   }
   return best ? best[1] : null;
+}
+
+/** A permission module's display name: "cargoTypes" -> "Cargo types" (then translated). */
+export function formatModule(module: string): string {
+  const spaced = module.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }

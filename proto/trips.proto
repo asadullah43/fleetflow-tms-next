@@ -2,17 +2,25 @@ syntax = "proto3";
 
 package fleetflow.trips;
 
+import "common.proto";
+
 service TripsService {
-  rpc List(ListRequest) returns (TripList);
-  rpc Get(IdRequest) returns (Trip);
-  rpc Create(CreateTripRequest) returns (Trip);
-  rpc Update(UpdateTripRequest) returns (Trip);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: TripList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Trip
+  rpc Create(CreateTripRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Trip
+  rpc Update(UpdateTripRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Trip
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
-message ListRequest {}
+message ListRequest {
+  int32 page = 1;        // 1-based; default 1
+  int32 page_size = 2;   // default 20, max 100
+  string search = 3;     // server-side, case-insensitive partial match
+  string sort_by = 4;    // one of the service's sortable fields
+  string sort_order = 5; // asc | desc
+  map<string, string> filters = 6; // service-specific exact/range filters
+}
 message IdRequest { int32 id = 1; }
-message DeleteResponse {}
 
 message Trip {
   int32 id = 1;
@@ -45,7 +53,10 @@ message Trip {
   optional string driver_name_ar = 35;
 }
 
-message TripList { repeated Trip items = 1; }
+message TripList {
+  repeated Trip items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 
 message CreateTripRequest {
   string transaction_number = 1;

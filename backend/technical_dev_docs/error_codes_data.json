@@ -1,0 +1,1322 @@
+[
+  {
+    "error_code": "FLEET-APK001",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "API key not found.",
+    "module_name": "API Keys",
+    "file": "services/api-keys.service.ts",
+    "function": "apiKeysService.revoke"
+  },
+  {
+    "error_code": "FLEET-APK002",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create API key. Please try again.",
+    "module_name": "API Keys",
+    "file": "services/api-keys.service.ts",
+    "function": "apiKeysService.create"
+  },
+  {
+    "error_code": "FLEET-APK003",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to revoke API key. Please try again.",
+    "module_name": "API Keys",
+    "file": "services/api-keys.service.ts",
+    "function": "apiKeysService.revoke"
+  },
+  {
+    "error_code": "FLEET-APK004",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve API keys. Please try again.",
+    "module_name": "API Keys",
+    "file": "services/api-keys.service.ts",
+    "function": "apiKeysService.list"
+  },
+  {
+    "error_code": "FLEET-APK005",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "The API key permissions contain an unknown, repeated or non-grantable module.",
+    "module_name": "API Keys",
+    "file": "services/api-keys.service.ts",
+    "function": "normalizeScopes"
+  },
+  {
+    "error_code": "FLEET-APK006",
+    "error_filter": "USER_NOT_AUTHORIZED",
+    "error_description": "You cannot grant an API key a permission you do not have yourself.",
+    "module_name": "API Keys",
+    "file": "services/api-keys.service.ts",
+    "function": "normalizeScopes"
+  },
+  {
+    "error_code": "FLEET-APK007",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Select at least one permission for the API key.",
+    "module_name": "API Keys",
+    "file": "services/api-keys.service.ts",
+    "function": "normalizeScopes"
+  },
+  {
+    "error_code": "FLEET-AUTH001",
+    "error_filter": "USER_NOT_AUTHENTICATED",
+    "error_description": "Invalid username or password.",
+    "module_name": "Authentication",
+    "file": "services/auth.service.ts",
+    "function": "authService.login"
+  },
+  {
+    "error_code": "FLEET-AUTH002",
+    "error_filter": "USER_NOT_AUTHENTICATED",
+    "error_description": "Your account has been deactivated. Please contact an administrator.",
+    "module_name": "Authentication",
+    "file": "services/auth.service.ts",
+    "function": "authService.login"
+  },
+  {
+    "error_code": "FLEET-AUTH003",
+    "error_filter": "USER_NOT_AUTHENTICATED",
+    "error_description": "Authentication required. Please log in.",
+    "module_name": "Authentication",
+    "file": "middlewares/authentication.ts",
+    "function": "resolvePrincipal"
+  },
+  {
+    "error_code": "FLEET-AUTH004",
+    "error_filter": "USER_NOT_AUTHENTICATED",
+    "error_description": "Your session has expired. Please log in again.",
+    "module_name": "Authentication",
+    "file": "middlewares/authentication.ts",
+    "function": "principalFromJwt"
+  },
+  {
+    "error_code": "FLEET-AUTH005",
+    "error_filter": "USER_NOT_AUTHORIZED",
+    "error_description": "You do not have permission to perform this action.",
+    "module_name": "Authentication",
+    "file": "middlewares/authorization.ts",
+    "function": "authorize"
+  },
+  {
+    "error_code": "FLEET-AUTH006",
+    "error_filter": "RATE_LIMIT_EXCEEDED",
+    "error_description": "Too many failed sign-in attempts. Please wait a few minutes and try again.",
+    "module_name": "Authentication",
+    "file": "services/auth.service.ts",
+    "function": "authService.login"
+  },
+  {
+    "error_code": "FLEET-AUTH007",
+    "error_filter": "USER_NOT_AUTHENTICATED",
+    "error_description": "The API key is invalid or has been revoked.",
+    "module_name": "Authentication",
+    "file": "middlewares/authentication.ts",
+    "function": "principalFromApiKey"
+  },
+  {
+    "error_code": "FLEET-AUTH008",
+    "error_filter": "USER_NOT_AUTHENTICATED",
+    "error_description": "This company account is not active. Please contact support.",
+    "module_name": "Authentication",
+    "file": "services/auth.service.ts",
+    "function": "authService.login"
+  },
+  {
+    "error_code": "FLEET-CGO001",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Cargo type not found.",
+    "module_name": "Cargo Types",
+    "file": "services/cargo-types.service.ts",
+    "function": "cargoTypesService.findOne"
+  },
+  {
+    "error_code": "FLEET-CGO002",
+    "error_filter": "USER_END_VIOLATION",
+    "error_description": "This cargo type is used by one or more trips and cannot be deleted.",
+    "module_name": "Cargo Types",
+    "file": "services/cargo-types.service.ts",
+    "function": "cargoTypesService.remove"
+  },
+  {
+    "error_code": "FLEET-CGO003",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create cargo type. Please try again.",
+    "module_name": "Cargo Types",
+    "file": "services/cargo-types.service.ts",
+    "function": "cargoTypesService.create"
+  },
+  {
+    "error_code": "FLEET-CGO004",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to update cargo type. Please try again.",
+    "module_name": "Cargo Types",
+    "file": "services/cargo-types.service.ts",
+    "function": "cargoTypesService.update"
+  },
+  {
+    "error_code": "FLEET-CGO005",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to delete cargo type. Please try again.",
+    "module_name": "Cargo Types",
+    "file": "services/cargo-types.service.ts",
+    "function": "cargoTypesService.remove"
+  },
+  {
+    "error_code": "FLEET-CGO006",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve cargo types. Please try again.",
+    "module_name": "Cargo Types",
+    "file": "services/cargo-types.service.ts",
+    "function": "cargoTypesService.list"
+  },
+  {
+    "error_code": "FLEET-CUS001",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Customer not found.",
+    "module_name": "Customers",
+    "file": "services/customers.service.ts",
+    "function": "customersService.findOne"
+  },
+  {
+    "error_code": "FLEET-CUS002",
+    "error_filter": "USER_END_VIOLATION",
+    "error_description": "This customer is used by one or more trips and cannot be deleted.",
+    "module_name": "Customers",
+    "file": "services/customers.service.ts",
+    "function": "customersService.remove"
+  },
+  {
+    "error_code": "FLEET-CUS003",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create customer. Please try again.",
+    "module_name": "Customers",
+    "file": "services/customers.service.ts",
+    "function": "customersService.create"
+  },
+  {
+    "error_code": "FLEET-CUS004",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to update customer. Please try again.",
+    "module_name": "Customers",
+    "file": "services/customers.service.ts",
+    "function": "customersService.update"
+  },
+  {
+    "error_code": "FLEET-CUS005",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to delete customer. Please try again.",
+    "module_name": "Customers",
+    "file": "services/customers.service.ts",
+    "function": "customersService.remove"
+  },
+  {
+    "error_code": "FLEET-CUS006",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve customers. Please try again.",
+    "module_name": "Customers",
+    "file": "services/customers.service.ts",
+    "function": "customersService.list"
+  },
+  {
+    "error_code": "FLEET-DRV001",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Driver not found.",
+    "module_name": "Drivers",
+    "file": "services/drivers.service.ts",
+    "function": "driversService.findOne"
+  },
+  {
+    "error_code": "FLEET-DRV002",
+    "error_filter": "USER_END_VIOLATION",
+    "error_description": "This driver is used by one or more trips and cannot be deleted.",
+    "module_name": "Drivers",
+    "file": "services/drivers.service.ts",
+    "function": "driversService.remove"
+  },
+  {
+    "error_code": "FLEET-DRV003",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create driver. Please try again.",
+    "module_name": "Drivers",
+    "file": "services/drivers.service.ts",
+    "function": "driversService.create"
+  },
+  {
+    "error_code": "FLEET-DRV004",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to update driver. Please try again.",
+    "module_name": "Drivers",
+    "file": "services/drivers.service.ts",
+    "function": "driversService.update"
+  },
+  {
+    "error_code": "FLEET-DRV005",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to delete driver. Please try again.",
+    "module_name": "Drivers",
+    "file": "services/drivers.service.ts",
+    "function": "driversService.remove"
+  },
+  {
+    "error_code": "FLEET-DRV006",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve drivers. Please try again.",
+    "module_name": "Drivers",
+    "file": "services/drivers.service.ts",
+    "function": "driversService.list"
+  },
+  {
+    "error_code": "FLEET-DSH001",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to load dashboard data. Please try again.",
+    "module_name": "Dashboard",
+    "file": "services/dashboard.service.ts",
+    "function": "dashboardService.getSummary"
+  },
+  {
+    "error_code": "FLEET-DSH002",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to load HR dashboard data. Please try again.",
+    "module_name": "Dashboard",
+    "file": "services/dashboard.service.ts",
+    "function": "dashboardService.getHrSummary"
+  },
+  {
+    "error_code": "FLEET-HR001",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Record not found.",
+    "module_name": "Human Resources",
+    "file": "services/hr.service.ts",
+    "function": "HR_ERRORS.findOne"
+  },
+  {
+    "error_code": "FLEET-HR002",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "A record with this information already exists.",
+    "module_name": "Human Resources",
+    "file": "services/hr.service.ts",
+    "function": "employeesRepository.create / update"
+  },
+  {
+    "error_code": "FLEET-HR003",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create record. Please try again.",
+    "module_name": "Human Resources",
+    "file": "services/hr.service.ts",
+    "function": "HR_ERRORS.create"
+  },
+  {
+    "error_code": "FLEET-HR004",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to update record. Please try again.",
+    "module_name": "Human Resources",
+    "file": "services/hr.service.ts",
+    "function": "HR_ERRORS.update"
+  },
+  {
+    "error_code": "FLEET-HR005",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to delete record. Please try again.",
+    "module_name": "Human Resources",
+    "file": "services/hr.service.ts",
+    "function": "HR_ERRORS.remove"
+  },
+  {
+    "error_code": "FLEET-HR006",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve records. Please try again.",
+    "module_name": "Human Resources",
+    "file": "services/hr.service.ts",
+    "function": "HR_ERRORS.list"
+  },
+  {
+    "error_code": "FLEET-HR007",
+    "error_filter": "USER_END_VIOLATION",
+    "error_description": "This record is referenced by other records and cannot be deleted.",
+    "module_name": "Human Resources",
+    "file": "services/hr.service.ts",
+    "function": "HR_ERRORS.remove"
+  },
+  {
+    "error_code": "FLEET-HR008",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Attendance already recorded for this employee on this date.",
+    "module_name": "Human Resources",
+    "file": "services/hr.service.ts",
+    "function": "attendanceService.create / update"
+  },
+  {
+    "error_code": "FLEET-INV001",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Invoice not found.",
+    "module_name": "Invoices",
+    "file": "services/invoices.service.ts",
+    "function": "invoicesService.findOne"
+  },
+  {
+    "error_code": "FLEET-INV002",
+    "error_filter": "USER_END_VIOLATION",
+    "error_description": "This action cannot be performed on the current invoice status.",
+    "module_name": "Invoices",
+    "file": "services/invoices.service.ts",
+    "function": "invoicesService.markPaid"
+  },
+  {
+    "error_code": "FLEET-INV003",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create invoice. Please try again.",
+    "module_name": "Invoices",
+    "file": "services/invoices.service.ts",
+    "function": "invoicesService.create"
+  },
+  {
+    "error_code": "FLEET-INV004",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to update invoice. Please try again.",
+    "module_name": "Invoices",
+    "file": "services/invoices.service.ts",
+    "function": "invoicesService.update"
+  },
+  {
+    "error_code": "FLEET-INV005",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to delete invoice. Please try again.",
+    "module_name": "Invoices",
+    "file": "services/invoices.service.ts",
+    "function": "invoicesService.remove"
+  },
+  {
+    "error_code": "FLEET-INV006",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve invoices. Please try again.",
+    "module_name": "Invoices",
+    "file": "services/invoices.service.ts",
+    "function": "invoicesService.list"
+  },
+  {
+    "error_code": "FLEET-INV007",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Each line item needs a description, a quantity above zero and a valid rate.",
+    "module_name": "Invoices",
+    "file": "services/invoices.service.ts",
+    "function": "computeOrFail"
+  },
+  {
+    "error_code": "FLEET-INV008",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "An invoice needs at least one line item.",
+    "module_name": "Invoices",
+    "file": "services/invoices.service.ts",
+    "function": "invoicesService.create"
+  },
+  {
+    "error_code": "FLEET-INV010",
+    "error_filter": "USER_END_VIOLATION",
+    "error_description": "This invoice has been submitted to ZATCA and its amounts can no longer be changed.",
+    "module_name": "Invoices",
+    "file": "services/invoices.service.ts",
+    "function": "invoicesService.update"
+  },
+  {
+    "error_code": "FLEET-LDO002",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Loading order batch not found.",
+    "module_name": "Loading Orders",
+    "file": "services/loading-orders.service.ts",
+    "function": "loadingOrdersService.findByBatch"
+  },
+  {
+    "error_code": "FLEET-LDO003",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create loading order. Please try again.",
+    "module_name": "Loading Orders",
+    "file": "services/loading-orders.service.ts",
+    "function": "loadingOrdersService.create"
+  },
+  {
+    "error_code": "FLEET-LDO005",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to delete loading order. Please try again.",
+    "module_name": "Loading Orders",
+    "file": "services/loading-orders.service.ts",
+    "function": "loadingOrdersService.removeBatch"
+  },
+  {
+    "error_code": "FLEET-LDO006",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve loading orders. Please try again.",
+    "module_name": "Loading Orders",
+    "file": "services/loading-orders.service.ts",
+    "function": "loadingOrdersService.listGrouped"
+  },
+  {
+    "error_code": "FLEET-LDO007",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to prepare the loading order document. Please try again.",
+    "module_name": "Loading Orders",
+    "file": "services/loading-orders.service.ts",
+    "function": "loadingOrdersService.getBatchDocument"
+  },
+  {
+    "error_code": "FLEET-LOC001",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Location not found.",
+    "module_name": "Locations",
+    "file": "services/locations.service.ts",
+    "function": "locationsService.findOne"
+  },
+  {
+    "error_code": "FLEET-LOC002",
+    "error_filter": "USER_END_VIOLATION",
+    "error_description": "This location is used by one or more trips and cannot be deleted.",
+    "module_name": "Locations",
+    "file": "services/locations.service.ts",
+    "function": "locationsService.remove"
+  },
+  {
+    "error_code": "FLEET-LOC003",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create location. Please try again.",
+    "module_name": "Locations",
+    "file": "services/locations.service.ts",
+    "function": "locationsService.create"
+  },
+  {
+    "error_code": "FLEET-LOC004",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to update location. Please try again.",
+    "module_name": "Locations",
+    "file": "services/locations.service.ts",
+    "function": "locationsService.update"
+  },
+  {
+    "error_code": "FLEET-LOC005",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to delete location. Please try again.",
+    "module_name": "Locations",
+    "file": "services/locations.service.ts",
+    "function": "locationsService.remove"
+  },
+  {
+    "error_code": "FLEET-LOC006",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve locations. Please try again.",
+    "module_name": "Locations",
+    "file": "services/locations.service.ts",
+    "function": "locationsService.list"
+  },
+  {
+    "error_code": "FLEET-RLC001",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Rate contract not found.",
+    "module_name": "Rate Contracts",
+    "file": "services/rate-contracts.service.ts",
+    "function": "rateContractsService.findOne"
+  },
+  {
+    "error_code": "FLEET-RLC002",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "A rate contract with this reference already exists.",
+    "module_name": "Rate Contracts",
+    "file": "services/rate-contracts.service.ts",
+    "function": "rateContractsService.create / update"
+  },
+  {
+    "error_code": "FLEET-RLC003",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create rate contract. Please try again.",
+    "module_name": "Rate Contracts",
+    "file": "services/rate-contracts.service.ts",
+    "function": "rateContractsService.create"
+  },
+  {
+    "error_code": "FLEET-RLC004",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to update rate contract. Please try again.",
+    "module_name": "Rate Contracts",
+    "file": "services/rate-contracts.service.ts",
+    "function": "rateContractsService.update"
+  },
+  {
+    "error_code": "FLEET-RLC005",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to delete rate contract. Please try again.",
+    "module_name": "Rate Contracts",
+    "file": "services/rate-contracts.service.ts",
+    "function": "rateContractsService.remove"
+  },
+  {
+    "error_code": "FLEET-RLC006",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve rate contracts. Please try again.",
+    "module_name": "Rate Contracts",
+    "file": "services/rate-contracts.service.ts",
+    "function": "rateContractsService.list"
+  },
+  {
+    "error_code": "FLEET-ROL001",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Role not found.",
+    "module_name": "Roles & Permissions",
+    "file": "services/roles.service.ts",
+    "function": "rolesService.findOne"
+  },
+  {
+    "error_code": "FLEET-ROL002",
+    "error_filter": "USER_END_VIOLATION",
+    "error_description": "This role is assigned to one or more users and cannot be deleted.",
+    "module_name": "Roles & Permissions",
+    "file": "services/roles.service.ts",
+    "function": "rolesService.remove"
+  },
+  {
+    "error_code": "FLEET-ROL004",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create role. Please try again.",
+    "module_name": "Roles & Permissions",
+    "file": "services/roles.service.ts",
+    "function": "rolesService.create"
+  },
+  {
+    "error_code": "FLEET-ROL005",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to update role. Please try again.",
+    "module_name": "Roles & Permissions",
+    "file": "services/roles.service.ts",
+    "function": "rolesService.update"
+  },
+  {
+    "error_code": "FLEET-ROL006",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to delete role. Please try again.",
+    "module_name": "Roles & Permissions",
+    "file": "services/roles.service.ts",
+    "function": "rolesService.remove"
+  },
+  {
+    "error_code": "FLEET-ROL007",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve roles. Please try again.",
+    "module_name": "Roles & Permissions",
+    "file": "services/roles.service.ts",
+    "function": "rolesService.list"
+  },
+  {
+    "error_code": "FLEET-ROL008",
+    "error_filter": "USER_END_VIOLATION",
+    "error_description": "The ADMIN role is built in and cannot be renamed or deleted.",
+    "module_name": "Roles & Permissions",
+    "file": "services/roles.service.ts",
+    "function": "rolesService.update"
+  },
+  {
+    "error_code": "FLEET-ROL009",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "The permission matrix contains an unknown module.",
+    "module_name": "Roles & Permissions",
+    "file": "services/roles.service.ts",
+    "function": "assertKnownModules"
+  },
+  {
+    "error_code": "FLEET-ROL010",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "A role with this name already exists.",
+    "module_name": "Roles & Permissions",
+    "file": "services/roles.service.ts",
+    "function": "rolesService.create"
+  },
+  {
+    "error_code": "FLEET-SET001",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve company settings. Please try again.",
+    "module_name": "Company Settings",
+    "file": "services/company-settings.service.ts",
+    "function": "companySettingsService.getOrCreate"
+  },
+  {
+    "error_code": "FLEET-SET002",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to update company settings. Please try again.",
+    "module_name": "Company Settings",
+    "file": "services/company-settings.service.ts",
+    "function": "companySettingsService.update"
+  },
+  {
+    "error_code": "FLEET-SPP001",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Supplier payment not found.",
+    "module_name": "Supplier Payments",
+    "file": "services/supplier-payments.service.ts",
+    "function": "supplierPaymentsService.findOne"
+  },
+  {
+    "error_code": "FLEET-SPP002",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create supplier payment. Please try again.",
+    "module_name": "Supplier Payments",
+    "file": "services/supplier-payments.service.ts",
+    "function": "supplierPaymentsService.create"
+  },
+  {
+    "error_code": "FLEET-SPP003",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to update supplier payment. Please try again.",
+    "module_name": "Supplier Payments",
+    "file": "services/supplier-payments.service.ts",
+    "function": "supplierPaymentsService.update"
+  },
+  {
+    "error_code": "FLEET-SPP004",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to delete supplier payment. Please try again.",
+    "module_name": "Supplier Payments",
+    "file": "services/supplier-payments.service.ts",
+    "function": "supplierPaymentsService.remove"
+  },
+  {
+    "error_code": "FLEET-SPP005",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve supplier payments. Please try again.",
+    "module_name": "Supplier Payments",
+    "file": "services/supplier-payments.service.ts",
+    "function": "supplierPaymentsService.list"
+  },
+  {
+    "error_code": "FLEET-SUP001",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Supplier not found.",
+    "module_name": "Suppliers",
+    "file": "services/suppliers.service.ts",
+    "function": "suppliersService.findOne"
+  },
+  {
+    "error_code": "FLEET-SUP002",
+    "error_filter": "USER_END_VIOLATION",
+    "error_description": "This supplier is used by one or more rate contracts and cannot be deleted.",
+    "module_name": "Suppliers",
+    "file": "services/suppliers.service.ts",
+    "function": "suppliersService.remove"
+  },
+  {
+    "error_code": "FLEET-SUP003",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create supplier. Please try again.",
+    "module_name": "Suppliers",
+    "file": "services/suppliers.service.ts",
+    "function": "suppliersService.create"
+  },
+  {
+    "error_code": "FLEET-SUP004",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to update supplier. Please try again.",
+    "module_name": "Suppliers",
+    "file": "services/suppliers.service.ts",
+    "function": "suppliersService.update"
+  },
+  {
+    "error_code": "FLEET-SUP005",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to delete supplier. Please try again.",
+    "module_name": "Suppliers",
+    "file": "services/suppliers.service.ts",
+    "function": "suppliersService.remove"
+  },
+  {
+    "error_code": "FLEET-SUP006",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve suppliers. Please try again.",
+    "module_name": "Suppliers",
+    "file": "services/suppliers.service.ts",
+    "function": "suppliersService.list"
+  },
+  {
+    "error_code": "FLEET-SYS001",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Something went wrong. Please try again.",
+    "module_name": "System",
+    "file": "middlewares/error-handler.ts",
+    "function": "toAppError"
+  },
+  {
+    "error_code": "FLEET-SYS002",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "The request contains invalid data.",
+    "module_name": "System",
+    "file": "services/workshop.service.ts",
+    "function": "costCents"
+  },
+  {
+    "error_code": "FLEET-SYS005",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "A record with the same unique value already exists.",
+    "module_name": "System",
+    "file": "middlewares/error-handler.ts",
+    "function": "fromPrismaError"
+  },
+  {
+    "error_code": "FLEET-SYS006",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "One of the selected related records does not exist.",
+    "module_name": "System",
+    "file": "middlewares/error-handler.ts",
+    "function": "fromPrismaError"
+  },
+  {
+    "error_code": "FLEET-SYS007",
+    "error_filter": "USER_END_VIOLATION",
+    "error_description": "This record is used by other records and cannot be deleted.",
+    "module_name": "System",
+    "file": "services/assignments.service.ts",
+    "function": "repository.remove"
+  },
+  {
+    "error_code": "FLEET-SYS008",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "The requested record no longer exists.",
+    "module_name": "System",
+    "file": "middlewares/error-handler.ts",
+    "function": "fromPrismaError"
+  },
+  {
+    "error_code": "FLEET-SYS009",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "This Idempotency-Key was already used with a different request.",
+    "module_name": "System",
+    "file": "middlewares/idempotency.ts",
+    "function": "idempotency"
+  },
+  {
+    "error_code": "FLEET-SYS010",
+    "error_filter": "USER_END_VIOLATION",
+    "error_description": "This request is already being processed. Please wait a moment.",
+    "module_name": "System",
+    "file": "middlewares/idempotency.ts",
+    "function": "idempotency"
+  },
+  {
+    "error_code": "FLEET-TRK001",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Truck not found.",
+    "module_name": "Trucks & Assignments",
+    "file": "services/trucks.service.ts",
+    "function": "trucksService.findOne"
+  },
+  {
+    "error_code": "FLEET-TRK002",
+    "error_filter": "USER_END_VIOLATION",
+    "error_description": "This truck is used by one or more trips and cannot be deleted.",
+    "module_name": "Trucks & Assignments",
+    "file": "services/trucks.service.ts",
+    "function": "trucksService.remove"
+  },
+  {
+    "error_code": "FLEET-TRK003",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create truck. Please try again.",
+    "module_name": "Trucks & Assignments",
+    "file": "services/trucks.service.ts",
+    "function": "trucksService.create"
+  },
+  {
+    "error_code": "FLEET-TRK004",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to update truck. Please try again.",
+    "module_name": "Trucks & Assignments",
+    "file": "services/trucks.service.ts",
+    "function": "trucksService.update"
+  },
+  {
+    "error_code": "FLEET-TRK005",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to delete truck. Please try again.",
+    "module_name": "Trucks & Assignments",
+    "file": "services/trucks.service.ts",
+    "function": "trucksService.remove"
+  },
+  {
+    "error_code": "FLEET-TRK006",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve trucks. Please try again.",
+    "module_name": "Trucks & Assignments",
+    "file": "services/trucks.service.ts",
+    "function": "trucksService.list"
+  },
+  {
+    "error_code": "FLEET-TRK007",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Truck assignment not found.",
+    "module_name": "Trucks & Assignments",
+    "file": "services/assignments.service.ts",
+    "function": "repository.findOne"
+  },
+  {
+    "error_code": "FLEET-TRK008",
+    "error_filter": "USER_END_VIOLATION",
+    "error_description": "This truck already has an assignment during the selected period.",
+    "module_name": "Trucks & Assignments",
+    "file": "services/assignments.service.ts",
+    "function": "assertNoOverlap"
+  },
+  {
+    "error_code": "FLEET-TRK009",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "The end date must be on or after the start date.",
+    "module_name": "Trucks & Assignments",
+    "file": "services/assignments.service.ts",
+    "function": "assertDateOrder"
+  },
+  {
+    "error_code": "FLEET-TRK010",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve truck assignments. Please try again.",
+    "module_name": "Trucks & Assignments",
+    "file": "services/assignments.service.ts",
+    "function": "repository.list"
+  },
+  {
+    "error_code": "FLEET-TRK011",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create truck assignment. Please try again.",
+    "module_name": "Trucks & Assignments",
+    "file": "services/assignments.service.ts",
+    "function": "repository.create"
+  },
+  {
+    "error_code": "FLEET-TRK012",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to update truck assignment. Please try again.",
+    "module_name": "Trucks & Assignments",
+    "file": "services/assignments.service.ts",
+    "function": "repository.update"
+  },
+  {
+    "error_code": "FLEET-TRK013",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to remove truck assignment. Please try again.",
+    "module_name": "Trucks & Assignments",
+    "file": "services/assignments.service.ts",
+    "function": "repository.remove"
+  },
+  {
+    "error_code": "FLEET-TRP001",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Trip not found.",
+    "module_name": "Trips",
+    "file": "services/trips.service.ts",
+    "function": "tripsService.findOne"
+  },
+  {
+    "error_code": "FLEET-TRP003",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create trip. Please try again.",
+    "module_name": "Trips",
+    "file": "services/trips.service.ts",
+    "function": "tripsService.create"
+  },
+  {
+    "error_code": "FLEET-TRP004",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to update trip. Please try again.",
+    "module_name": "Trips",
+    "file": "services/trips.service.ts",
+    "function": "tripsService.update"
+  },
+  {
+    "error_code": "FLEET-TRP005",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to delete trip. Please try again.",
+    "module_name": "Trips",
+    "file": "services/trips.service.ts",
+    "function": "tripsService.remove"
+  },
+  {
+    "error_code": "FLEET-TRP006",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve trips. Please try again.",
+    "module_name": "Trips",
+    "file": "services/trips.service.ts",
+    "function": "tripsService.list"
+  },
+  {
+    "error_code": "FLEET-TRP007",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "A trip with this transaction number already exists.",
+    "module_name": "Trips",
+    "file": "services/trips.service.ts",
+    "function": "tripsService.create / update"
+  },
+  {
+    "error_code": "FLEET-USR001",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "A user with this email already exists.",
+    "module_name": "Users",
+    "file": "services/users.service.ts",
+    "function": "assertLoginNamesFree"
+  },
+  {
+    "error_code": "FLEET-USR002",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "A user with this username already exists.",
+    "module_name": "Users",
+    "file": "services/users.service.ts",
+    "function": "assertLoginNamesFree"
+  },
+  {
+    "error_code": "FLEET-USR003",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "User not found.",
+    "module_name": "Users",
+    "file": "services/auth.service.ts",
+    "function": "authService.getMe"
+  },
+  {
+    "error_code": "FLEET-USR004",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create user. Please try again.",
+    "module_name": "Users",
+    "file": "services/users.service.ts",
+    "function": "usersService.create"
+  },
+  {
+    "error_code": "FLEET-USR005",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to update user. Please try again.",
+    "module_name": "Users",
+    "file": "services/users.service.ts",
+    "function": "usersService.update"
+  },
+  {
+    "error_code": "FLEET-USR006",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to delete user. Please try again.",
+    "module_name": "Users",
+    "file": "services/users.service.ts",
+    "function": "usersService.remove"
+  },
+  {
+    "error_code": "FLEET-USR007",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve users. Please try again.",
+    "module_name": "Users",
+    "file": "services/users.service.ts",
+    "function": "usersService.list"
+  },
+  {
+    "error_code": "FLEET-USR008",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to update language preference. Please try again.",
+    "module_name": "Users",
+    "file": "services/auth.service.ts",
+    "function": "authService.updateLanguage"
+  },
+  {
+    "error_code": "FLEET-USR009",
+    "error_filter": "USER_END_VIOLATION",
+    "error_description": "You cannot delete or deactivate your own account.",
+    "module_name": "Users",
+    "file": "services/users.service.ts",
+    "function": "usersService.update"
+  },
+  {
+    "error_code": "FLEET-USR010",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Password must be at least 8 characters long.",
+    "module_name": "Users",
+    "file": "services/users.service.ts",
+    "function": "assertPasswordLength"
+  },
+  {
+    "error_code": "FLEET-WKS001",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Work order not found.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "workOrdersRepository.findOne"
+  },
+  {
+    "error_code": "FLEET-WKS003",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create work order. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "workOrdersRepository.create"
+  },
+  {
+    "error_code": "FLEET-WKS004",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to update work order. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "workOrdersRepository.update"
+  },
+  {
+    "error_code": "FLEET-WKS005",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to delete work order. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "workOrdersRepository.remove"
+  },
+  {
+    "error_code": "FLEET-WKS006",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve work orders. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "workOrdersRepository.list"
+  },
+  {
+    "error_code": "FLEET-WKS007",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Maintenance schedule not found.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "maintenanceSchedulesService.findOne"
+  },
+  {
+    "error_code": "FLEET-WKS008",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create maintenance schedule. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "maintenanceSchedulesService.create"
+  },
+  {
+    "error_code": "FLEET-WKS009",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to update maintenance schedule. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "maintenanceSchedulesService.update"
+  },
+  {
+    "error_code": "FLEET-WKS010",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to delete maintenance schedule. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "maintenanceSchedulesService.remove"
+  },
+  {
+    "error_code": "FLEET-WKS011",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve maintenance schedules. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "maintenanceSchedulesService.list"
+  },
+  {
+    "error_code": "FLEET-WKS012",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create inspection. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "vehicleInspectionsService.create"
+  },
+  {
+    "error_code": "FLEET-WKS013",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve inspections. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "vehicleInspectionsService.list"
+  },
+  {
+    "error_code": "FLEET-WKS014",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Spare part not found.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "sparePartsService.findOne"
+  },
+  {
+    "error_code": "FLEET-WKS015",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create spare part. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "sparePartsService.create"
+  },
+  {
+    "error_code": "FLEET-WKS016",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to update spare part. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "sparePartsService.update"
+  },
+  {
+    "error_code": "FLEET-WKS017",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to delete spare part. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "sparePartsService.remove"
+  },
+  {
+    "error_code": "FLEET-WKS018",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve spare parts. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "sparePartsService.list"
+  },
+  {
+    "error_code": "FLEET-WKS019",
+    "error_filter": "USER_END_VIOLATION",
+    "error_description": "Insufficient stock for this spare part.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "takeFromStock"
+  },
+  {
+    "error_code": "FLEET-WKS020",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create spare part transaction. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "stockMovementsRepository.create"
+  },
+  {
+    "error_code": "FLEET-WKS021",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to delete inspection. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "vehicleInspectionsService.remove"
+  },
+  {
+    "error_code": "FLEET-WKS022",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create workshop expense. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "workshopExpensesService.create"
+  },
+  {
+    "error_code": "FLEET-WKS023",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve workshop expenses. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "workshopExpensesService.list"
+  },
+  {
+    "error_code": "FLEET-WKS024",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to load workshop dashboard data. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/dashboard.service.ts",
+    "function": "dashboardService.getWorkshopSummary"
+  },
+  {
+    "error_code": "FLEET-WKS025",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve spare part transactions. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "stockMovementsRepository.list"
+  },
+  {
+    "error_code": "FLEET-WKS026",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Inspection not found.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "vehicleInspectionsService.findOne"
+  },
+  {
+    "error_code": "FLEET-WKS027",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to update inspection. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "vehicleInspectionsService.update"
+  },
+  {
+    "error_code": "FLEET-WKS028",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "A spare part with this part number already exists.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "sparePartsService.create / update"
+  },
+  {
+    "error_code": "FLEET-WKS029",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Workshop expense not found.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "workshopExpensesService.findOne"
+  },
+  {
+    "error_code": "FLEET-WKS030",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to update workshop expense. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "workshopExpensesService.update"
+  },
+  {
+    "error_code": "FLEET-WKS031",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to delete workshop expense. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "workshopExpensesService.remove"
+  },
+  {
+    "error_code": "FLEET-WKS032",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Work order part not found.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "workOrderPartsRepository.findOne"
+  },
+  {
+    "error_code": "FLEET-WKS033",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Inspection item not found.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "inspectionItemsService.findOne"
+  },
+  {
+    "error_code": "FLEET-WKS034",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Stock movement not found.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "stockMovementsRepository.findOne"
+  },
+  {
+    "error_code": "FLEET-WKS035",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to delete stock movement. Please try again.",
+    "module_name": "Workshop",
+    "file": "services/workshop.service.ts",
+    "function": "stockMovementsRepository.remove"
+  },
+  {
+    "error_code": "FLEET-ZATCA003",
+    "error_filter": "USER_END_VIOLATION",
+    "error_description": "This invoice has already been submitted to ZATCA.",
+    "module_name": "ZATCA E-Invoicing",
+    "file": "services/invoices.service.ts",
+    "function": "invoicesService.submitToZatca"
+  },
+  {
+    "error_code": "FLEET-ZATCA004",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Failed to submit invoice to ZATCA. Please try again.",
+    "module_name": "ZATCA E-Invoicing",
+    "file": "services/invoices.service.ts",
+    "function": "invoicesService.submitToZatca"
+  },
+  {
+    "error_code": "RATE-429001",
+    "error_filter": "RATE_LIMIT_EXCEEDED",
+    "error_description": "Too many requests. Please try again later.",
+    "module_name": "Rate Limiting",
+    "file": "middlewares/rate-limit.ts",
+    "function": "rateLimitError"
+  }
+]

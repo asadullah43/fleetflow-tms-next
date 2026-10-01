@@ -5,7 +5,7 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -15,7 +15,8 @@ datasource db {
 
 model Truck {
   id          Int      @id @default(autoincrement())
-  truckNumber String   @unique
+  companyId   Int
+  truckNumber String
   truckType   String?
   status      String   @default("ACTIVE")
   createdAt   DateTime @default(now())
@@ -28,11 +29,16 @@ model Truck {
   inspections          VehicleInspection[]
   expenses             WorkshopExpense[]
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@unique([companyId, truckNumber])
   @@index([status])
+  @@index([companyId])
 }
 
 model TruckDriverAssignment {
   id        Int       @id @default(autoincrement())
+  companyId Int
   truckId   Int
   driverId  Int
   startDate DateTime
@@ -43,17 +49,21 @@ model TruckDriverAssignment {
   truck  Truck  @relation(fields: [truckId], references: [id], onDelete: Cascade)
   driver Driver @relation(fields: [driverId], references: [id], onDelete: Restrict)
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
   @@index([truckId, startDate])
   @@index([driverId, startDate])
+  @@index([companyId])
 }
 
 model Driver {
   id        Int      @id @default(autoincrement())
+  companyId Int
   name      String
   nameAr    String?
   phone     String?
-  licenseNo String?  @unique
-  idNumber  String?  @unique
+  licenseNo String?
+  idNumber  String?
   status    String   @default("ACTIVE")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -63,11 +73,17 @@ model Driver {
   workOrders  WorkOrder[]
   employee    Employee?
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@unique([companyId, licenseNo])
+  @@unique([companyId, idNumber])
   @@index([status])
+  @@index([companyId])
 }
 
 model Supplier {
   id            Int      @id @default(autoincrement())
+  companyId     Int
   name          String
   nameAr        String?
   contactPerson String?
@@ -82,38 +98,46 @@ model Supplier {
   workOrders WorkOrder[]
   spareParts SparePart[]
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
   @@index([status])
+  @@index([companyId])
 }
 
 model Customer {
-  id            Int      @id @default(autoincrement())
-  name          String
-  nameAr        String?
-  contactPerson String?
-  phone         String?
-  email         String?
-  address       String?
-  vatNumber     String?
-  crNumber      String?
-  streetName    String?
+  id             Int      @id @default(autoincrement())
+  companyId      Int
+  name           String
+  nameAr         String?
+  contactPerson  String?
+  phone          String?
+  email          String?
+  address        String?
+  vatNumber      String?
+  crNumber       String?
+  streetName     String?
   buildingNumber String?
-  postalCode    String?
-  city          String?
-  country       String?  @default("SA")
-  status        String   @default("ACTIVE")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  postalCode     String?
+  city           String?
+  country        String?  @default("SA")
+  status         String   @default("ACTIVE")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   trips         Trip[]
   rateContracts RateContract[]
   invoices      Invoice[]
   loadingOrders LoadingOrder[]
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
   @@index([status])
+  @@index([companyId])
 }
 
 model Location {
   id            Int      @id @default(autoincrement())
+  companyId     Int
   name          String
   nameAr        String?
   description   String?
@@ -130,11 +154,16 @@ model Location {
 
   loadingOrdersAsPickup   LoadingOrder[] @relation("LoadingOrderPickup")
   loadingOrdersAsDelivery LoadingOrder[] @relation("LoadingOrderDelivery")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@index([companyId])
 }
 
 model CargoType {
   id            Int      @id @default(autoincrement())
-  name          String   @unique
+  companyId     Int
+  name          String
   nameAr        String?
   description   String?
   descriptionAr String?
@@ -143,14 +172,20 @@ model CargoType {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  trips            Trip[]
-  rateContracts    RateContract[]
-  loadingOrders    LoadingOrder[]
+  trips         Trip[]
+  rateContracts RateContract[]
+  loadingOrders LoadingOrder[]
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@unique([companyId, name])
+  @@index([companyId])
 }
 
 model Trip {
   id                Int    @id @default(autoincrement())
-  transactionNumber String @unique
+  companyId         Int
+  transactionNumber String
 
   supplierId Int?
   customerId Int?
@@ -179,6 +214,9 @@ model Trip {
   driver           Driver?   @relation(fields: [driverId], references: [id], onDelete: Restrict)
   invoice          Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@unique([companyId, transactionNumber])
   @@index([tripDate])
   @@index([truckId])
   @@index([driverId])
@@ -188,10 +226,12 @@ model Trip {
   @@index([pickupLocationId])
   @@index([deliveryLocationId])
   @@index([invoiceId])
+  @@index([companyId])
 }
 
 model RateContract {
   id                 Int      @id @default(autoincrement())
+  companyId          Int
   customerId         Int
   pickupLocationId   Int
   deliveryLocationId Int
@@ -206,12 +246,16 @@ model RateContract {
   deliveryLocation Location  @relation("RateContractDelivery", fields: [deliveryLocationId], references: [id], onDelete: Restrict)
   cargoType        CargoType @relation(fields: [cargoTypeId], references: [id], onDelete: Restrict)
 
-  @@unique([customerId, pickupLocationId, deliveryLocationId, cargoTypeId])
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@unique([companyId, customerId, pickupLocationId, deliveryLocationId, cargoTypeId])
+  @@index([companyId])
 }
 
 model Invoice {
   id            Int       @id @default(autoincrement())
-  invoiceNumber String    @unique
+  companyId     Int
+  invoiceNumber String
   customerId    Int
   issueDate     DateTime  @default(now())
   issueTime     DateTime  @default(now())
@@ -220,7 +264,7 @@ model Invoice {
   toDate        DateTime
   currency      String    @default("SAR")
   invoiceType   String    @default("STANDARD") // STANDARD | SIMPLIFIED | CREDIT_NOTE | DEBIT_NOTE
-  paymentMeans  String    @default("CASH")     // CASH | BANK_TRANSFER | CARD | CHEQUE
+  paymentMeans  String    @default("CASH") // CASH | BANK_TRANSFER | CARD | CHEQUE
   vatEnabled    Boolean   @default(false)
   vatPercent    Decimal   @default(0) @db.Decimal(5, 2)
   subtotal      Decimal   @db.Decimal(12, 2)
@@ -251,23 +295,27 @@ model Invoice {
   createdByCompanyId  Int? // company owning this invoice (multi-tenant isolation)
   zatcaSubmissionLogs ZatcaSubmissionLog[]
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@unique([companyId, invoiceNumber])
   @@index([customerId])
   @@index([status])
   @@index([issueDate])
   @@index([dueDate])
   @@index([zatcaStatus])
+  @@index([companyId])
 }
 
 model InvoiceLineItem {
-  id          Int      @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   invoiceId   Int
   description String
-  quantity    Decimal  @db.Decimal(12, 3)
-  rate        Decimal  @db.Decimal(12, 2)
-  amount      Decimal  @db.Decimal(12, 2)
-  taxCategory String   @default("S")
-  taxPercent  Decimal  @default(15) @db.Decimal(5, 2)
-  taxAmount   Decimal  @default(0)  @db.Decimal(12, 2)
+  quantity    Decimal @db.Decimal(12, 3)
+  rate        Decimal @db.Decimal(12, 2)
+  amount      Decimal @db.Decimal(12, 2)
+  taxCategory String  @default("S")
+  taxPercent  Decimal @default(15) @db.Decimal(5, 2)
+  taxAmount   Decimal @default(0) @db.Decimal(12, 2)
 
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
@@ -275,26 +323,29 @@ model InvoiceLineItem {
 }
 
 model CompanySettings {
-  id          Int      @id @default(autoincrement())
-  companyName String
-  logoUrl     String?
-  vatNumber   String? // 15-digit Saudi VAT number (includes leading '3')
-  /** -------- ZATCA Company Information (Phase-2 onboarding) -------- */
-  crNumber          String? // CRN / commercial registration number
-  branchName        String? // registered branch name
-  industryCategory  String? // business industry/category
-  city              String? // registered branch city
-  country           String  @default("SA") // ISO 3166-1 alpha-2 (SA for Saudi Arabia)
-  address           String?
-  streetName        String?
-  buildingNumber    String?
-  postalCode        String?
-  bankName          String?
-  bankAccount       String?
-  phone             String?
-  email             String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id               Int      @id @default(autoincrement())
+  companyId        Int
+  companyName      String
+  logoUrl          String?
+  vatNumber        String? // 15-digit Saudi VAT number (includes leading '3')
+  /**
+   * -------- ZATCA Company Information (Phase-2 onboarding) --------
+   */
+  crNumber         String? // CRN / commercial registration number
+  branchName       String? // registered branch name
+  industryCategory String? // business industry/category
+  city             String? // registered branch city
+  country          String   @default("SA") // ISO 3166-1 alpha-2 (SA for Saudi Arabia)
+  address          String?
+  streetName       String?
+  buildingNumber   String?
+  postalCode       String?
+  bankName         String?
+  bankAccount      String?
+  phone            String?
+  email            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   /**
    * =====================================================================
@@ -328,6 +379,10 @@ model CompanySettings {
   zatcaLastOnboardedAt       DateTime?
   zatcaLastSubmittedAt       DateTime?
   zatcaLastSubmissionStatus  String?   @db.Text // http status from last invoice submission
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@unique([companyId])
 }
 
 model ZatcaSubmissionLog {
@@ -357,6 +412,7 @@ model ZatcaSubmissionLog {
 
 model SupplierPayment {
   id          Int      @id @default(autoincrement())
+  companyId   Int
   supplierId  Int
   amount      Decimal  @db.Decimal(12, 2)
   currency    String   @default("SAR")
@@ -367,13 +423,17 @@ model SupplierPayment {
 
   supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
   @@index([supplierId])
   @@index([paymentDate])
+  @@index([companyId])
 }
 
 model LoadingOrder {
   id                 Int      @id @default(autoincrement())
-  serialNumber       String   @unique
+  companyId          Int
+  serialNumber       String
   batchId            Int
   pickupLocationId   Int
   deliveryLocationId Int
@@ -386,12 +446,17 @@ model LoadingOrder {
   customer         Customer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
   cargoType        CargoType @relation(fields: [cargoTypeId], references: [id], onDelete: Restrict)
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@unique([companyId, serialNumber])
   @@index([customerId])
   @@index([batchId])
+  @@index([companyId])
 }
 
 model User {
   id           Int      @id @default(autoincrement())
+  companyId    Int
   name         String
   email        String   @unique
   username     String?  @unique
@@ -407,13 +472,17 @@ model User {
 
   inspections VehicleInspection[]
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
   @@index([roleId])
   @@index([status])
+  @@index([companyId])
 }
 
 model Role {
   id          Int      @id @default(autoincrement())
-  name        String   @unique
+  companyId   Int
+  name        String
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -421,7 +490,11 @@ model Role {
   permissions Permission[]
   users       User[]
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@unique([companyId, name])
   @@index([name])
+  @@index([companyId])
 }
 
 model Permission {
@@ -444,7 +517,8 @@ model Permission {
 
 model WorkOrder {
   id             Int       @id @default(autoincrement())
-  orderNumber    String    @unique
+  companyId      Int
+  orderNumber    String
   truckId        Int
   driverId       Int?
   supplierId     Int?
@@ -471,16 +545,21 @@ model WorkOrder {
   inspectionItems InspectionItem[]
   expenses        WorkshopExpense[]
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@unique([companyId, orderNumber])
   @@index([truckId])
   @@index([driverId])
   @@index([supplierId])
   @@index([status])
   @@index([priority])
   @@index([createdAt])
+  @@index([companyId])
 }
 
 model WorkOrderPart {
   id          Int      @id @default(autoincrement())
+  companyId   Int
   workOrderId Int
   sparePartId Int
   quantity    Int      @default(1)
@@ -492,12 +571,16 @@ model WorkOrderPart {
   workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
   sparePart SparePart @relation(fields: [sparePartId], references: [id], onDelete: Restrict)
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
   @@index([workOrderId])
   @@index([sparePartId])
+  @@index([companyId])
 }
 
 model MaintenanceSchedule {
   id              Int       @id @default(autoincrement())
+  companyId       Int
   truckId         Int
   maintenanceType String
   description     String?
@@ -512,13 +595,17 @@ model MaintenanceSchedule {
 
   truck Truck @relation(fields: [truckId], references: [id], onDelete: Restrict)
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
   @@index([truckId])
   @@index([nextService])
   @@index([status])
+  @@index([companyId])
 }
 
 model VehicleInspection {
   id          Int      @id @default(autoincrement())
+  companyId   Int
   truckId     Int
   inspectorId Int
   inspectDate DateTime
@@ -533,13 +620,17 @@ model VehicleInspection {
   inspector User             @relation(fields: [inspectorId], references: [id], onDelete: Restrict)
   items     InspectionItem[]
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
   @@index([truckId])
   @@index([inspectorId])
   @@index([inspectDate])
+  @@index([companyId])
 }
 
 model InspectionItem {
   id            Int      @id @default(autoincrement())
+  companyId     Int
   inspectionId  Int
   workOrderId   Int?
   checklistItem String
@@ -551,15 +642,19 @@ model InspectionItem {
   inspection VehicleInspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
   workOrder  WorkOrder?        @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
   @@index([inspectionId])
   @@index([workOrderId])
+  @@index([companyId])
 }
 
 model SparePart {
   id           Int      @id @default(autoincrement())
+  companyId    Int
   name         String
   nameAr       String?
-  partNumber   String?  @unique
+  partNumber   String?
   category     String?
   quantity     Int      @default(0)
   minimumStock Int      @default(0)
@@ -573,14 +668,19 @@ model SparePart {
   workOrderParts WorkOrderPart[]
   transactions   SparePartTransaction[]
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@unique([companyId, partNumber])
   @@index([supplierId])
   @@index([category])
   @@index([status])
   @@index([partNumber])
+  @@index([companyId])
 }
 
 model SparePartTransaction {
   id              Int      @id @default(autoincrement())
+  companyId       Int
   sparePartId     Int
   transactionType String
   quantity        Int
@@ -589,12 +689,16 @@ model SparePartTransaction {
 
   sparePart SparePart @relation(fields: [sparePartId], references: [id], onDelete: Restrict)
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
   @@index([sparePartId])
   @@index([createdAt])
+  @@index([companyId])
 }
 
 model WorkshopExpense {
   id          Int      @id @default(autoincrement())
+  companyId   Int
   truckId     Int
   workOrderId Int?
   category    String
@@ -607,10 +711,13 @@ model WorkshopExpense {
   truck     Truck      @relation(fields: [truckId], references: [id], onDelete: Restrict)
   workOrder WorkOrder? @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
   @@index([truckId])
   @@index([workOrderId])
   @@index([expenseDate])
   @@index([category])
+  @@index([companyId])
 }
 
 // ============================================================
@@ -619,6 +726,7 @@ model WorkshopExpense {
 
 model Department {
   id          Int      @id @default(autoincrement())
+  companyId   Int
   name        String
   nameAr      String?
   description String?
@@ -630,11 +738,15 @@ model Department {
   designations Designation[]
   employees    Employee[]
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
   @@index([status])
+  @@index([companyId])
 }
 
 model Designation {
   id           Int      @id @default(autoincrement())
+  companyId    Int
   name         String
   nameAr       String?
   description  String?
@@ -647,16 +759,20 @@ model Designation {
   department Department @relation(fields: [departmentId], references: [id], onDelete: Restrict)
   employees  Employee[]
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
   @@index([departmentId])
   @@index([status])
+  @@index([companyId])
 }
 
 model Employee {
   id               Int      @id @default(autoincrement())
-  employeeNumber   String   @unique
+  companyId        Int
+  employeeNumber   String
   name             String
   nameAr           String?
-  email            String?  @unique
+  email            String?
   phone            String?
   idNumber         String?
   joiningDate      DateTime
@@ -683,14 +799,20 @@ model Employee {
   documents     EmployeeDocument[]
   contracts     EmploymentContract[]
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@unique([companyId, employeeNumber])
+  @@unique([companyId, email])
   @@index([departmentId])
   @@index([designationId])
   @@index([employmentStatus])
   @@index([joiningDate])
+  @@index([companyId])
 }
 
 model Attendance {
   id          Int       @id @default(autoincrement())
+  companyId   Int
   employeeId  Int
   attendDate  DateTime
   checkIn     DateTime?
@@ -703,14 +825,18 @@ model Attendance {
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
   @@unique([employeeId, attendDate])
   @@index([employeeId])
   @@index([attendDate])
   @@index([status])
+  @@index([companyId])
 }
 
 model LeaveRequest {
   id         Int      @id @default(autoincrement())
+  companyId  Int
   employeeId Int
   leaveType  String
   startDate  DateTime
@@ -725,14 +851,18 @@ model LeaveRequest {
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
   @@index([employeeId])
   @@index([status])
   @@index([startDate])
   @@index([endDate])
+  @@index([companyId])
 }
 
 model EmployeeDocument {
   id             Int       @id @default(autoincrement())
+  companyId      Int
   employeeId     Int
   documentType   String
   documentNumber String?
@@ -745,34 +875,131 @@ model EmployeeDocument {
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
 
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
   @@index([employeeId])
   @@index([documentType])
   @@index([expiryDate])
+  @@index([companyId])
 }
 
 model EmploymentContract {
-  id             Int       @id @default(autoincrement())
-  employeeId     Int
-  contractNumber String
-  contractType   String    @default("FIXED_TERM")
-  startDate      DateTime
-  endDate        DateTime?
-  salary         Decimal?  @db.Decimal(12, 2)
-  currency       String?
-  terms          String?
-  status         String    @default("ACTIVE")
-  documentUrl    String?
-  title          String?
+  id                 Int       @id @default(autoincrement())
+  companyId          Int
+  employeeId         Int
+  contractNumber     String
+  contractType       String    @default("FIXED_TERM")
+  startDate          DateTime
+  endDate            DateTime?
+  salary             Decimal?  @db.Decimal(12, 2)
+  currency           String?
+  terms              String?
+  status             String    @default("ACTIVE")
+  documentUrl        String?
+  title              String?
   documentUploadedAt DateTime?
   documentUploadedBy String?
-  notes          String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  notes              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
 
   @@index([employeeId])
   @@index([status])
   @@index([startDate])
   @@index([endDate])
+  @@index([companyId])
+}
+
+// ============================================================
+// MULTI-TENANCY, API KEYS, IDEMPOTENCY
+// ============================================================
+
+/// A tenant. Every business table carries companyId; the tenant-scoped
+/// Prisma client (_core_app_connectivities/prisma.ts) filters and stamps it
+/// on every query from the authenticated context, so a request can never
+/// read or write another company's rows.
+model Company {
+  id        Int      @id @default(autoincrement())
+  name      String
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  trucks                 Truck[]
+  truckDriverAssignments TruckDriverAssignment[]
+  drivers                Driver[]
+  suppliers              Supplier[]
+  customers              Customer[]
+  locations              Location[]
+  cargoTypes             CargoType[]
+  trips                  Trip[]
+  rateContracts          RateContract[]
+  invoices               Invoice[]
+  settings               CompanySettings?
+  supplierPayments       SupplierPayment[]
+  loadingOrders          LoadingOrder[]
+  users                  User[]
+  roles                  Role[]
+  workOrders             WorkOrder[]
+  workOrderParts         WorkOrderPart[]
+  maintenanceSchedules   MaintenanceSchedule[]
+  vehicleInspections     VehicleInspection[]
+  inspectionItems        InspectionItem[]
+  spareParts             SparePart[]
+  sparePartTransactions  SparePartTransaction[]
+  workshopExpenses       WorkshopExpense[]
+  departments            Department[]
+  designations           Designation[]
+  employees              Employee[]
+  attendances            Attendance[]
+  leaveRequests          LeaveRequest[]
+  employeeDocuments      EmployeeDocument[]
+  employmentContracts    EmploymentContract[]
+  apiKeys                ApiKey[]
+  idempotencyRecords     IdempotencyRecord[]
+}
+
+/// Machine credential for integrations (same APIs as JWT users). Only a
+/// SHA-256 hash of the key is stored; the plaintext is shown once at creation.
+model ApiKey {
+  id          Int       @id @default(autoincrement())
+  companyId   Int
+  name        String
+  keyPrefix   String // first characters, for identifying a key in lists/logs
+  keyHash     String    @unique
+  /// Least-privilege grant, same shape as a role's matrix: [{ module, canView, canAdd, canEdit, canDelete }]
+  scopes      Json
+  status      String    @default("ACTIVE") // ACTIVE | REVOKED
+  createdById Int?
+  lastUsedAt  DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@index([companyId])
+}
+
+/// One row per (tenant, operation, Idempotency-Key): a retried create
+/// returns the stored result instead of creating a duplicate.
+model IdempotencyRecord {
+  id          Int      @id @default(autoincrement())
+  companyId   Int
+  operation   String // fully-qualified rpc, e.g. fleetflow.invoices.InvoicesService/Create
+  key         String
+  requestHash String // SHA-256 of the request, to reject key reuse with a different payload
+  status      String   @default("IN_PROGRESS") // IN_PROGRESS | COMPLETED
+  response    Json? // the DB_DATA payload returned by the first successful attempt
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, operation, key])
+  @@index([expiresAt])
 }

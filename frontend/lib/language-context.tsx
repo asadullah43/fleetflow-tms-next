@@ -1,8 +1,11 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
-import { useAuth } from './auth-context';
-import { authClient } from './grpc/auth';
+import { useDirection } from '@mantine/core';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '../features/auth/session-provider';
+import { authApi, UserProfileDto } from './api/auth.api';
+import { queryKeys } from './api/query-keys';
 import { translate, localizeDigits, localizeStatValue } from './i18n/dictionary';
 
 export type Language = 'en' | 'ar';
@@ -38,55 +41,61 @@ function applyDocumentDirection(lang: Language) {
 }
 
 /**
- * Global EN/AR language preference — restores the switcher the legacy
- * Flutter app had in its topbar dropdown and on its login screen (a
- * `SegmentedButton`). The choice is kept in localStorage so it applies
- * immediately, even before signing in, and — once there's a session — is
- * saved to the user's profile through the same `AuthService.UpdateLanguage`
- * RPC the legacy app called, so it travels with the account across
- * devices. Signing in then re-syncs the switcher from the profile's saved
- * language, same as the legacy screens did.
+ * Global EN/AR language preference. The choice is kept in localStorage so
+ * it applies immediately, even before signing in, and — once there's a
+ * session — is saved to the user's profile, so it travels with the
+ * account across devices. Signing in re-syncs the switcher from the
+ * profile's saved language.
  *
  * Flips the document's text direction (RTL for Arabic) and `lang`
- * attribute app-wide; `useT()` below translates UI strings through
- * lib/i18n/dictionary.ts.
+ * attribute app-wide, and Mantine's direction with it; `useT()` below
+ * translates UI strings through lib/i18n/dictionary.ts.
  */
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const { token, user } = useAuth();
+  const { user } = useAuth();
+  const { setDirection } = useDirection();
+  const queryClient = useQueryClient();
   const [language, setLanguageState] = useState<Language>('en');
+
+  const apply = useCallback(
+    (lang: Language) => {
+      setLanguageState(lang);
+      applyDocumentDirection(lang);
+      setDirection(lang === 'ar' ? 'rtl' : 'ltr');
+      writeStoredLanguage(lang);
+    },
+    [setDirection],
+  );
 
   // Initial load: whatever was last chosen on this device/browser. Read in
   // an effect (not the useState initializer) so the server render and the
   // first client render agree, avoiding a hydration mismatch.
   useEffect(() => {
-    const initial: Language = readStoredLanguage();
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync from localStorage after hydration
-    setLanguageState(initial);
-    applyDocumentDirection(initial);
-  }, []);
+    apply(readStoredLanguage());
+  }, [apply]);
 
   // Once signed in, the account's saved preference takes over.
+  const profileLanguage = user?.language;
   useEffect(() => {
-    if (user?.language === 'ar' || user?.language === 'en') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- adopting the profile's language when a session starts
-      setLanguageState(user.language);
-      applyDocumentDirection(user.language);
-      writeStoredLanguage(user.language);
-    }
-  }, [user]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- adopting the profile's language when a session starts
+    if (profileLanguage === 'ar' || profileLanguage === 'en') apply(profileLanguage);
+  }, [profileLanguage, apply]);
+
+  const saveToProfile = useMutation({
+    mutationFn: (lang: Language) => authApi.updateLanguage(lang),
+    onSuccess: (profile: UserProfileDto) =>
+      queryClient.setQueryData(queryKeys.session(), (session: { user: UserProfileDto } | undefined) => (session ? { ...session, user: { ...session.user, language: profile.language } } : session)),
+    // Best-effort: the local switch has already taken effect.
+  });
+  const { mutate: save } = saveToProfile;
 
   const setLanguage = useCallback(
     (lang: Language) => {
-      setLanguageState(lang);
-      applyDocumentDirection(lang);
-      writeStoredLanguage(lang);
-      if (token) {
-        authClient.updateLanguage(token, lang).catch(() => {
-          // Best-effort — the local switch has already taken effect.
-        });
-      }
+      apply(lang);
+      if (user) save(lang);
     },
-    [token],
+    [apply, user, save],
   );
 
   return <LanguageContext.Provider value={{ language, setLanguage }}>{children}</LanguageContext.Provider>;
@@ -102,7 +111,7 @@ export function useLanguage(): LanguageState {
  * `t('Some English label')` — translates a literal UI string to Arabic
  * when that's the active language (via the dictionary in `./i18n/dictionary`),
  * or returns it unchanged for English / anything not yet translated.
- * Used throughout the shared chrome (AppShell, CrudPage/CrudPanel, login)
+ * Used throughout the shared chrome (AppShell, the CRUD screens, sign-in)
  * so every module page gets bilingual labels for free without each page
  * needing its own translation wiring.
  */

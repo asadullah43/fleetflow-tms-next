@@ -2,17 +2,25 @@ syntax = "proto3";
 
 package fleetflow.users;
 
+import "common.proto";
+
 service UsersService {
-  rpc List(ListRequest) returns (UserList);
-  rpc Get(IdRequest) returns (User);
-  rpc Create(CreateUserRequest) returns (User);
-  rpc Update(UpdateUserRequest) returns (User);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: UserList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: User
+  rpc Create(CreateUserRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: User
+  rpc Update(UpdateUserRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: User
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
-message ListRequest {}
+message ListRequest {
+  int32 page = 1;        // 1-based; default 1
+  int32 page_size = 2;   // default 20, max 100
+  string search = 3;     // server-side, case-insensitive partial match
+  string sort_by = 4;    // one of the service's sortable fields
+  string sort_order = 5; // asc | desc
+  map<string, string> filters = 6; // service-specific exact/range filters
+}
 message IdRequest { int32 id = 1; }
-message DeleteResponse {}
 
 // Never carries passwordHash — SAFE_FIELDS-style projection, same as legacy.
 message User {
@@ -27,7 +35,10 @@ message User {
   optional string role_name = 9; // denormalized from roleRef
 }
 
-message UserList { repeated User items = 1; }
+message UserList {
+  repeated User items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 
 message CreateUserRequest {
   string name = 1;

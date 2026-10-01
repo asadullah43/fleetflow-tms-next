@@ -1,34 +1,14 @@
-type BadgeTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+'use client';
 
-const STATUS_TONE: Record<string, BadgeTone> = {
-  ACTIVE: 'success',
-  COMPLETED: 'success',
-  PAID: 'success',
-  DELIVERED: 'success',
-  APPROVED: 'success',
-  IN_PROGRESS: 'info',
-  IN_TRANSIT: 'info',
-  ASSIGNED: 'info',
-  PENDING: 'warning',
-  SCHEDULED: 'warning',
-  MAINTENANCE: 'warning',
-  INACTIVE: 'danger',
-  CANCELLED: 'danger',
-  OVERDUE: 'danger',
-  REJECTED: 'danger',
-  UNPAID: 'danger',
-};
+import { Badge } from '@mantine/core';
+import { useT } from '../lib/language-context';
+import { STATUS_COLOR, statusLabel } from '../lib/status';
 
-/** Renders a status string (e.g. Truck.status, Trip.status) as a colored badge. */
+export { statusLabel };
+
+/** Renders a status code (Truck.status, Invoice.status, ...) as a coloured, translated badge. */
 export function StatusBadge({ status }: { status: string }) {
-  const tone = STATUS_TONE[status] ?? 'neutral';
-  return <span className={`badge badge-${tone}`}>{formatStatus(status)}</span>;
-}
-
-function formatStatus(status: string): string {
-  return status
-    .toLowerCase()
-    .split('_')
-    .map((w) => w[0].toUpperCase() + w.slice(1))
-    .join(' ');
+  const t = useT();
+  if (!status) return null;
+  return <Badge color={STATUS_COLOR[status] ?? 'gray'}>{t(statusLabel(status))}</Badge>;
 }

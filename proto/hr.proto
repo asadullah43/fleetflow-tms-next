@@ -2,17 +2,25 @@ syntax = "proto3";
 
 package fleetflow.hr;
 
-message ListRequest {}
+import "common.proto";
+
+message ListRequest {
+  int32 page = 1;        // 1-based; default 1
+  int32 page_size = 2;   // default 20, max 100
+  string search = 3;     // server-side, case-insensitive partial match
+  string sort_by = 4;    // one of the service's sortable fields
+  string sort_order = 5; // asc | desc
+  map<string, string> filters = 6; // service-specific exact/range filters
+}
 message IdRequest { int32 id = 1; }
-message DeleteResponse {}
 
 // ---- Departments ----
 service DepartmentsService {
-  rpc List(ListRequest) returns (DepartmentList);
-  rpc Get(IdRequest) returns (Department);
-  rpc Create(CreateDepartmentRequest) returns (Department);
-  rpc Update(UpdateDepartmentRequest) returns (Department);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: DepartmentList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Department
+  rpc Create(CreateDepartmentRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Department
+  rpc Update(UpdateDepartmentRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Department
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
 message Department {
@@ -23,13 +31,18 @@ message Department {
   optional int32 manager_id = 5;
   string status = 6;
 }
-message DepartmentList { repeated Department items = 1; }
+message DepartmentList {
+  repeated Department items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 message CreateDepartmentRequest {
   string name = 1;
   optional string language = 2;
   optional string description = 3;
   optional int32 manager_id = 4;
   optional string status = 5;
+  // Arabic value entered alongside the English one (preferred over the legacy `language` tag).
+  optional string name_ar = 50;
 }
 message UpdateDepartmentRequest {
   int32 id = 1;
@@ -38,15 +51,17 @@ message UpdateDepartmentRequest {
   optional string description = 4;
   optional int32 manager_id = 5;
   optional string status = 6;
+  // Arabic value entered alongside the English one (preferred over the legacy `language` tag).
+  optional string name_ar = 50;
 }
 
 // ---- Designations ----
 service DesignationsService {
-  rpc List(ListRequest) returns (DesignationList);
-  rpc Get(IdRequest) returns (Designation);
-  rpc Create(CreateDesignationRequest) returns (Designation);
-  rpc Update(UpdateDesignationRequest) returns (Designation);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: DesignationList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Designation
+  rpc Create(CreateDesignationRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Designation
+  rpc Update(UpdateDesignationRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Designation
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
 message Designation {
@@ -59,7 +74,10 @@ message Designation {
   string status = 7;
   optional string department_name = 8;
 }
-message DesignationList { repeated Designation items = 1; }
+message DesignationList {
+  repeated Designation items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 message CreateDesignationRequest {
   string name = 1;
   optional string language = 2;
@@ -67,6 +85,8 @@ message CreateDesignationRequest {
   int32 department_id = 4;
   optional string level = 5;
   optional string status = 6;
+  // Arabic value entered alongside the English one (preferred over the legacy `language` tag).
+  optional string name_ar = 50;
 }
 message UpdateDesignationRequest {
   int32 id = 1;
@@ -76,15 +96,17 @@ message UpdateDesignationRequest {
   optional int32 department_id = 5;
   optional string level = 6;
   optional string status = 7;
+  // Arabic value entered alongside the English one (preferred over the legacy `language` tag).
+  optional string name_ar = 50;
 }
 
 // ---- Employees ----
 service EmployeesService {
-  rpc List(ListRequest) returns (EmployeeList);
-  rpc Get(IdRequest) returns (Employee);
-  rpc Create(CreateEmployeeRequest) returns (Employee);
-  rpc Update(UpdateEmployeeRequest) returns (Employee);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: EmployeeList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Employee
+  rpc Create(CreateEmployeeRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Employee
+  rpc Update(UpdateEmployeeRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Employee
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
 message Employee {
@@ -110,7 +132,10 @@ message Employee {
   optional string department_name = 30;
   optional string designation_name = 31;
 }
-message EmployeeList { repeated Employee items = 1; }
+message EmployeeList {
+  repeated Employee items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 message CreateEmployeeRequest {
   string name = 1;
   optional string language = 2;
@@ -129,6 +154,8 @@ message CreateEmployeeRequest {
   optional string emergency_phone = 15;
   optional int32 driver_id = 16;
   optional string notes = 17;
+  // Arabic value entered alongside the English one (preferred over the legacy `language` tag).
+  optional string name_ar = 50;
 }
 message UpdateEmployeeRequest {
   int32 id = 1;
@@ -149,15 +176,17 @@ message UpdateEmployeeRequest {
   optional string emergency_phone = 16;
   optional int32 driver_id = 17;
   optional string notes = 18;
+  // Arabic value entered alongside the English one (preferred over the legacy `language` tag).
+  optional string name_ar = 50;
 }
 
 // ---- Attendance ----
 service AttendanceService {
-  rpc List(ListRequest) returns (AttendanceList);
-  rpc Get(IdRequest) returns (Attendance);
-  rpc Create(CreateAttendanceRequest) returns (Attendance);
-  rpc Update(UpdateAttendanceRequest) returns (Attendance);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: AttendanceList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Attendance
+  rpc Create(CreateAttendanceRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Attendance
+  rpc Update(UpdateAttendanceRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Attendance
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
 message Attendance {
@@ -171,7 +200,10 @@ message Attendance {
   optional string notes = 8;
   optional string employee_name = 9;
 }
-message AttendanceList { repeated Attendance items = 1; }
+message AttendanceList {
+  repeated Attendance items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 message CreateAttendanceRequest {
   int32 employee_id = 1;
   string attend_date = 2;
@@ -194,11 +226,11 @@ message UpdateAttendanceRequest {
 
 // ---- Leave requests ----
 service LeaveRequestsService {
-  rpc List(ListRequest) returns (LeaveRequestList);
-  rpc Get(IdRequest) returns (LeaveRequest);
-  rpc Create(CreateLeaveRequestRequest) returns (LeaveRequest);
-  rpc Update(UpdateLeaveRequestRequest) returns (LeaveRequest);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: LeaveRequestList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: LeaveRequest
+  rpc Create(CreateLeaveRequestRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: LeaveRequest
+  rpc Update(UpdateLeaveRequestRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: LeaveRequest
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
 message LeaveRequest {
@@ -214,7 +246,10 @@ message LeaveRequest {
   optional string comments = 10;
   optional string employee_name = 11;
 }
-message LeaveRequestList { repeated LeaveRequest items = 1; }
+message LeaveRequestList {
+  repeated LeaveRequest items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 message CreateLeaveRequestRequest {
   int32 employee_id = 1;
   string leave_type = 2;
@@ -239,11 +274,11 @@ message UpdateLeaveRequestRequest {
 
 // ---- Employee documents ----
 service EmployeeDocumentsService {
-  rpc List(ListRequest) returns (EmployeeDocumentList);
-  rpc Get(IdRequest) returns (EmployeeDocument);
-  rpc Create(CreateEmployeeDocumentRequest) returns (EmployeeDocument);
-  rpc Update(UpdateEmployeeDocumentRequest) returns (EmployeeDocument);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: EmployeeDocumentList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: EmployeeDocument
+  rpc Create(CreateEmployeeDocumentRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: EmployeeDocument
+  rpc Update(UpdateEmployeeDocumentRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: EmployeeDocument
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
 message EmployeeDocument {
@@ -257,7 +292,10 @@ message EmployeeDocument {
   optional string notes = 8;
   optional string employee_name = 9;
 }
-message EmployeeDocumentList { repeated EmployeeDocument items = 1; }
+message EmployeeDocumentList {
+  repeated EmployeeDocument items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 message CreateEmployeeDocumentRequest {
   int32 employee_id = 1;
   string document_type = 2;
@@ -280,11 +318,11 @@ message UpdateEmployeeDocumentRequest {
 
 // ---- Employment contracts ----
 service EmploymentContractsService {
-  rpc List(ListRequest) returns (EmploymentContractList);
-  rpc Get(IdRequest) returns (EmploymentContract);
-  rpc Create(CreateEmploymentContractRequest) returns (EmploymentContract);
-  rpc Update(UpdateEmploymentContractRequest) returns (EmploymentContract);
-  rpc Delete(IdRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: EmploymentContractList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: EmploymentContract
+  rpc Create(CreateEmploymentContractRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: EmploymentContract
+  rpc Update(UpdateEmploymentContractRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: EmploymentContract
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
 message EmploymentContract {
@@ -303,7 +341,10 @@ message EmploymentContract {
   optional string notes = 13;
   optional string employee_name = 14;
 }
-message EmploymentContractList { repeated EmploymentContract items = 1; }
+message EmploymentContractList {
+  repeated EmploymentContract items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
 message CreateEmploymentContractRequest {
   int32 employee_id = 1;
   string contract_number = 2;

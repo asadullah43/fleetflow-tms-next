@@ -2,13 +2,38 @@ syntax = "proto3";
 
 package fleetflow.common;
 
-// Shared error shape, mirrors the old REST API's AppError envelope
-// (backend/src/common/errors/app-error.ts in the legacy NestJS app)
-message AppError {
-  string error_code = 1;
-  string error_filter = 2;
-  string error_description = 3;
-  int32 status_code = 4;
+// ── Standard API envelope ─────────────────────────────────────────────
+// EVERY rpc in every service returns ApiResponse. Success:
+//   STATUS="SUCCESSFUL", ERROR_* empty, DB_DATA = the encoded payload
+//   message whose fully-qualified type is DB_DATA_TYPE (each rpc's payload
+//   type is noted next to it as `// DB_DATA: <Type>`).
+// Error:
+//   STATUS="ERROR" with ERROR_FILTER / ERROR_CODE / ERROR_DESCRIPTION
+//   (see backend/technical_dev_docs/error_codes_data.json), DB_DATA empty.
+// Application errors are returned in this envelope with gRPC status OK;
+// only transport failures surface as gRPC status errors.
+message ApiResponse {
+  string STATUS = 1;            // SUCCESSFUL | ERROR
+  string ERROR_CODE = 2;
+  string ERROR_FILTER = 3;      // USER_END_VIOLATION | TECHNICAL_ISSUE | INVALID_REQUEST | RATE_LIMIT_EXCEEDED | USER_NOT_AUTHENTICATED | USER_NOT_AUTHORIZED
+  string ERROR_DESCRIPTION = 4;
+  bytes DB_DATA = 5;
+  string DB_DATA_TYPE = 6;
+  optional RateLimit RATE_LIMIT = 7; // only on RATE_LIMIT_EXCEEDED
+}
+
+message RateLimit {
+  string type = 1;              // IP | USER | TENANT | API_KEY | GLOBAL
+  int32 retry_after_seconds = 2;
+  int32 remaining_points = 3;
+}
+
+// Server-calculated pagination returned with every list payload.
+message Pagination {
+  int32 page = 1;
+  int32 page_size = 2;
+  int32 total_items = 3;
+  int32 total_pages = 4;
 }
 
 message Empty {}

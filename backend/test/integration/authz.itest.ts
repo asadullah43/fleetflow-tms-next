@@ -5,9 +5,9 @@
  */
 import { describe, test, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { ADDR, ADMIN_PASSWORD, ADMIN_USER, call, client, loginAs, must } from './client.js';
+import { ADMIN_PASSWORD, ADMIN_USER, SKIP, call, client, loginAs, must } from './client.js';
 
-describe('authentication and authorization', { skip: !ADDR && 'set INTEGRATION_GRPC_ADDR to run' }, () => {
+describe('authentication and authorization', { skip: SKIP }, () => {
   const stamp = Date.now();
   const users = () => client('users', 'UsersService');
   const roles = () => client('roles', 'RolesService');
@@ -27,7 +27,8 @@ describe('authentication and authorization', { skip: !ADDR && 'set INTEGRATION_G
 
   test('wrong password is rejected', async () => {
     const r = await call(client('auth', 'AuthService'), 'login', { username: ADMIN_USER, password: 'wrong' });
-    assert.equal(r.err?.code, 'UNAUTHENTICATED');
+    assert.equal(r.err?.errorFilter, 'USER_NOT_AUTHENTICATED');
+    assert.equal(r.err?.errorCode, 'FLEET-AUTH001');
   });
 
   test('missing and invalid tokens are rejected with distinct codes', async () => {
@@ -36,23 +37,23 @@ describe('authentication and authorization', { skip: !ADDR && 'set INTEGRATION_G
   });
 
   test('a role without users/roles permissions cannot escalate', async () => {
-    assert.equal((await call(users(), 'list', {}, dispatcher)).err?.code, 'PERMISSION_DENIED');
+    assert.equal((await call(users(), 'list', {}, dispatcher)).err?.errorFilter, 'USER_NOT_AUTHORIZED');
     const escalate = await call(users(), 'create', { name: 'E', email: `e${stamp}@test.local`, username: `e${stamp}`, password: 'EvilPass123!', roleId: 1, status: 'ACTIVE', language: 'en' }, dispatcher);
-    assert.equal(escalate.err?.code, 'PERMISSION_DENIED');
-    assert.equal((await call(roles(), 'update', { id: 1, permissions: [] }, dispatcher)).err?.code, 'PERMISSION_DENIED');
+    assert.equal(escalate.err?.errorFilter, 'USER_NOT_AUTHORIZED');
+    assert.equal((await call(roles(), 'update', { id: 1, permissions: [] }, dispatcher)).err?.errorFilter, 'USER_NOT_AUTHORIZED');
   });
 
   test('module permissions are enforced per action', async () => {
     assert.ok((await call(client('trips', 'TripsService'), 'list', {}, dispatcher)).ok);
-    assert.equal((await call(client('trips', 'TripsService'), 'delete', { id: 1 }, dispatcher)).err?.code, 'PERMISSION_DENIED');
-    assert.equal((await call(client('invoices', 'InvoicesService'), 'list', {}, dispatcher)).err?.code, 'PERMISSION_DENIED');
-    assert.equal((await call(client('hr', 'EmployeesService'), 'list', {}, dispatcher)).err?.code, 'PERMISSION_DENIED');
-    assert.equal((await call(client('workshop', 'WorkOrderPartsService'), 'list', {}, dispatcher)).err?.code, 'PERMISSION_DENIED');
+    assert.equal((await call(client('trips', 'TripsService'), 'delete', { id: 1 }, dispatcher)).err?.errorFilter, 'USER_NOT_AUTHORIZED');
+    assert.equal((await call(client('invoices', 'InvoicesService'), 'list', {}, dispatcher)).err?.errorFilter, 'USER_NOT_AUTHORIZED');
+    assert.equal((await call(client('hr', 'EmployeesService'), 'list', {}, dispatcher)).err?.errorFilter, 'USER_NOT_AUTHORIZED');
+    assert.equal((await call(client('workshop', 'WorkOrderPartsService'), 'list', {}, dispatcher)).err?.errorFilter, 'USER_NOT_AUTHORIZED');
   });
 
   test('shared lookup lists stay readable, but not writable', async () => {
     assert.ok((await call(client('trucks', 'TrucksService'), 'list', {}, dispatcher)).ok);
-    assert.equal((await call(client('trucks', 'TrucksService'), 'create', { truckNumber: `X${stamp}` }, dispatcher)).err?.code, 'PERMISSION_DENIED');
+    assert.equal((await call(client('trucks', 'TrucksService'), 'create', { truckNumber: `X${stamp}` }, dispatcher)).err?.errorFilter, 'USER_NOT_AUTHORIZED');
   });
 
   test('effective permissions: dispatcher sees only trips; admin sees everything', async () => {
@@ -71,7 +72,7 @@ describe('authentication and authorization', { skip: !ADDR && 'set INTEGRATION_G
   test('deactivating a user ends their existing session immediately', async () => {
     must(await call(users(), 'update', { id: dispatcherId, status: 'INACTIVE' }, admin));
     const r = await call(client('trips', 'TripsService'), 'list', {}, dispatcher);
-    assert.equal(r.err?.code, 'UNAUTHENTICATED');
+    assert.equal(r.err?.errorFilter, 'USER_NOT_AUTHENTICATED');
     assert.equal(r.err?.errorCode, 'FLEET-AUTH002');
   });
 });

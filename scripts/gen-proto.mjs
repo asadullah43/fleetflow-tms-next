@@ -23,7 +23,6 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 const PROTO_DIR = path.join(ROOT_DIR, 'proto');
 
 const OUT_DIRS = [
-  path.join(ROOT_DIR, 'backend', 'src', 'generated', 'proto'),
   path.join(ROOT_DIR, 'frontend', 'lib', 'generated', 'proto'),
 ];
 

@@ -2,14 +2,16 @@ syntax = "proto3";
 
 package fleetflow.companysettings;
 
+import "common.proto";
+
 // Singleton settings record — get-or-create, no list/delete.
 service CompanySettingsService {
-  rpc Get(GetRequest) returns (CompanySettings);
-  rpc Update(UpdateCompanySettingsRequest) returns (CompanySettings);
+  rpc Get(GetRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: CompanySettings
+  rpc Update(UpdateCompanySettingsRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: CompanySettings
   // Public (no auth) — just enough to brand the sidebar and the login
   // screen before a session exists. Everything else on this row (VAT,
   // bank account, address, ...) stays behind Get.
-  rpc GetBranding(GetRequest) returns (CompanyBranding);
+  rpc GetBranding(GetRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: CompanyBranding
 }
 
 message GetRequest {}

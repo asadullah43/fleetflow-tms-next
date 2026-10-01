@@ -1,0 +1,73 @@
+import { toDateInput } from '../../lib/date';
+import type { FieldDef, FormValues } from './types';
+
+/** Form values for a new record. */
+export function emptyValues(fields: FieldDef[]): FormValues {
+  return Object.fromEntries(fields.map((field) => [field.name, field.default ?? '']));
+}
+
+/** A stored row -> editable strings, by field type. */
+export function rowToValues(fields: FieldDef[], row: Record<string, unknown>): FormValues {
+  const values: FormValues = {};
+  for (const field of fields) {
+    const raw = row[field.name];
+    switch (field.type) {
+      case 'password':
+      case 'display':
+        values[field.name] = '';
+        break;
+      case 'date':
+        values[field.name] = toDateInput(raw as string | undefined);
+        break;
+      case 'lookup':
+        values[field.name] = raw ? String(raw) : ''; // 0 / null = no reference
+        break;
+      default:
+        values[field.name] = raw === null || raw === undefined ? '' : String(raw);
+    }
+  }
+  return values;
+}
+
+/**
+ * Editable strings -> the API payload, by field type. References and
+ * whole numbers become numbers; a blank optional reference, number or
+ * password is left out (meaning "not set" on create, "unchanged" on edit).
+ */
+export function valuesToPayload(fields: FieldDef[], values: FormValues): Record<string, unknown> {
+  const payload: Record<string, unknown> = {};
+  for (const field of fields) {
+    const value = values[field.name] ?? '';
+    switch (field.type) {
+      case 'display':
+        break;
+      case 'lookup':
+      case 'integer':
+        if (value !== '') payload[field.name] = Number(value);
+        break;
+      case 'password':
+        if (value !== '') payload[field.name] = value;
+        break;
+      case 'decimal':
+        payload[field.name] = value.trim();
+        break;
+      default:
+        payload[field.name] = typeof value === 'string' && field.type !== 'textarea' ? value.trim() : value;
+    }
+  }
+  return payload;
+}
+
+/** Client-side checks that mirror the backend's validation, so most mistakes are caught before a round trip. */
+export function validateValues(fields: FieldDef[], values: FormValues, mode: 'create' | 'edit'): Record<string, string> {
+  const errors: Record<string, string> = {};
+  for (const field of fields) {
+    if (field.type === 'display') continue;
+    const value = (values[field.name] ?? '').trim();
+    const requiredNow = field.required && !(field.type === 'password' && mode === 'edit');
+    if (requiredNow && value === '') errors[field.name] = 'This field is required.';
+    else if (value !== '' && field.type === 'decimal' && !/^\d+(\.\d+)?$/.test(value)) errors[field.name] = 'Enter a number, e.g. 150 or 99.50.';
+    else if (value !== '' && field.type === 'integer' && !/^\d+$/.test(value)) errors[field.name] = 'Enter a whole number.';
+  }
+  return errors;
+}

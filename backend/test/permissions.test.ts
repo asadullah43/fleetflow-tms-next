@@ -6,7 +6,7 @@ import {
   isAdminRole,
   isAllowed,
   isPermissionModule,
-} from '../src/common/auth/permissions.js';
+} from '../utils/permissions.js';
 
 const none = { canView: false, canAdd: false, canEdit: false, canDelete: false };
 
