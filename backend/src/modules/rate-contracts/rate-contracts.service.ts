@@ -1,5 +1,5 @@
 import { prisma } from '../../lib/prisma.js';
-import { AppError } from '../../common/errors/app-error.js';
+import { fail } from '../../common/errors/app-error.js';
 import { ErrorCode } from '../../common/errors/error-codes.js';
 
 const INCLUDE = {
@@ -27,10 +27,6 @@ function mapOut(row: any) {
     deliveryLocationNameAr: row.deliveryLocation?.nameAr,
     cargoTypeNameAr: row.cargoType?.nameAr,
   };
-}
-
-function fail(code: { code: string; filter: any; description: string }, statusCode: number, cause?: unknown): never {
-  throw new AppError({ errorCode: code.code, errorFilter: code.filter, errorDescription: code.description, statusCode, cause: cause as Error });
 }
 
 interface RateContractDto {

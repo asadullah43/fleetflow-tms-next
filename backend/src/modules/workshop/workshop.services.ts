@@ -1,14 +1,23 @@
 import { prisma } from '../../lib/prisma.js';
-import { AppError } from '../../common/errors/app-error.js';
+import { AppError, fail } from '../../common/errors/app-error.js';
 import { ErrorCode } from '../../common/errors/error-codes.js';
+import { buildLocalizedWriteData } from '../../common/localization/language.util.js';
+import { createWithSequence } from '../../common/sequence.js';
+import { toCents, fromCents } from '../../common/money.js';
 
-function fail(code: { code: string; filter: any; description: string }, statusCode: number, cause?: unknown): never {
-  throw new AppError({ errorCode: code.code, errorFilter: code.filter, errorDescription: code.description, statusCode, cause: cause as Error });
+/** A cost field: blank means "use the fallback"; anything else must be a valid non-negative amount. */
+function costCents(value: unknown, fallback: number): number {
+  if (value === undefined || value === null || value === '') return fallback;
+  const cents = toCents(value as string);
+  if (cents === null) fail(ErrorCode.SYS_VALIDATION_ERROR, 400);
+  return cents;
 }
 
-async function generateOrderNumber(): Promise<string> {
-  const count = await prisma.workOrder.count();
-  return `WO-${String(count + 1).padStart(5, '0')}`;
+/** Status COMPLETED without a completion date gets today — the dashboard's "completed this month" counts by this date. */
+function completionDateFor(status: string | undefined, given: string | undefined, existing?: Date | string | null): Date | undefined {
+  if (given) return new Date(given);
+  if (status === 'COMPLETED' && !existing) return new Date();
+  return undefined;
 }
 
 const WO_INCLUDE = { truck: { select: { truckNumber: true } }, driver: { select: { name: true, nameAr: true } } } as const;
@@ -27,33 +36,38 @@ export const workOrdersService = {
     return mapWorkOrder(row);
   },
   async create(dto: Record<string, any>) {
+    if (!dto.truckId || !dto.issue?.trim()) fail(ErrorCode.SYS_VALIDATION_ERROR, 400);
+    const laborCost = costCents(dto.laborCost, 0);
+    const partsCost = costCents(dto.partsCost, 0);
+    const otherCost = costCents(dto.otherCost, 0);
+    const status = dto.status || 'OPEN';
     try {
-      const orderNumber = await generateOrderNumber();
-      const laborCost = Number(dto.laborCost ?? 0);
-      const partsCost = Number(dto.partsCost ?? 0);
-      const otherCost = Number(dto.otherCost ?? 0);
-      const row = await prisma.workOrder.create({
-        data: {
-          orderNumber,
-          truckId: dto.truckId,
-          driverId: dto.driverId,
-          supplierId: dto.supplierId,
-          issue: dto.issue,
-          diagnosis: dto.diagnosis,
-          description: dto.description,
-          priority: dto.priority ?? 'MEDIUM',
-          status: dto.status ?? 'OPEN',
-          startDate: dto.startDate ? new Date(dto.startDate) : undefined,
-          completionDate: dto.completionDate ? new Date(dto.completionDate) : undefined,
-          odometer: dto.odometer,
-          laborCost,
-          partsCost,
-          otherCost,
-          totalCost: laborCost + partsCost + otherCost,
-          notes: dto.notes,
-        },
-        include: WO_INCLUDE,
-      });
+      const row = await createWithSequence(
+        async () => (await prisma.workOrder.findFirst({ orderBy: { id: 'desc' }, select: { orderNumber: true } }))?.orderNumber,
+        (n) => `WO-${String(n).padStart(5, '0')}`,
+        (orderNumber) => prisma.workOrder.create({
+          data: {
+            orderNumber,
+            truckId: dto.truckId,
+            driverId: dto.driverId,
+            supplierId: dto.supplierId,
+            issue: dto.issue,
+            diagnosis: dto.diagnosis,
+            description: dto.description,
+            priority: dto.priority || 'MEDIUM',
+            status,
+            startDate: dto.startDate ? new Date(dto.startDate) : undefined,
+            completionDate: completionDateFor(status, dto.completionDate),
+            odometer: dto.odometer || undefined,
+            laborCost: fromCents(laborCost),
+            partsCost: fromCents(partsCost),
+            otherCost: fromCents(otherCost),
+            totalCost: fromCents(laborCost + partsCost + otherCost),
+            notes: dto.notes,
+          },
+          include: WO_INCLUDE,
+        }),
+      );
       return mapWorkOrder(row);
     } catch (error) {
       fail(ErrorCode.WKS_CREATE_FAILED, 500, error);
@@ -61,20 +75,21 @@ export const workOrdersService = {
   },
   async update(id: number, dto: Record<string, any>) {
     const existing = await this.findOne(id);
+    const laborCost = costCents(dto.laborCost, toCents(existing.laborCost.toFixed(2))!);
+    const partsCost = costCents(dto.partsCost, toCents(existing.partsCost.toFixed(2))!);
+    const otherCost = costCents(dto.otherCost, toCents(existing.otherCost.toFixed(2))!);
     try {
-      const laborCost = dto.laborCost !== undefined ? Number(dto.laborCost) : Number(existing.laborCost);
-      const partsCost = dto.partsCost !== undefined ? Number(dto.partsCost) : Number(existing.partsCost);
-      const otherCost = dto.otherCost !== undefined ? Number(dto.otherCost) : Number(existing.otherCost);
       const row = await prisma.workOrder.update({
         where: { id },
         data: {
           ...dto,
+          odometer: dto.odometer || undefined,
           startDate: dto.startDate ? new Date(dto.startDate) : undefined,
-          completionDate: dto.completionDate ? new Date(dto.completionDate) : undefined,
-          laborCost,
-          partsCost,
-          otherCost,
-          totalCost: laborCost + partsCost + otherCost,
+          completionDate: completionDateFor(dto.status, dto.completionDate, existing.completionDate),
+          laborCost: fromCents(laborCost),
+          partsCost: fromCents(partsCost),
+          otherCost: fromCents(otherCost),
+          totalCost: fromCents(laborCost + partsCost + otherCost),
         },
         include: WO_INCLUDE,
       });
@@ -217,7 +232,6 @@ export const sparePartsService = {
     return { ...row, supplierName: (row as any).supplier?.name, supplierNameAr: (row as any).supplier?.nameAr };
   },
   async create(dto: Record<string, any>) {
-    const { buildLocalizedWriteData } = await import('../../common/localization/language.util.js');
     try {
       const data = buildLocalizedWriteData(dto, true) as any;
       const row = await prisma.sparePart.create({ data, include: SPARE_INCLUDE });
@@ -227,7 +241,6 @@ export const sparePartsService = {
     }
   },
   async update(id: number, dto: Record<string, any>) {
-    const { buildLocalizedWriteData } = await import('../../common/localization/language.util.js');
     await this.findOne(id);
     try {
       const row = await prisma.sparePart.update({ where: { id }, data: buildLocalizedWriteData(dto, false) as any, include: SPARE_INCLUDE });

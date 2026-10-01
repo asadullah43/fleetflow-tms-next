@@ -1,11 +1,7 @@
 import { prisma } from '../../lib/prisma.js';
-import { AppError, ErrorCodeEntry } from '../../common/errors/app-error.js';
+import { fail } from '../../common/errors/app-error.js';
 import { ErrorCode } from '../../common/errors/error-codes.js';
 import { PERMISSION_MODULES, isAdminRole, isPermissionModule } from '../../common/auth/permissions.js';
-
-function fail(code: ErrorCodeEntry, statusCode: number, cause?: unknown): never {
-  throw AppError.from(code, statusCode, cause);
-}
 
 function assertKnownModules(permissions: PermissionInput[] | undefined): void {
   if (permissions?.some((p) => !isPermissionModule(p.module))) fail(ErrorCode.ROL_UNKNOWN_MODULE, 400);

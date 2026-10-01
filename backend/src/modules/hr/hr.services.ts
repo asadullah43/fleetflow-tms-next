@@ -1,11 +1,9 @@
 import { prisma } from '../../lib/prisma.js';
-import { AppError } from '../../common/errors/app-error.js';
+import { fail } from '../../common/errors/app-error.js';
 import { ErrorCode } from '../../common/errors/error-codes.js';
 import { createCrudService } from '../../common/crud/crud.service.js';
-
-function fail(code: { code: string; filter: any; description: string }, statusCode: number, cause?: unknown): never {
-  throw new AppError({ errorCode: code.code, errorFilter: code.filter, errorDescription: code.description, statusCode, cause: cause as Error });
-}
+import { buildLocalizedWriteData } from '../../common/localization/language.util.js';
+import { createWithSequence } from '../../common/sequence.js';
 
 const HR_ERRORS = {
   notFound: ErrorCode.HR_NOT_FOUND,
@@ -32,7 +30,6 @@ export const designationsService = {
     return { ...row, departmentName: (row as any).department?.name };
   },
   async create(dto: Record<string, unknown>) {
-    const { buildLocalizedWriteData } = await import('../../common/localization/language.util.js');
     try {
       return await designationDelegate().create({ data: buildLocalizedWriteData(dto, true) as any });
     } catch (error) {
@@ -40,7 +37,6 @@ export const designationsService = {
     }
   },
   async update(id: number, dto: Record<string, unknown>) {
-    const { buildLocalizedWriteData } = await import('../../common/localization/language.util.js');
     await this.findOne(id);
     try {
       return await designationDelegate().update({ where: { id }, data: buildLocalizedWriteData(dto, false) as any });
@@ -58,10 +54,6 @@ export const designationsService = {
   },
 };
 
-async function generateEmployeeNumber(): Promise<string> {
-  const count = await prisma.employee.count();
-  return `EMP-${String(count + 1).padStart(5, '0')}`;
-}
 
 const EMPLOYEE_INCLUDE = { department: { select: { name: true } }, designation: { select: { name: true } } } as const;
 function mapEmployee(row: any) {
@@ -79,40 +71,43 @@ export const employeesService = {
     return mapEmployee(row);
   },
   async create(dto: Record<string, any>) {
-    const { buildLocalizedWriteData } = await import('../../common/localization/language.util.js');
+    const data = buildLocalizedWriteData(dto, true) as Record<string, any>;
+    const joiningDate = new Date(data.joiningDate);
+    if (!data.name?.trim() || !data.departmentId || Number.isNaN(joiningDate.getTime())) fail(ErrorCode.SYS_VALIDATION_ERROR, 400);
     try {
-      const employeeNumber = await generateEmployeeNumber();
-      const data = buildLocalizedWriteData(dto, true) as Record<string, any>;
-      const row = await prisma.employee.create({
-        data: {
-          employeeNumber,
-          name: data.name,
-          nameAr: data.nameAr,
-          email: data.email || undefined,
-          phone: data.phone,
-          idNumber: data.idNumber,
-          joiningDate: new Date(data.joiningDate),
-          employmentType: data.employmentType ?? 'FULL_TIME',
-          employmentStatus: data.employmentStatus ?? 'ACTIVE',
-          departmentId: data.departmentId,
-          designationId: data.designationId,
-          managerId: data.managerId,
-          salary: data.salary,
-          address: data.address,
-          emergencyContact: data.emergencyContact,
-          emergencyPhone: data.emergencyPhone,
-          driverId: data.driverId,
-          notes: data.notes,
-        },
-        include: EMPLOYEE_INCLUDE,
-      });
+      const row = await createWithSequence(
+        async () => (await prisma.employee.findFirst({ orderBy: { id: 'desc' }, select: { employeeNumber: true } }))?.employeeNumber,
+        (n) => `EMP-${String(n).padStart(5, '0')}`,
+        (employeeNumber) => prisma.employee.create({
+          data: {
+            employeeNumber,
+            name: data.name,
+            nameAr: data.nameAr,
+            email: data.email || undefined,
+            phone: data.phone,
+            idNumber: data.idNumber,
+            joiningDate,
+            employmentType: data.employmentType ?? 'FULL_TIME',
+            employmentStatus: data.employmentStatus ?? 'ACTIVE',
+            departmentId: data.departmentId,
+            designationId: data.designationId,
+            managerId: data.managerId,
+            salary: data.salary,
+            address: data.address,
+            emergencyContact: data.emergencyContact,
+            emergencyPhone: data.emergencyPhone,
+            driverId: data.driverId,
+            notes: data.notes,
+          },
+          include: EMPLOYEE_INCLUDE,
+        }),
+      );
       return mapEmployee(row);
     } catch (error) {
       fail(ErrorCode.HR_CREATE_FAILED, 500, error);
     }
   },
   async update(id: number, dto: Record<string, any>) {
-    const { buildLocalizedWriteData } = await import('../../common/localization/language.util.js');
     await this.findOne(id);
     try {
       const data = buildLocalizedWriteData(dto, false) as Record<string, any>;

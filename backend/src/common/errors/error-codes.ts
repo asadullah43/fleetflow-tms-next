@@ -83,6 +83,10 @@ export const ErrorCode = {
   INV_CREATE_FAILED: { code: 'FLEET-INV003', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Unable to create invoice. Please try again.' },
   INV_UPDATE_FAILED: { code: 'FLEET-INV004', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Unable to update invoice. Please try again.' },
   INV_DELETE_FAILED: { code: 'FLEET-INV005', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Unable to delete invoice. Please try again.' },
+  INV_INVALID_LINES: { code: 'FLEET-INV007', filter: ErrorFilter.INVALID_REQUEST, description: 'Each line item needs a description, a quantity above zero and a valid rate.' },
+  INV_NO_LINES: { code: 'FLEET-INV008', filter: ErrorFilter.INVALID_REQUEST, description: 'An invoice needs at least one line item.' },
+  INV_INVALID_DATES: { code: 'FLEET-INV009', filter: ErrorFilter.INVALID_REQUEST, description: 'The invoice dates are missing or invalid.' },
+  INV_LOCKED: { code: 'FLEET-INV010', filter: ErrorFilter.USER_END_VIOLATION, description: 'This invoice has been submitted to ZATCA and its amounts can no longer be changed.' },
   INV_FETCH_FAILED: { code: 'FLEET-INV006', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Unable to retrieve invoices. Please try again.' },
 
   RLC_NOT_FOUND: { code: 'FLEET-RLC001', filter: ErrorFilter.INVALID_REQUEST, description: 'Rate contract not found.' },

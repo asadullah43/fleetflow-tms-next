@@ -3,7 +3,7 @@ import { rpc } from './grpc-handler.js';
 import type { Access } from './authz.js';
 import type { PermissionModule } from '../common/auth/permissions.js';
 
-export { serialize } from './grpc-handler.js';
+export { serialize } from './serialize.js';
 
 interface CrudLike {
   // `any` here (not Record<string, unknown>) so modules with a narrower,

@@ -106,6 +106,8 @@ export const assignmentsService = {
     const truckId = dto.truckId ?? existing.truckId;
     const startDate = dto.startDate ? new Date(dto.startDate) : new Date(existing.startDate);
     const endDate = dto.endDate !== undefined ? (dto.endDate ? new Date(dto.endDate) : null) : existing.endDate ? new Date(existing.endDate) : null;
+    // Create already rejected end-before-start; update didn't, so an edit could save an impossible range.
+    if (endDate && endDate < startDate) throw AppError.from(ErrorCode.TRK_ASSIGNMENT_INVALID_DATES, 400);
     await assertNoOverlap(truckId, startDate, endDate, id);
     try {
       const row = await prisma.truckDriverAssignment.update({

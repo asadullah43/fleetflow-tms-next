@@ -1,6 +1,6 @@
 import * as bcrypt from 'bcrypt';
 import { prisma } from '../../lib/prisma.js';
-import { AppError, ErrorCodeEntry } from '../../common/errors/app-error.js';
+import { fail } from '../../common/errors/app-error.js';
 import { ErrorCode } from '../../common/errors/error-codes.js';
 
 const SAFE_FIELDS = {
@@ -14,10 +14,6 @@ const SAFE_FIELDS = {
   status: true,
   roleRef: { select: { name: true } },
 } as const;
-
-function fail(code: ErrorCodeEntry, statusCode: number, cause?: unknown): never {
-  throw AppError.from(code, statusCode, cause);
-}
 
 const MIN_PASSWORD_LENGTH = 8;
 
