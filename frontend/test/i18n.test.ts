@@ -37,7 +37,7 @@ test('bilingual names fall back to whichever language exists', () => {
  * otherwise it silently stays English in Arabic mode.
  */
 test('every translated UI literal has an Arabic dictionary entry', () => {
-  const IGNORED = new Set(['FleetFlow TMS', 'Transport Management System', 'Some English label']);
+  const IGNORED = new Set(['FleetFlow TMS', 'Transport Management System', 'Some English label', 'empty', 'Language', 'EN', 'عربي', 'useAuth must be used within SessionProvider', 'useLanguage must be used within LanguageProvider']);
   const files: string[] = [];
   const walk = (dir: string) => {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -47,7 +47,7 @@ test('every translated UI literal has an Arabic dictionary entry', () => {
       } else if (/\.tsx?$/.test(entry.name)) files.push(full);
     }
   };
-  ['app', 'components', 'lib'].forEach((d) => walk(path.join(ROOT, d)));
+  ['app', 'components', 'lib', 'features', 'providers'].forEach((d) => walk(path.join(ROOT, d)));
 
   const missing = new Set<string>();
   const check = (text: string, file: string) => {
@@ -56,8 +56,13 @@ test('every translated UI literal has an Arabic dictionary entry', () => {
   for (const file of files) {
     const src = fs.readFileSync(file, 'utf8');
     for (const m of src.matchAll(/\bt\(\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")\s*[,)]/g)) check((m[1] ?? m[2]).replace(/\\'/g, "'"), file);
-    for (const m of src.matchAll(/\b(?:title|description|addLabel|emptyLabel|searchPlaceholder|label|header)\s*[:=]\s*(?:\{\s*)?'((?:[^'\\]|\\.)*)'/g)) check(m[1].replace(/\\'/g, "'"), file);
-    for (const m of src.matchAll(/\b(?:title|description|addLabel|emptyLabel|searchPlaceholder|label|header)\s*=\s*"([^"]*)"/g)) check(m[1], file);
+    for (const m of src.matchAll(/\b(?:title|subtitle|description|addLabel|emptyLabel|searchPlaceholder|label|header|hint)\s*[:=]\s*(?:\{\s*)?'((?:[^'\\]|\\.)*)'/g)) check(m[1].replace(/\\'/g, "'"), file);
+    for (const m of src.matchAll(/\b(?:title|subtitle|description|addLabel|emptyLabel|searchPlaceholder|label|header|hint)\s*=\s*"([^"]*)"/g)) check(m[1], file);
+    // Messages produced in view models and shown through t(): fallbacks, validation errors, form errors.
+    for (const m of src.matchAll(/errorMessage\([^()]*?,\s*'((?:[^'\\]|\\.)*)'\)/g)) check(m[1].replace(/\\'/g, "'"), file);
+    for (const m of src.matchAll(/(?:setFormError|new Error)\(\s*'((?:[^'\\]|\\.)*)'\s*\)/g)) check(m[1].replace(/\\'/g, "'"), file);
+    for (const m of src.matchAll(/(?:errors|problems)(?:\[[\w.]+\]|\.\w+)\s*=\s*'((?:[^'\\]|\\.)*)'/g)) check(m[1].replace(/\\'/g, "'"), file);
+    for (const m of src.matchAll(/emptyLabel=\{[^}]*?\? '([^']*)' : '([^']*)'\}/g)) [m[1], m[2]].forEach((text) => check(text, file));
   }
   assert.deepEqual([...missing], [], `Missing Arabic translations:\n${[...missing].join('\n')}`);
 });

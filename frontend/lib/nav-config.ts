@@ -95,6 +95,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Roles', href: '/roles', icon: 'shield' },
       { label: 'Company Settings', href: '/settings/company', icon: 'settings' },
       { label: 'ZATCA', href: '/settings/zatca', icon: 'fileCheck' },
+      { label: 'API Keys', href: '/settings/api-keys', icon: 'link' },
     ],
   },
 ];
