@@ -1,6 +1,9 @@
+import type { IconName } from '../components/icons';
+
 export interface NavItem {
   label: string;
   href: string;
+  icon: IconName;
 }
 
 export interface NavGroup {
@@ -10,58 +13,55 @@ export interface NavGroup {
 
 /**
  * Sidebar nav grouped the way a dispatcher actually thinks about the
- * business, not an alphabetical dump of all 19 modules.
+ * business, not an alphabetical dump of all 20 modules.
  */
 export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Overview',
-    items: [{ label: 'Dashboard', href: '/dashboard' }],
-  },
-  {
-    label: 'Fleet',
-    items: [
-      { label: 'Trucks', href: '/trucks' },
-      { label: 'Drivers', href: '/drivers' },
-      { label: 'Truck-Driver Assignments', href: '/assignments' },
-      { label: 'Locations', href: '/locations' },
-    ],
+    items: [{ label: 'Dashboard', href: '/dashboard', icon: 'dashboard' }],
   },
   {
     label: 'Operations',
     items: [
-      { label: 'Trips', href: '/trips' },
-      { label: 'Loading Orders', href: '/loading-orders' },
-      { label: 'Cargo Types', href: '/cargo-types' },
-      { label: 'Rate Contracts', href: '/rate-contracts' },
+      { label: 'Trips', href: '/trips', icon: 'route' },
+      { label: 'Loading Orders', href: '/loading-orders', icon: 'clipboard' },
     ],
   },
   {
-    label: 'Commercial',
+    label: 'Accounts',
     items: [
-      { label: 'Customers', href: '/customers' },
-      { label: 'Suppliers', href: '/suppliers' },
-      { label: 'Supplier Payments', href: '/supplier-payments' },
+      { label: 'Invoices', href: '/invoices', icon: 'invoice' },
+      { label: 'Supplier Payments', href: '/supplier-payments', icon: 'creditCard' },
     ],
-  },
-  {
-    label: 'Finance',
-    items: [{ label: 'Invoices', href: '/invoices' }],
-  },
-  {
-    label: 'Workforce',
-    items: [{ label: 'HR', href: '/hr' }],
   },
   {
     label: 'Workshop',
-    items: [{ label: 'Workshop', href: '/workshop' }],
+    items: [{ label: 'Workshop', href: '/workshop', icon: 'wrench' }],
   },
   {
-    label: 'Admin',
+    label: 'Master Data',
     items: [
-      { label: 'Users', href: '/users' },
-      { label: 'Roles', href: '/roles' },
-      { label: 'Company Settings', href: '/settings/company' },
-      { label: 'ZATCA', href: '/settings/zatca' },
+      { label: 'Trucks', href: '/trucks', icon: 'truck' },
+      { label: 'Drivers', href: '/drivers', icon: 'driver' },
+      { label: 'Truck-Driver Assignments', href: '/assignments', icon: 'link' },
+      { label: 'Suppliers', href: '/suppliers', icon: 'building' },
+      { label: 'Customers', href: '/customers', icon: 'users' },
+      { label: 'Locations', href: '/locations', icon: 'mapPin' },
+      { label: 'Cargo Types', href: '/cargo-types', icon: 'box' },
+      { label: 'Rate Contracts', href: '/rate-contracts', icon: 'fileText' },
+    ],
+  },
+  {
+    label: 'Human Resources',
+    items: [{ label: 'HR', href: '/hr', icon: 'userCog' }],
+  },
+  {
+    label: 'Administration',
+    items: [
+      { label: 'Users', href: '/users', icon: 'users' },
+      { label: 'Roles', href: '/roles', icon: 'shield' },
+      { label: 'Company Settings', href: '/settings/company', icon: 'settings' },
+      { label: 'ZATCA', href: '/settings/zatca', icon: 'fileCheck' },
     ],
   },
 ];
