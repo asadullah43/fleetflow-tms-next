@@ -1,10 +1,14 @@
 import { prisma } from '../../lib/prisma.js';
-import { AppError } from '../../common/errors/app-error.js';
+import { AppError, ErrorCodeEntry } from '../../common/errors/app-error.js';
 import { ErrorCode } from '../../common/errors/error-codes.js';
-import { PERMISSION_MODULES } from './roles.constants.js';
+import { PERMISSION_MODULES, isAdminRole, isPermissionModule } from '../../common/auth/permissions.js';
 
-function fail(code: { code: string; filter: any; description: string }, statusCode: number, cause?: unknown): never {
-  throw new AppError({ errorCode: code.code, errorFilter: code.filter, errorDescription: code.description, statusCode, cause: cause as Error });
+function fail(code: ErrorCodeEntry, statusCode: number, cause?: unknown): never {
+  throw AppError.from(code, statusCode, cause);
+}
+
+function assertKnownModules(permissions: PermissionInput[] | undefined): void {
+  if (permissions?.some((p) => !isPermissionModule(p.module))) fail(ErrorCode.ROL_UNKNOWN_MODULE, 400);
 }
 
 function mapOut(row: any) {
@@ -47,11 +51,13 @@ export const rolesService = {
     return mapOut(row);
   },
 
-  getPermissionModules() {
-    return PERMISSION_MODULES;
+  getPermissionModules(): string[] {
+    return [...PERMISSION_MODULES];
   },
 
   async create(dto: { name: string; description?: string; permissions?: PermissionInput[] }) {
+    if (!dto.name?.trim()) fail(ErrorCode.SYS_VALIDATION_ERROR, 400);
+    assertKnownModules(dto.permissions);
     try {
       const permissionRows = PERMISSION_MODULES.map((module) => {
         const found = dto.permissions?.find((p) => p.module === module);
@@ -78,7 +84,10 @@ export const rolesService = {
   },
 
   async update(id: number, dto: { name?: string; description?: string; permissions?: PermissionInput[] }) {
-    await this.findOne(id);
+    const existing = await this.findOne(id);
+    // ADMIN's full access is keyed on its name — renaming it would silently strip every admin's rights.
+    if (isAdminRole(existing.name) && dto.name !== undefined && !isAdminRole(dto.name)) fail(ErrorCode.ROL_PROTECTED, 400);
+    assertKnownModules(dto.permissions);
     try {
       await prisma.$transaction(async (tx: any) => {
         await tx.role.update({ where: { id }, data: { name: dto.name, description: dto.description } });
@@ -111,11 +120,12 @@ export const rolesService = {
   },
 
   async remove(id: number) {
-    await this.findOne(id);
+    const existing = await this.findOne(id);
+    if (isAdminRole(existing.name)) fail(ErrorCode.ROL_PROTECTED, 400);
     const usersOnRole = await prisma.user.count({ where: { roleId: id } });
     if (usersOnRole > 0) fail(ErrorCode.ROL_HAS_USERS, 400);
     try {
-      await prisma.permission.deleteMany({ where: { roleId: id } });
+      // Permission rows cascade on delete (schema: onDelete: Cascade).
       await prisma.role.delete({ where: { id } });
     } catch (error) {
       fail(ErrorCode.ROL_DELETE_FAILED, 500, error);

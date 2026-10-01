@@ -9,10 +9,12 @@ import {
   employmentContractsService,
 } from './hr.services.js';
 
-export const departmentsGrpcImpl = createCrudGrpcHandlers(departmentsService, { listKey: 'items' });
-export const designationsGrpcImpl = createCrudGrpcHandlers(designationsService, { listKey: 'items' });
-export const employeesGrpcImpl = createCrudGrpcHandlers(employeesService, { listKey: 'items' });
-export const attendanceGrpcImpl = createCrudGrpcHandlers(attendanceService, { listKey: 'items' });
-export const leaveRequestsGrpcImpl = createCrudGrpcHandlers(leaveRequestsService, { listKey: 'items' });
-export const employeeDocumentsGrpcImpl = createCrudGrpcHandlers(employeeDocumentsService, { listKey: 'items' });
-export const employmentContractsGrpcImpl = createCrudGrpcHandlers(employmentContractsService, { listKey: 'items' });
+// Every HR table is guarded by the single `hr` permission row (employee
+// records carry salary and ID numbers, so even reads need hr:view).
+export const departmentsGrpcImpl = createCrudGrpcHandlers(departmentsService, { module: 'hr' });
+export const designationsGrpcImpl = createCrudGrpcHandlers(designationsService, { module: 'hr' });
+export const employeesGrpcImpl = createCrudGrpcHandlers(employeesService, { module: 'hr' });
+export const attendanceGrpcImpl = createCrudGrpcHandlers(attendanceService, { module: 'hr' });
+export const leaveRequestsGrpcImpl = createCrudGrpcHandlers(leaveRequestsService, { module: 'hr' });
+export const employeeDocumentsGrpcImpl = createCrudGrpcHandlers(employeeDocumentsService, { module: 'hr' });
+export const employmentContractsGrpcImpl = createCrudGrpcHandlers(employmentContractsService, { module: 'hr' });

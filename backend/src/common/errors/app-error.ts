@@ -1,8 +1,12 @@
 import * as grpc from '@grpc/grpc-js';
 import { ErrorFilter, ErrorResponse } from './error-response.interface.js';
-import { createLogger } from '../../lib/logger.js';
 
-const log = createLogger('app-error.ts');
+/** One row of the ErrorCode table (see error-codes.ts). */
+export interface ErrorCodeEntry {
+  code: string;
+  filter: ErrorFilter;
+  description: string;
+}
 
 /**
  * Same structured error shape the legacy NestJS app used (AppError +
@@ -33,14 +37,17 @@ export class AppError extends Error {
     this.errorFilter = params.errorFilter;
     this.errorDescription = params.errorDescription;
     this.statusCode = params.statusCode ?? 500;
+  }
 
-    // The client only ever sees `errorDescription` (a safe, generic
-    // message) — log the real underlying cause server-side so a 500
-    // is actually diagnosable from `docker compose logs api` instead
-    // of a dead end.
-    if (this.statusCode >= 500) {
-      log.error('001', 'constructor', `AppError ${this.errorCode}`, params.cause ?? this);
-    }
+  /** Shorthand for the common "throw this ErrorCode entry with this status" case. */
+  static from(entry: ErrorCodeEntry, statusCode: number, cause?: unknown): AppError {
+    return new AppError({
+      errorCode: entry.code,
+      errorFilter: entry.filter,
+      errorDescription: entry.description,
+      statusCode,
+      cause: cause instanceof Error ? cause : undefined,
+    });
   }
 
   toResponse(): ErrorResponse {

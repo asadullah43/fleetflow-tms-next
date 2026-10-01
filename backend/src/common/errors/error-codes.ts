@@ -4,7 +4,9 @@ export const ErrorCode = {
   AUTH_LOGIN_FAILED: { code: 'FLEET-AUTH001', filter: ErrorFilter.USER_NOT_AUTHENTICATED, description: 'Invalid username or password.' },
   AUTH_ACCOUNT_INACTIVE: { code: 'FLEET-AUTH002', filter: ErrorFilter.USER_NOT_AUTHENTICATED, description: 'Your account has been deactivated. Please contact an administrator.' },
   AUTH_TOKEN_MISSING: { code: 'FLEET-AUTH003', filter: ErrorFilter.USER_NOT_AUTHENTICATED, description: 'Authentication required. Please log in.' },
+  AUTH_TOKEN_INVALID: { code: 'FLEET-AUTH004', filter: ErrorFilter.USER_NOT_AUTHENTICATED, description: 'Your session has expired. Please log in again.' },
   AUTH_PERMISSION_DENIED: { code: 'FLEET-AUTH005', filter: ErrorFilter.USER_NOT_AUTHORIZED, description: 'You do not have permission to perform this action.' },
+  AUTH_TOO_MANY_ATTEMPTS: { code: 'FLEET-AUTH006', filter: ErrorFilter.RATE_LIMIT_EXCEEDED, description: 'Too many failed sign-in attempts. Please wait a few minutes and try again.' },
 
   USR_DUPLICATE_EMAIL: { code: 'FLEET-USR001', filter: ErrorFilter.INVALID_REQUEST, description: 'A user with this email already exists.' },
   USR_DUPLICATE_USERNAME: { code: 'FLEET-USR002', filter: ErrorFilter.INVALID_REQUEST, description: 'A user with this username already exists.' },
@@ -13,6 +15,8 @@ export const ErrorCode = {
   USR_UPDATE_FAILED: { code: 'FLEET-USR005', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Unable to update user. Please try again.' },
   USR_DELETE_FAILED: { code: 'FLEET-USR006', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Unable to delete user. Please try again.' },
   USR_FETCH_FAILED: { code: 'FLEET-USR007', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Unable to retrieve users. Please try again.' },
+  USR_CANNOT_REMOVE_SELF: { code: 'FLEET-USR009', filter: ErrorFilter.USER_END_VIOLATION, description: 'You cannot delete or deactivate your own account.' },
+  USR_PASSWORD_TOO_SHORT: { code: 'FLEET-USR010', filter: ErrorFilter.INVALID_REQUEST, description: 'Password must be at least 8 characters long.' },
   USR_LANGUAGE_UPDATE_FAILED: { code: 'FLEET-USR008', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Unable to update language preference. Please try again.' },
 
   TRK_NOT_FOUND: { code: 'FLEET-TRK001', filter: ErrorFilter.INVALID_REQUEST, description: 'Truck not found.' },
@@ -104,6 +108,8 @@ export const ErrorCode = {
   ROL_CREATE_FAILED: { code: 'FLEET-ROL004', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Unable to create role. Please try again.' },
   ROL_UPDATE_FAILED: { code: 'FLEET-ROL005', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Unable to update role. Please try again.' },
   ROL_DELETE_FAILED: { code: 'FLEET-ROL006', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Unable to delete role. Please try again.' },
+  ROL_PROTECTED: { code: 'FLEET-ROL008', filter: ErrorFilter.USER_END_VIOLATION, description: 'The ADMIN role is built in and cannot be renamed or deleted.' },
+  ROL_UNKNOWN_MODULE: { code: 'FLEET-ROL009', filter: ErrorFilter.INVALID_REQUEST, description: 'The permission matrix contains an unknown module.' },
   ROL_FETCH_FAILED: { code: 'FLEET-ROL007', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Unable to retrieve roles. Please try again.' },
 
   DSH_FETCH_FAILED: { code: 'FLEET-DSH001', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Unable to load dashboard data. Please try again.' },
@@ -156,9 +162,14 @@ export const ErrorCode = {
   ZATCA_SIGN_FAILED: { code: 'FLEET-ZATCA006', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Failed to sign ZATCA invoice. Please try again.' },
   ZATCA_REJECTED: { code: 'FLEET-ZATCA007', filter: ErrorFilter.USER_END_VIOLATION, description: 'Invoice was rejected by ZATCA. Please check the invoice data and try again.' },
 
+  SYS_UNEXPECTED: { code: 'FLEET-SYS001', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Something went wrong. Please try again.' },
   SYS_VALIDATION_ERROR: { code: 'FLEET-SYS002', filter: ErrorFilter.INVALID_REQUEST, description: 'The request contains invalid data.' },
   SYS_RATE_LIMIT: { code: 'FLEET-SYS003', filter: ErrorFilter.RATE_LIMIT_EXCEEDED, description: 'Too many requests. Please wait a moment and try again.' },
   SYS_UNKNOWN: { code: 'FLEET-SYS004', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'An unexpected error occurred. Please try again.' },
+  SYS_DUPLICATE: { code: 'FLEET-SYS005', filter: ErrorFilter.INVALID_REQUEST, description: 'A record with the same unique value already exists.' },
+  SYS_INVALID_REFERENCE: { code: 'FLEET-SYS006', filter: ErrorFilter.INVALID_REQUEST, description: 'One of the selected related records does not exist.' },
+  SYS_RECORD_IN_USE: { code: 'FLEET-SYS007', filter: ErrorFilter.USER_END_VIOLATION, description: 'This record is used by other records and cannot be deleted.' },
+  SYS_RECORD_NOT_FOUND: { code: 'FLEET-SYS008', filter: ErrorFilter.INVALID_REQUEST, description: 'The requested record no longer exists.' },
 } as const;
 
 export type ErrorCodeKey = keyof typeof ErrorCode;

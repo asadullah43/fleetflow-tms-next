@@ -1,57 +1,13 @@
-import * as grpc from '@grpc/grpc-js';
+import { rpc } from '../../lib/grpc-handler.js';
 import { companySettingsService } from './company-settings.service.js';
-import { requireAuth } from '../../lib/grpc-auth.js';
-import { AppError } from '../../common/errors/app-error.js';
-import { ErrorFilter } from '../../common/errors/error-response.interface.js';
-import { serialize } from '../../lib/crud-grpc.js';
 
-type Callback<T> = grpc.sendUnaryData<T>;
-
-function fail(callback: Callback<unknown>, error: unknown): void {
-  if (error instanceof AppError) {
-    callback(error.toGrpcServiceError(), null);
-    return;
-  }
-  const unexpected = new AppError({
-    errorCode: 'FLEET-SYS001',
-    errorFilter: ErrorFilter.TECHNICAL_ISSUE,
-    errorDescription: 'Something went wrong. Please try again.',
-    statusCode: 500,
-    cause: error as Error,
-  });
-  callback(unexpected.toGrpcServiceError(), null);
-}
-
-export const companySettingsGrpcImpl: grpc.UntypedServiceImplementation = {
-  get: async (call: grpc.ServerUnaryCall<any, any>, callback: Callback<any>) => {
-    try {
-      requireAuth(call);
-      const row = await companySettingsService.getOrCreate();
-      callback(null, serialize(row));
-    } catch (error) {
-      fail(callback, error);
-    }
-  },
-  update: async (call: grpc.ServerUnaryCall<any, any>, callback: Callback<any>) => {
-    try {
-      requireAuth(call);
-      const row = await companySettingsService.update(call.request);
-      callback(null, serialize(row));
-    } catch (error) {
-      fail(callback, error);
-    }
-  },
-  // No requireAuth — the login screen and sidebar need company name/logo
-  // before there's a session. The underlying row has far more on it
-  // (VAT, bank account, address, ...); the CompanyBranding proto message
-  // only has company_name/logo_url fields, so that's all that goes out
-  // on the wire regardless of what's passed to callback() here.
-  getBranding: async (_call: grpc.ServerUnaryCall<any, any>, callback: Callback<any>) => {
-    try {
-      const row = await companySettingsService.getOrCreate();
-      callback(null, serialize(row));
-    } catch (error) {
-      fail(callback, error);
-    }
-  },
+export const companySettingsGrpcImpl = {
+  // Any signed-in user: printed documents (loading-order slips, invoices) need the company header.
+  get: rpc('authenticated', () => companySettingsService.getOrCreate(), 'read'),
+  update: rpc({ module: 'settings', action: 'edit' }, (req: Record<string, unknown>) => companySettingsService.update(req)),
+  // Public — the login screen and sidebar need company name/logo before
+  // there's a session. The underlying row has far more on it (VAT, bank
+  // account, address, ...); the CompanyBranding proto message only has
+  // company_name/logo_url fields, so only those go out on the wire.
+  getBranding: rpc('public', () => companySettingsService.getOrCreate(), 'read'),
 };

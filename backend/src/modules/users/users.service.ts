@@ -1,6 +1,6 @@
 import * as bcrypt from 'bcrypt';
 import { prisma } from '../../lib/prisma.js';
-import { AppError } from '../../common/errors/app-error.js';
+import { AppError, ErrorCodeEntry } from '../../common/errors/app-error.js';
 import { ErrorCode } from '../../common/errors/error-codes.js';
 
 const SAFE_FIELDS = {
@@ -15,9 +15,11 @@ const SAFE_FIELDS = {
   roleRef: { select: { name: true } },
 } as const;
 
-function fail(code: { code: string; filter: any; description: string }, statusCode: number, cause?: unknown): never {
-  throw new AppError({ errorCode: code.code, errorFilter: code.filter, errorDescription: code.description, statusCode, cause: cause as Error });
+function fail(code: ErrorCodeEntry, statusCode: number, cause?: unknown): never {
+  throw AppError.from(code, statusCode, cause);
 }
+
+const MIN_PASSWORD_LENGTH = 8;
 
 function mapUser(row: any) {
   return {
@@ -73,6 +75,8 @@ export const usersService = {
   },
 
   async create(dto: CreateUserDto) {
+    if (!dto.name?.trim() || !dto.email?.trim()) fail(ErrorCode.SYS_VALIDATION_ERROR, 400);
+    if (!dto.password || dto.password.length < MIN_PASSWORD_LENGTH) fail(ErrorCode.USR_PASSWORD_TOO_SHORT, 400);
     const dupEmail = await prisma.user.findUnique({ where: { email: dto.email } });
     if (dupEmail) fail(ErrorCode.USR_DUPLICATE_EMAIL, 400);
     if (dto.username) {
@@ -100,8 +104,11 @@ export const usersService = {
     }
   },
 
-  async update(id: number, dto: UpdateUserDto) {
+  /** `actingUserId`: the caller — an account can't deactivate itself (avoids locking the last admin out). */
+  async update(id: number, dto: UpdateUserDto, actingUserId?: number) {
     await this.findOne(id);
+    if (actingUserId === id && dto.status !== undefined && dto.status !== 'ACTIVE') fail(ErrorCode.USR_CANNOT_REMOVE_SELF, 400);
+    if (dto.password && dto.password.length < MIN_PASSWORD_LENGTH) fail(ErrorCode.USR_PASSWORD_TOO_SHORT, 400);
     if (dto.email) {
       const dupEmail = await prisma.user.findFirst({ where: { email: dto.email, NOT: { id } } });
       if (dupEmail) fail(ErrorCode.USR_DUPLICATE_EMAIL, 400);
@@ -132,7 +139,8 @@ export const usersService = {
     }
   },
 
-  async remove(id: number) {
+  async remove(id: number, actingUserId?: number) {
+    if (actingUserId === id) fail(ErrorCode.USR_CANNOT_REMOVE_SELF, 400);
     await this.findOne(id);
     try {
       await prisma.user.delete({ where: { id } });

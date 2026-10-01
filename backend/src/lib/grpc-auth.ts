@@ -6,32 +6,23 @@ import { ErrorCode } from '../common/errors/error-codes.js';
 /**
  * gRPC equivalent of the legacy JwtAuthGuard: reads the bearer token from
  * call metadata ("authorization: Bearer <jwt>") instead of an HTTP header.
- * Every authenticated RPC handler calls this first, same as Nest's
- * @UseGuards(JwtAuthGuard) did for REST routes.
+ *
+ * Only proves *who* is calling. Use `authorize()` (lib/authz.ts), which
+ * calls this and then checks the account is still active and allowed to
+ * perform the action.
  */
 export function requireAuth(call: grpc.ServerUnaryCall<unknown, unknown>): JwtPayload {
   const raw = call.metadata.get('authorization')[0];
   const header = typeof raw === 'string' ? raw : raw?.toString('utf8');
 
   if (!header || !header.startsWith('Bearer ')) {
-    throw new AppError({
-      errorCode: ErrorCode.AUTH_TOKEN_MISSING.code,
-      errorFilter: ErrorCode.AUTH_TOKEN_MISSING.filter,
-      errorDescription: ErrorCode.AUTH_TOKEN_MISSING.description,
-      statusCode: 401,
-    });
+    throw AppError.from(ErrorCode.AUTH_TOKEN_MISSING, 401);
   }
 
-  const token = header.slice('Bearer '.length);
-
   try {
-    return verifyJwt(token);
+    return verifyJwt(header.slice('Bearer '.length));
   } catch {
-    throw new AppError({
-      errorCode: ErrorCode.AUTH_TOKEN_MISSING.code,
-      errorFilter: ErrorCode.AUTH_TOKEN_MISSING.filter,
-      errorDescription: ErrorCode.AUTH_TOKEN_MISSING.description,
-      statusCode: 401,
-    });
+    // Expired, tampered, wrong algorithm or wrong shape — all mean "sign in again".
+    throw AppError.from(ErrorCode.AUTH_TOKEN_INVALID, 401);
   }
 }
