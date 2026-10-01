@@ -3,6 +3,7 @@
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { AppShell } from '../../../components/AppShell';
 import { useAuth } from '../../../lib/auth-context';
+import { useT } from '../../../lib/language-context';
 import { companySettingsClient, CompanySettingsDto } from '../../../lib/grpc/company-settings';
 import { setCompanyBranding } from '../../../lib/use-company-branding';
 import type { RpcError } from '../../../lib/grpc/client';
@@ -61,6 +62,7 @@ function fileToLogoDataUrl(file: File): Promise<string> {
 
 export default function CompanySettingsPage() {
   const { token } = useAuth();
+  const t = useT();
   const [values, setValues] = useState<Record<string, string> | null>(null);
   const [logoUrl, setLogoUrl] = useState<string>('');
   const [logoError, setLogoError] = useState<string | null>(null);
@@ -84,11 +86,11 @@ export default function CompanySettingsPage() {
     e.target.value = '';
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      setLogoError('Please choose an image file.');
+      setLogoError(t('Please choose an image file.'));
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setLogoError('That image is larger than 5 MB — choose a smaller file.');
+      setLogoError(t('That image is larger than 5 MB — choose a smaller file.'));
       return;
     }
     setLogoError(null);
@@ -96,7 +98,7 @@ export default function CompanySettingsPage() {
       const dataUrl = await fileToLogoDataUrl(file);
       setLogoUrl(dataUrl);
     } catch (err) {
-      setLogoError((err as Error).message ?? 'Could not process that image.');
+      setLogoError((err as Error).message ?? t('Could not process that image.'));
     }
   }
 
@@ -108,7 +110,7 @@ export default function CompanySettingsPage() {
       setSavedAt(Date.now());
       setCompanyBranding({ companyName: saved.companyName, logoUrl: saved.logoUrl });
     } catch (err) {
-      setError((err as RpcError).message ?? 'Save failed.');
+      setError((err as RpcError).message ?? t('Save failed.'));
     } finally {
       setSaving(false);
     }
@@ -127,7 +129,7 @@ export default function CompanySettingsPage() {
       {error && <div className="error-banner">{error}</div>}
       <div className="panel" style={{ padding: 24, maxWidth: 640 }}>
         <div className="field">
-          <label>Company logo</label>
+          <label>{t('Company logo')}</label>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <div
               style={{
@@ -145,23 +147,23 @@ export default function CompanySettingsPage() {
             >
               {logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={logoUrl} alt="Company logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                <img src={logoUrl} alt={t('Company logo')} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               ) : (
-                <span style={{ color: 'var(--text-faint)', fontSize: 11 }}>No logo</span>
+                <span style={{ color: 'var(--text-faint)', fontSize: 11 }}>{t('No logo')}</span>
               )}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button type="button" className="btn btn-secondary" onClick={() => fileInputRef.current?.click()}>
-                  {logoUrl ? 'Replace logo' : 'Upload logo'}
+                  {logoUrl ? t('Replace logo') : t('Upload logo')}
                 </button>
                 {logoUrl && (
                   <button type="button" className="btn btn-secondary" onClick={() => setLogoUrl('')}>
-                    Remove
+                    {t('Remove')}
                   </button>
                 )}
               </div>
-              <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>PNG or JPG. Shown in the sidebar, login screen, and printed documents.</span>
+              <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>{t('PNG or JPG. Shown in the sidebar, login screen, and printed documents.')}</span>
               {logoError && <span style={{ fontSize: 12, color: 'var(--danger)' }}>{logoError}</span>}
             </div>
             <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onLogoSelected} />
@@ -170,15 +172,15 @@ export default function CompanySettingsPage() {
 
         {FIELDS.map((f) => (
           <div className="field" key={f.name}>
-            <label>{f.label}</label>
+            <label>{t(f.label)}</label>
             <input value={values[f.name] ?? ''} onChange={(e) => setValues({ ...values, [f.name]: e.target.value })} />
           </div>
         ))}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <button className="btn btn-primary" onClick={save} disabled={saving}>
-            {saving ? 'Saving...' : 'Save changes'}
+            {saving ? t('Saving...') : t('Save changes')}
           </button>
-          {savedAt && <span style={{ color: 'var(--success)', fontSize: 13 }}>Saved.</span>}
+          {savedAt && <span style={{ color: 'var(--success)', fontSize: 13 }}>{t('Saved.')}</span>}
         </div>
       </div>
     </AppShell>

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { AppShell } from '../../components/AppShell';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useAuth } from '../../lib/auth-context';
-import { useT, useLanguage } from '../../lib/language-context';
+import { useT, useLanguage, useLocalizedDigits, useLocalizedStatValue } from '../../lib/language-context';
 import { dashboardClient, DashboardSummaryDto } from '../../lib/grpc/dashboard';
 import { Icon, IconName } from '../../components/icons';
 import { trucksClient, TruckDto } from '../../lib/grpc/trucks';
@@ -21,6 +21,7 @@ const TABS: { key: string; label: string; icon: IconName }[] = [
 function StatCard({ icon, tone, label, value }: { icon: IconName; tone: string; label: string; value: string | number }) {
   const ItemIcon = Icon[icon];
   const t = useT();
+  const statValue = useLocalizedStatValue();
   return (
     <div className="stat-card">
       <div className="stat-card-top">
@@ -29,7 +30,7 @@ function StatCard({ icon, tone, label, value }: { icon: IconName; tone: string; 
         </span>
       </div>
       <div className="stat-label">{t(label)}</div>
-      <div className="stat-value mono">{value}</div>
+      <div className="stat-value mono">{statValue(value)}</div>
     </div>
   );
 }
@@ -37,13 +38,14 @@ function StatCard({ icon, tone, label, value }: { icon: IconName; tone: string; 
 function ProgressRow({ label, value, max, tone }: { label: string; value: number; max: number; tone: string }) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
   const t = useT();
+  const n = useLocalizedDigits();
   return (
     <div className="progress-row">
       <span className="progress-label">{t(label)}</span>
       <span className="progress-track">
         <span className="progress-fill" style={{ width: `${pct}%`, background: `var(--tile-${tone}-fg)` }} />
       </span>
-      <span className="progress-value mono">{value}</span>
+      <span className="progress-value mono">{n(value)}</span>
     </div>
   );
 }
@@ -69,6 +71,7 @@ function TabBar({ active, onChange }: { active: string; onChange: (key: string) 
 
 function OperationsTab({ summary }: { summary: DashboardSummaryDto | null }) {
   const t = useT();
+  const n = useLocalizedDigits();
   if (!summary) {
     return <div className="empty-state" style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 10 }}>{t('Loading fleet summary...')}</div>;
   }
@@ -85,22 +88,22 @@ function OperationsTab({ summary }: { summary: DashboardSummaryDto | null }) {
     summary.lowStockSpareParts > 0 && {
       icon: 'box' as IconName,
       tone: 'pink',
-      text: `${summary.lowStockSpareParts} spare part${summary.lowStockSpareParts === 1 ? '' : 's'} at or below minimum stock`,
+      text: `${n(summary.lowStockSpareParts)} ${t(summary.lowStockSpareParts === 1 ? 'spare part' : 'spare parts')} ${t('at or below minimum stock')}`,
     },
     summary.unpaidInvoicesCount > 0 && {
       icon: 'invoice' as IconName,
       tone: 'orange',
-      text: `${summary.unpaidInvoicesCount} unpaid invoice${summary.unpaidInvoicesCount === 1 ? '' : 's'} totalling ${summary.unpaidInvoicesTotal} SAR`,
+      text: `${n(summary.unpaidInvoicesCount)} ${t(summary.unpaidInvoicesCount === 1 ? 'unpaid invoice' : 'unpaid invoices')} ${t('totalling')} ${n(summary.unpaidInvoicesTotal)} ${t('SAR')}`,
     },
     summary.pendingLeaveRequests > 0 && {
       icon: 'calendar' as IconName,
       tone: 'purple',
-      text: `${summary.pendingLeaveRequests} leave request${summary.pendingLeaveRequests === 1 ? '' : 's'} awaiting approval`,
+      text: `${n(summary.pendingLeaveRequests)} ${t(summary.pendingLeaveRequests === 1 ? 'leave request' : 'leave requests')} ${t('awaiting approval')}`,
     },
     summary.openWorkOrders > 0 && {
       icon: 'wrench' as IconName,
       tone: 'blue',
-      text: `${summary.openWorkOrders} work order${summary.openWorkOrders === 1 ? '' : 's'} open or in progress`,
+      text: `${n(summary.openWorkOrders)} ${t(summary.openWorkOrders === 1 ? 'work order' : 'work orders')} ${t('open or in progress')}`,
     },
   ].filter(Boolean as unknown as (v: unknown) => v is { icon: IconName; tone: string; text: string });
 
@@ -251,6 +254,7 @@ function HrDashboardTab({ token }: { token: string }) {
 
 function WorkshopDashboardTab({ token }: { token: string }) {
   const t = useT();
+  const n = useLocalizedDigits();
   const [loading, setLoading] = useState(true);
   const [workOrders, setWorkOrders] = useState<WorkOrderDto[]>([]);
   const [maintenance, setMaintenance] = useState<MaintenanceScheduleDto[]>([]);
@@ -327,7 +331,9 @@ function WorkshopDashboardTab({ token }: { token: string }) {
                 <span className="stat-icon stat-icon-pink" style={{ width: 32, height: 32, flexShrink: 0 }}>
                   <Icon.alert size={15} />
                 </span>
-                <span style={{ fontSize: 13 }}>{overdueMaintenance} maintenance schedule{overdueMaintenance === 1 ? '' : 's'} past due</span>
+                <span style={{ fontSize: 13 }}>
+                  {n(overdueMaintenance)} {t(overdueMaintenance === 1 ? 'maintenance schedule' : 'maintenance schedules')} {t('past due')}
+                </span>
               </div>
             )}
             {lowStockParts > 0 && (
@@ -335,7 +341,9 @@ function WorkshopDashboardTab({ token }: { token: string }) {
                 <span className="stat-icon stat-icon-orange" style={{ width: 32, height: 32, flexShrink: 0 }}>
                   <Icon.box size={15} />
                 </span>
-                <span style={{ fontSize: 13 }}>{lowStockParts} spare part{lowStockParts === 1 ? '' : 's'} at or below minimum stock</span>
+                <span style={{ fontSize: 13 }}>
+                  {n(lowStockParts)} {t(lowStockParts === 1 ? 'spare part' : 'spare parts')} {t('at or below minimum stock')}
+                </span>
               </div>
             )}
             {failedInspections > 0 && (
@@ -343,7 +351,9 @@ function WorkshopDashboardTab({ token }: { token: string }) {
                 <span className="stat-icon stat-icon-purple" style={{ width: 32, height: 32, flexShrink: 0 }}>
                   <Icon.clipboard size={15} />
                 </span>
-                <span style={{ fontSize: 13 }}>{failedInspections} failed inspection{failedInspections === 1 ? '' : 's'} on record</span>
+                <span style={{ fontSize: 13 }}>
+                  {n(failedInspections)} {t(failedInspections === 1 ? 'failed inspection' : 'failed inspections')} {t('on record')}
+                </span>
               </div>
             )}
             {overdueMaintenance === 0 && lowStockParts === 0 && failedInspections === 0 && (

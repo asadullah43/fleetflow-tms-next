@@ -424,7 +424,88 @@ export const AR_STRINGS: Record<string, string> = {
   'Description (Arabic)': 'الوصف (بالعربية)',
   'Full name (English)': 'الاسم الكامل (بالإنجليزية)',
   'Full name (Arabic)': 'الاسم الكامل (بالعربية)',
+
+  // ── Dashboard: pluralized alert-text fragments ───────────────
+  'spare part': 'قطعة غيار',
+  'spare parts': 'قطع غيار',
+  'at or below minimum stock': 'عند الحد الأدنى للمخزون أو أقل منه',
+  'unpaid invoice': 'فاتورة غير مسددة',
+  'unpaid invoices': 'فواتير غير مسددة',
+  totalling: 'بإجمالي',
+  'leave request': 'طلب إجازة',
+  'leave requests': 'طلبات إجازة',
+  'awaiting approval': 'بانتظار الموافقة',
+  'work order': 'أمر عمل',
+  'work orders': 'أوامر عمل',
+  'open or in progress': 'مفتوح أو قيد التنفيذ',
+  'maintenance schedule': 'جدول صيانة',
+  'maintenance schedules': 'جداول صيانة',
+  'past due': 'متأخر عن موعده',
+  'failed inspection': 'فحص فاشل',
+  'failed inspections': 'فحوصات فاشلة',
+  'on record': 'مسجّل',
+  SAR: 'ريال سعودي',
+
+  // ── Workshop list pages: descriptions ────────────────────────
+  'Workshop spend per truck — parts, labor, and other repair costs.':
+    'مصروفات الورشة لكل شاحنة — القطع، العمالة، وتكاليف الإصلاح الأخرى.',
+  'Pass/fail vehicle inspection records per truck.': 'سجلات فحص المركبات (ناجح/راسب) لكل شاحنة.',
+  'Scheduled service per truck — last and next due dates.': 'الصيانة المجدولة لكل شاحنة — تواريخ آخر وأقرب صيانة.',
+
+  // ── Company settings page ────────────────────────────────────
+  'Company logo': 'شعار الشركة',
+  'No logo': 'لا يوجد شعار',
+  'Replace logo': 'استبدال الشعار',
+  'Upload logo': 'رفع شعار',
+  'PNG or JPG. Shown in the sidebar, login screen, and printed documents.':
+    'بصيغة PNG أو JPG. يظهر في الشريط الجانبي، شاشة الدخول، والمستندات المطبوعة.',
+  'Save changes': 'حفظ التغييرات',
+  'Saved.': 'تم الحفظ.',
+  'Please choose an image file.': 'يرجى اختيار ملف صورة.',
+  'That image is larger than 5 MB — choose a smaller file.': 'هذه الصورة أكبر من 5 ميغابايت — اختر ملفًا أصغر.',
+  'Could not process that image.': 'تعذّرت معالجة هذه الصورة.',
+  'Save failed.': 'فشل الحفظ.',
+
+  // ── ZATCA settings page ──────────────────────────────────────
+  'ZATCA e-Invoicing': 'الفوترة الإلكترونية (زاتكا)',
+  'Phase-1 QR codes are live': 'رموز QR للمرحلة الأولى مفعّلة',
+  'Every invoice gets a real ZATCA-compliant QR code (seller name, VAT number, timestamp, total, and VAT amount, TLV-encoded) when you use':
+    'تحصل كل فاتورة على رمز QR حقيقي متوافق مع زاتكا (اسم البائع، الرقم الضريبي، التاريخ والوقت، الإجمالي، ومبلغ الضريبة، مُرمّز بصيغة TLV) عند استخدام',
+  'on the Invoices page.': 'في صفحة الفواتير.',
+  "Phase-2 integration — the cryptographic invoice stamp and live clearance/reporting calls to ZATCA's API — needs a government-issued CSR and CSID certificate for your CR number, which this environment has no way to request or test against. The database is ready for it (see the company settings record's onboarding fields), so wiring in real certificates later is a config change, not a rebuild.":
+    'تكامل المرحلة الثانية — الختم التشفيري للفاتورة ونداءات التخليص/الإبلاغ المباشرة إلى واجهة برمجة تطبيقات زاتكا — يتطلب شهادة CSR وCSID صادرة من جهة حكومية لرقم سجلك التجاري، وهو ما لا تستطيع هذه البيئة طلبه أو اختباره. قاعدة البيانات جاهزة لذلك (انظر حقول الإعداد في سجل إعدادات الشركة)، لذا ربط الشهادات الحقيقية لاحقًا هو تغيير إعدادات، وليس إعادة بناء.',
 };
+
+const ARABIC_INDIC_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+
+/**
+ * Renders a number (or any string containing digits, e.g. "12 · 450 SAR")
+ * using Arabic-Indic numerals when `language` is 'ar', so dashboard stats
+ * and counts read in Arabic too, not just their surrounding labels. Any
+ * non-digit characters (separators, currency codes, punctuation) pass
+ * through unchanged.
+ */
+export function localizeDigits(value: string | number, language: 'en' | 'ar'): string {
+  const text = String(value);
+  if (language !== 'ar') return text;
+  return text.replace(/[0-9]/g, (d) => ARABIC_INDIC_DIGITS[Number(d)]);
+}
+
+/**
+ * Like `localizeDigits`, but also swaps known English words embedded in a
+ * composite stat value (currently just the "SAR" currency code) for their
+ * Arabic dictionary entry. Used for dashboard stat-card values such as
+ * "12 · 450 SAR", which mix a translated word into an otherwise numeric
+ * string that a plain dictionary lookup can't match as a whole.
+ */
+export function localizeStatValue(value: string | number, language: 'en' | 'ar'): string {
+  let text = String(value);
+  if (language === 'ar') {
+    text = text.replace(/\bSAR\b/g, AR_STRINGS.SAR ?? 'SAR');
+    text = text.replace(/[0-9]/g, (d) => ARABIC_INDIC_DIGITS[Number(d)]);
+  }
+  return text;
+}
 
 /**
  * Looks up `text` in the Arabic dictionary when `language` is 'ar';

@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
 import { useAuth } from './auth-context';
 import { authClient } from './grpc/auth';
-import { translate } from './i18n/dictionary';
+import { translate, localizeDigits, localizeStatValue } from './i18n/dictionary';
 
 export type Language = 'en' | 'ar';
 
@@ -91,4 +91,25 @@ export function useLanguage(): LanguageState {
 export function useT(): (text: string) => string {
   const { language } = useLanguage();
   return useCallback((text: string) => translate(text, language), [language]);
+}
+
+/**
+ * `n(123)` — renders a number (or digit-bearing string like "12 · 450") in
+ * Arabic-Indic numerals when Arabic is active, unchanged otherwise. Used
+ * anywhere raw counts/amounts are shown outside the dictionary's exact-
+ * string chrome translations (e.g. dashboard stats, pluralized alert text).
+ */
+export function useLocalizedDigits(): (value: string | number) => string {
+  const { language } = useLanguage();
+  return useCallback((value: string | number) => localizeDigits(value, language), [language]);
+}
+
+/**
+ * Like `useLocalizedDigits`, but also swaps the "SAR" currency code for its
+ * Arabic word. Used for dashboard stat-card values that mix a count/amount
+ * with that unit in one string (e.g. "12 · 450 SAR").
+ */
+export function useLocalizedStatValue(): (value: string | number) => string {
+  const { language } = useLanguage();
+  return useCallback((value: string | number) => localizeStatValue(value, language), [language]);
 }
