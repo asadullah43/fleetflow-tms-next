@@ -8,10 +8,16 @@
  *
  * Run: npm run seed:dev-data   (from backend/)
  *
- * Refuses to run when NODE_ENV=production. Safe to re-run - it only ADDS
- * records (no deletes, no truncation), so running it twice just doubles
- * the counts. If you want a clean slate first, restore from a backup or
- * wipe the dev database yourself; this script never drops anything.
+ * Refuses to run when NODE_ENV=production. Safe to re-run: every record
+ * with a real uniqueness constraint (truck number, driver license,
+ * employee email, trip transaction number, cargo type/part name, etc.)
+ * is looked up first and reused instead of recreated, so running it
+ * again fills in whatever didn't make it in last time rather than
+ * failing on a duplicate-key error. The few models with no uniqueness
+ * at all in the schema (customers, suppliers, locations, departments,
+ * designations) are also looked up by name first for the same reason.
+ * Rows with no natural key (invoices, work orders, attendance, etc.)
+ * just add more each run - never deletes or truncates anything.
  */
 import { config } from '../global_config/index.js';
 import { disconnectDatabase, prisma } from '../_core_app_connectivities/prisma.js';
@@ -41,6 +47,24 @@ import {
 if (config.env === 'production') {
   console.error('Refusing to run: NODE_ENV=production. This script is for local/dev databases only.');
   process.exit(1);
+}
+
+/**
+ * Looks up an existing row by its natural key first and reuses it;
+ * only creates when nothing matches. Makes every section safe to
+ * re-run without colliding on a unique constraint or piling up
+ * duplicate-named rows for models the schema leaves unconstrained.
+ */
+async function findOrCreate<T extends { id: number }>(find: () => Promise<T | null>, create: () => Promise<T>): Promise<T> {
+  const existing = await find();
+  if (existing) return existing;
+  try {
+    return await create();
+  } catch (error) {
+    const retry = await find();
+    if (retry) return retry;
+    throw error;
+  }
 }
 
 // ── Tiny deterministic-ish data pool (no new dependency needed) ─────────
@@ -77,49 +101,75 @@ async function main() {
     const users = await prisma.user.findMany({ select: { id: true } });
 
     // ── Master data (no dependencies) ────────────────────────────────
-    const trucks = [];
-    for (let i = 1; i <= 15; i++) trucks.push(await trucksService.create({ truckNumber: `TRK-${String(i).padStart(3, '0')}`, truckType: pick(['Flatbed', 'Reefer', 'Box Truck', 'Tanker', 'Lowboy'], i), status: 'ACTIVE' }));
+    const trucks: any[] = [];
+    for (let i = 1; i <= 15; i++) {
+      const truckNumber = `TRK-${String(i).padStart(3, '0')}`;
+      trucks.push(await findOrCreate(() => prisma.truck.findFirst({ where: { truckNumber } }), () => trucksService.create({ truckNumber, truckType: pick(['Flatbed', 'Reefer', 'Box Truck', 'Tanker', 'Lowboy'], i), status: 'ACTIVE' })));
+    }
 
-    const drivers = [];
-    for (let i = 0; i < 12; i++) drivers.push(await driversService.create({ name: DRIVER_NAMES[i], phone: `05${num(10000000, 99999999, i)}`, licenseNo: `DL-${String(i + 1).padStart(5, '0')}`, idNumber: `${num(1000000000, 1099999999, i)}`, status: 'ACTIVE' }));
+    const drivers: any[] = [];
+    for (let i = 0; i < 12; i++) {
+      const licenseNo = `DL-${String(i + 1).padStart(5, '0')}`;
+      drivers.push(await findOrCreate(() => prisma.driver.findFirst({ where: { licenseNo } }), () => driversService.create({ name: DRIVER_NAMES[i], phone: `05${num(10000000, 99999999, i)}`, licenseNo, idNumber: `${num(1000000000, 1099999999, i)}`, status: 'ACTIVE' })));
+    }
 
-    const customers = [];
-    for (let i = 0; i < 20; i++) customers.push(await customersService.create({ name: CUSTOMER_NAMES[i], contactPerson: pick(EMPLOYEE_NAMES, i + 3), phone: `01${num(1000000, 9999999, i)}`, email: `contact${i + 1}@${CUSTOMER_NAMES[i].toLowerCase().replace(/[^a-z]+/g, '')}.sa`, city: pick(['Riyadh', 'Jeddah', 'Dammam', 'Khobar', 'Mecca'], i), country: 'SA', vatNumber: `3${num(100000000000000, 399999999999999, i)}`, status: 'ACTIVE' }));
+    const customers: any[] = [];
+    for (let i = 0; i < 20; i++) {
+      const name = CUSTOMER_NAMES[i];
+      customers.push(await findOrCreate(() => prisma.customer.findFirst({ where: { name } }), () => customersService.create({ name, contactPerson: pick(EMPLOYEE_NAMES, i + 3), phone: `01${num(1000000, 9999999, i)}`, email: `contact${i + 1}@${name.toLowerCase().replace(/[^a-z]+/g, '')}.sa`, city: pick(['Riyadh', 'Jeddah', 'Dammam', 'Khobar', 'Mecca'], i), country: 'SA', vatNumber: `3${num(100000000000000, 399999999999999, i)}`, status: 'ACTIVE' })));
+    }
 
-    const suppliers = [];
-    for (let i = 0; i < 8; i++) suppliers.push(await suppliersService.create({ name: SUPPLIER_NAMES[i], contactPerson: pick(EMPLOYEE_NAMES, i + 7), phone: `01${num(1000000, 9999999, i + 50)}`, email: `info${i + 1}@${SUPPLIER_NAMES[i].toLowerCase().replace(/[^a-z]+/g, '')}.sa`, status: 'ACTIVE' }));
+    const suppliers: any[] = [];
+    for (let i = 0; i < 8; i++) {
+      const name = SUPPLIER_NAMES[i];
+      suppliers.push(await findOrCreate(() => prisma.supplier.findFirst({ where: { name } }), () => suppliersService.create({ name, contactPerson: pick(EMPLOYEE_NAMES, i + 7), phone: `01${num(1000000, 9999999, i + 50)}`, email: `info${i + 1}@${name.toLowerCase().replace(/[^a-z]+/g, '')}.sa`, status: 'ACTIVE' })));
+    }
 
-    const locations = [];
-    for (let i = 0; i < LOCATIONS.length; i++) locations.push(await locationsService.create({ name: LOCATIONS[i], description: `${LOCATIONS[i]} - primary loading/unloading point`, status: 'ACTIVE' }));
+    const locations: any[] = [];
+    for (let i = 0; i < LOCATIONS.length; i++) {
+      const name = LOCATIONS[i];
+      locations.push(await findOrCreate(() => prisma.location.findFirst({ where: { name } }), () => locationsService.create({ name, description: `${name} - primary loading/unloading point`, status: 'ACTIVE' })));
+    }
 
-    const cargoTypes = [];
-    for (let i = 0; i < CARGO_TYPES.length; i++) cargoTypes.push(await cargoTypesService.create({ name: CARGO_TYPES[i], pricingMode: pick(['PER_MT', 'PER_TRIP'], i), status: 'ACTIVE' }));
+    const cargoTypes: any[] = [];
+    for (let i = 0; i < CARGO_TYPES.length; i++) {
+      const name = CARGO_TYPES[i];
+      cargoTypes.push(await findOrCreate(() => prisma.cargoType.findFirst({ where: { name } }), () => cargoTypesService.create({ name, pricingMode: pick(['PER_MT', 'PER_TRIP'], i), status: 'ACTIVE' })));
+    }
 
     // ── HR structure ──────────────────────────────────────────────────
     const departments: Record<string, any> = {};
-    for (const name of DEPARTMENTS) departments[name] = await departmentsService.create({ name, status: 'ACTIVE' });
+    for (const name of DEPARTMENTS) departments[name] = await findOrCreate(() => prisma.department.findFirst({ where: { name } }), () => departmentsService.create({ name, status: 'ACTIVE' }));
 
     const designations: any[] = [];
     for (const [deptName, titles] of Object.entries(DESIGNATIONS_BY_DEPT)) {
-      for (const title of titles) designations.push(await designationsService.create({ name: title, departmentId: departments[deptName].id, status: 'ACTIVE' }));
+      for (const title of titles) {
+        const departmentId = departments[deptName].id;
+        designations.push(await findOrCreate(() => prisma.designation.findFirst({ where: { name: title, departmentId } }), () => designationsService.create({ name: title, departmentId, status: 'ACTIVE' })));
+      }
     }
 
     const employees = [];
     for (let i = 0; i < EMPLOYEE_NAMES.length; i++) {
       const deptName = pick(DEPARTMENTS, i);
       const deptDesignations = designations.filter((d) => d.departmentId === departments[deptName].id);
+      const email = `${EMPLOYEE_NAMES[i].toLowerCase().replace(/[^a-z ]+/g, '').replace(/ +/g, '.')}@fleetflow-dev.sa`;
       employees.push(
-        await employeesService.create({
-          name: EMPLOYEE_NAMES[i],
-          email: `${EMPLOYEE_NAMES[i].toLowerCase().replace(/[^a-z ]+/g, '').replace(/ +/g, '.')}@fleetflow-dev.sa`,
-          phone: `05${num(10000000, 99999999, i + 100)}`,
-          joiningDate: dateOffset(-num(30, 900, i)),
-          employmentType: 'FULL_TIME',
-          employmentStatus: 'ACTIVE',
-          departmentId: departments[deptName].id,
-          designationId: pick(deptDesignations, i).id,
-          salary: String(num(4000, 15000, i * 7)),
-        }),
+        await findOrCreate(
+          () => prisma.employee.findFirst({ where: { email } }),
+          () =>
+            employeesService.create({
+              name: EMPLOYEE_NAMES[i],
+              email,
+              phone: `05${num(10000000, 99999999, i + 100)}`,
+              joiningDate: dateOffset(-num(30, 900, i)),
+              employmentType: 'FULL_TIME',
+              employmentStatus: 'ACTIVE',
+              departmentId: departments[deptName].id,
+              designationId: pick(deptDesignations, i).id,
+              salary: String(num(4000, 15000, i * 7)),
+            }),
+        ),
       );
     }
 
@@ -146,22 +196,27 @@ async function main() {
     }
 
     // ── Trips (the central transaction record) ───────────────────────
-    const trips = [];
+    const trips: any[] = [];
     for (let i = 1; i <= 40; i++) {
       const pickup = pick(locations, i);
       const delivery = pick(locations, i + 4);
       if (pickup.id === delivery.id) continue;
+      const transactionNumber = `TRP-${String(i).padStart(4, '0')}`;
       trips.push(
-        await tripsService.create({
-          transactionNumber: `TRP-${String(i).padStart(4, '0')}`,
-          customerId: pick(customers, i).id,
-          pickupLocationId: pickup.id,
-          deliveryLocationId: delivery.id,
-          cargoTypeId: pick(cargoTypes, i).id,
-          quantity: String(num(5, 40, i * 2)),
-          tripDate: dateOffset(-num(0, 45, i)),
-          truckId: pick(trucks, i).id,
-        }),
+        await findOrCreate<any>(
+          () => prisma.trip.findFirst({ where: { transactionNumber } }),
+          () =>
+            tripsService.create({
+              transactionNumber,
+              customerId: pick(customers, i).id,
+              pickupLocationId: pickup.id,
+              deliveryLocationId: delivery.id,
+              cargoTypeId: pick(cargoTypes, i).id,
+              quantity: String(num(5, 40, i * 2)),
+              tripDate: dateOffset(-num(0, 45, i)),
+              truckId: pick(trucks, i).id,
+            }),
+        ),
       );
     }
 
@@ -194,9 +249,17 @@ async function main() {
     for (let i = 0; i < 10; i++) await supplierPaymentsService.create({ supplierId: pick(suppliers, i).id, amount: String(num(500, 8000, i * 4)), currency: 'SAR', paymentDate: dateOffset(-num(0, 30, i)), description: 'Spare parts / fuel settlement' });
 
     // ── Workshop ───────────────────────────────────────────────────────
-    const spareParts = [];
+    const spareParts: any[] = [];
     const PART_NAMES = ['Brake Pads', 'Oil Filter', 'Air Filter', 'Tyre 295/80R22.5', 'Clutch Plate', 'Fuel Injector', 'Alternator', 'Radiator Hose', 'Shock Absorber', 'Battery 12V', 'Headlight Assembly', 'Windscreen Wiper', 'Fan Belt', 'Brake Disc', 'Suspension Bushing'];
-    for (let i = 0; i < PART_NAMES.length; i++) spareParts.push(await sparePartsService.create({ name: PART_NAMES[i], partNumber: `SP-${String(i + 1).padStart(4, '0')}`, category: pick(['Engine', 'Brakes', 'Electrical', 'Tyres', 'Body'], i), quantity: num(5, 100, i), minimumStock: 10, unitCost: String(num(30, 1200, i * 6)), supplierId: pick(suppliers, i).id, status: 'ACTIVE' }));
+    for (let i = 0; i < PART_NAMES.length; i++) {
+      const partNumber = `SP-${String(i + 1).padStart(4, '0')}`;
+      spareParts.push(
+        await findOrCreate(
+          () => prisma.sparePart.findFirst({ where: { partNumber } }),
+          () => sparePartsService.create({ name: PART_NAMES[i], partNumber, category: pick(['Engine', 'Brakes', 'Electrical', 'Tyres', 'Body'], i), quantity: num(5, 100, i), minimumStock: 10, unitCost: String(num(30, 1200, i * 6)), supplierId: pick(suppliers, i).id, status: 'ACTIVE' }),
+        ),
+      );
+    }
 
     for (let i = 0; i < 10; i++) await sparePartTransactionsService.create({ sparePartId: pick(spareParts, i).id, transactionType: pick(['IN', 'OUT'], i), quantity: num(1, 10, i), referenceNote: 'Dev seed stock movement' });
 
@@ -230,7 +293,13 @@ async function main() {
       }
     }
     for (let i = 0; i < 6; i++) await leaveRequestsService.create({ employeeId: pick(employees, i).id, leaveType: pick(['ANNUAL', 'SICK', 'UNPAID'], i), startDate: dateOffset(5 + i), endDate: dateOffset(8 + i), days: 3, reason: 'Dev seed test leave', status: 'PENDING' });
-    for (const emp of employees) await employmentContractsService.create({ employeeId: emp.id, contractNumber: `CTR-${String(emp.id).padStart(5, '0')}`, contractType: 'FULL_TIME', startDate: dateOffset(-180), salary: String(num(4000, 15000, emp.id * 7)), currency: 'SAR', status: 'ACTIVE' });
+    for (const emp of employees) {
+      const contractNumber = `CTR-${String(emp.id).padStart(5, '0')}`;
+      await findOrCreate(
+        () => prisma.employmentContract.findFirst({ where: { contractNumber } }),
+        () => employmentContractsService.create({ employeeId: emp.id, contractNumber, contractType: 'FULL_TIME', startDate: dateOffset(-180), salary: String(num(4000, 15000, emp.id * 7)), currency: 'SAR', status: 'ACTIVE' }),
+      );
+    }
 
     console.log('Dev data seeded:');
     console.log(`  Trucks: ${trucks.length}, Drivers: ${drivers.length}, Customers: ${customers.length}, Suppliers: ${suppliers.length}`);
