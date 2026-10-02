@@ -84,39 +84,3 @@ export interface WorkshopExpenseDto {
   truckNumber?: string;
 }
 export const workshopExpensesApi = createCrudApi<WorkshopExpenseDto>('workshopExpenses', 'fleetflow.workshop.WorkshopExpensesService', ws, 'WorkshopExpense');
-
-// ---- Nested line-item tables (no Get RPC; narrower method sets) ----
-
-export interface WorkOrderPartDto {
-  id: number;
-  workOrderId: number;
-  sparePartId: number;
-  quantity: number;
-  unitCost: string;
-  totalCost: string;
-  sparePartName?: string;
-}
-/** Line items: no Get rpc (and stock movements cannot be edited) — list, create and remove only. */
-export const workOrderPartsApi = createCrudApi<WorkOrderPartDto>('workOrderParts', 'fleetflow.workshop.WorkOrderPartsService', ws, 'WorkOrderPart');
-
-export interface InspectionItemDto {
-  id: number;
-  inspectionId: number;
-  workOrderId?: number;
-  checklistItem: string;
-  status: string;
-  defect?: string;
-}
-/** Line items: no Get rpc (and stock movements cannot be edited) — list, create and remove only. */
-export const inspectionItemsApi = createCrudApi<InspectionItemDto>('inspectionItems', 'fleetflow.workshop.InspectionItemsService', ws, 'InspectionItem');
-
-export interface SparePartTransactionDto {
-  id: number;
-  sparePartId: number;
-  transactionType: string;
-  quantity: number;
-  referenceNote?: string;
-  sparePartName?: string;
-}
-/** Line items: no Get rpc (and stock movements cannot be edited) — list, create and remove only. */
-export const sparePartTransactionsApi = createCrudApi<SparePartTransactionDto>('sparePartTransactions', 'fleetflow.workshop.SparePartTransactionsService', ws, 'SparePartTransaction');

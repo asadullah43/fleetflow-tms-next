@@ -162,8 +162,6 @@ export const prisma = base.$extends({
   },
 });
 
-export type TenantPrisma = typeof prisma;
-
 export async function disconnectDatabase(): Promise<void> {
   await base.$disconnect();
 }

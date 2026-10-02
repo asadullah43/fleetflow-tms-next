@@ -129,6 +129,3 @@ export const authenticateIfPresent: Middleware = (ctx, next) => {
   const hasCredentials = !!header(ctx.metadata, config.auth.apiKeyHeader) || !!header(ctx.metadata, 'authorization');
   return hasCredentials ? authenticate(ctx, next) : runWithTenant(config.tenancy.defaultCompanyId, next);
 };
-
-/** For public routes that still read tenant data (login-screen branding): runs in the default company's context. */
-export const defaultTenant: Middleware = (_ctx, next) => runWithTenant(config.tenancy.defaultCompanyId, next);

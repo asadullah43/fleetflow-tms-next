@@ -35,8 +35,6 @@ export const Icon = {
     svg(size, <><circle cx="5.5" cy="18.5" r="2" /><circle cx="18.5" cy="5.5" r="2" /><path d="M7.3 17 15 9.5" /><path d="M17 7l1.5-1.5" /></>),
   clipboard: ({ size = 18 }: IconProps) =>
     svg(size, <><rect x="5" y="4" width="14" height="17" rx="1.5" /><rect x="8.5" y="2.5" width="7" height="3" rx="1" /><path d="M8.5 11h7M8.5 15h7" /></>),
-  package: ({ size = 18 }: IconProps) =>
-    svg(size, <><path d="M3.5 7.5 12 3l8.5 4.5L12 12 3.5 7.5z" /><path d="M3.5 7.5V16l8.5 4.5V12" /><path d="M20.5 7.5V16L12 20.5" /></>),
   fileText: ({ size = 18 }: IconProps) =>
     svg(size, <><path d="M6 2.5h8l4 4V20a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1z" /><path d="M14 2.5V7h4" /><path d="M8.5 12.5h7M8.5 16h7" /></>),
   building: ({ size = 18 }: IconProps) =>
@@ -81,8 +79,6 @@ export const Icon = {
     svg(size, <><path d="M4 20l.9-4.3 10-10 3.4 3.4-10 10L4 20z" /><path d="M13.6 6.4l3.4 3.4" /></>),
   trash: ({ size = 18 }: IconProps) =>
     svg(size, <><path d="M4.5 7h15" /><path d="M9.5 7V4.8c0-.7.5-1.3 1.2-1.3h2.6c.7 0 1.2.6 1.2 1.3V7" /><path d="M6.5 7l.9 12.1c.06.8.7 1.4 1.5 1.4h6.2c.8 0 1.44-.6 1.5-1.4L17.5 7" /><path d="M10.2 11v6M13.8 11v6" /></>),
-  globe: ({ size = 18 }: IconProps) =>
-    svg(size, <><circle cx="12" cy="12" r="9.3" /><path d="M2.7 12h18.6" /><path d="M12 2.7c2.6 2.4 4 5.8 4 9.3s-1.4 6.9-4 9.3c-2.6-2.4-4-5.8-4-9.3s1.4-6.9 4-9.3z" /></>),
 };
 
 export type IconName = keyof typeof Icon;

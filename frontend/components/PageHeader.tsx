@@ -1,11 +1,10 @@
 'use client';
 
-import { ReactNode } from 'react';
 import { Box, Group, Text, Title } from '@mantine/core';
 import { useT } from '../lib/language-context';
 
-/** Title + one-line purpose of a page, with optional actions on the trailing edge. */
-export function PageHeader({ title, description, actions }: { title: string; description?: string; actions?: ReactNode }) {
+/** Title + one-line purpose of a page. */
+export function PageHeader({ title, description }: { title: string; description?: string }) {
   const t = useT();
   return (
     <Group justify="space-between" align="flex-end" mb="md" wrap="wrap">
@@ -19,7 +18,6 @@ export function PageHeader({ title, description, actions }: { title: string; des
           </Text>
         )}
       </Box>
-      {actions}
     </Group>
   );
 }

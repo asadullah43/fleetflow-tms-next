@@ -26,7 +26,7 @@ export function fillPermissions(modules: string[], existing: PermissionDto[]): P
 }
 
 /** The module × view/add/edit/delete grid, used for roles and for API keys. */
-export function PermissionMatrix({ value, onChange, disabledModules = [] }: { value: PermissionDto[]; onChange: (next: PermissionDto[]) => void; disabledModules?: string[] }) {
+export function PermissionMatrix({ value, onChange }: { value: PermissionDto[]; onChange: (next: PermissionDto[]) => void }) {
   const t = useT();
   const toggle = (module: string, flag: Flag) => onChange(value.map((row) => (row.module === module ? { ...row, [flag]: !row[flag] } : row)));
 
@@ -52,7 +52,6 @@ export function PermissionMatrix({ value, onChange, disabledModules = [] }: { va
                   <Checkbox
                     checked={row[flag]}
                     onChange={() => toggle(row.module, flag)}
-                    disabled={disabledModules.includes(row.module)}
                     aria-label={`${t(formatModule(row.module))}: ${t(label)}`}
                     styles={{ body: { justifyContent: 'center' } }}
                   />

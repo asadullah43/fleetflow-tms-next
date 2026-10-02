@@ -31,7 +31,6 @@ function resolveProtoDir(): string {
 
 export const config = {
   env: process.env.NODE_ENV ?? 'development',
-  isProduction: process.env.NODE_ENV === 'production',
 
   grpc: {
     port: int('GRPC_PORT', 50051),

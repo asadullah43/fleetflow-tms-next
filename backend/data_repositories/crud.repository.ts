@@ -118,8 +118,6 @@ export function createCrudRepository<Out = any>(options: CrudRepositoryOptions<O
   return { list, findOne, create, update, remove };
 }
 
-export type CrudRepository<Out = any> = ReturnType<typeof createCrudRepository<Out>>;
-
 // ── Input-shaping helpers shared by services ────────────────────────────
 
 /** Converts the named date-string fields to Date; '' / undefined become undefined (i.e. "leave unchanged" on update). */

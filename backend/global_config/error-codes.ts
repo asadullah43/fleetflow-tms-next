@@ -189,5 +189,3 @@ export const ErrorCode = {
   /** The standard rate-limit code; the description is rewritten per response with the actual wait time. */
   RATE_LIMITED: { code: 'RATE-429001', filter: ErrorFilter.RATE_LIMIT_EXCEEDED, description: 'Too many requests. Please try again later.' },
 } as const;
-
-export type ErrorCodeKey = keyof typeof ErrorCode;

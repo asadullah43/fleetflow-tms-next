@@ -58,8 +58,3 @@ export class AppError extends Error {
     };
   }
 }
-
-/** Throws the given ErrorCode entry as an AppError — the one-liner every service uses for its failure paths. */
-export function fail(code: ErrorCodeEntry, statusCode: number, cause?: unknown): never {
-  throw AppError.from(code, statusCode, cause);
-}

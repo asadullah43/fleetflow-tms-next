@@ -21,14 +21,6 @@ export interface RateLimitInfo {
   remainingPoints: number;
 }
 
-export interface ApiSuccess<T> {
-  STATUS: 'SUCCESSFUL';
-  ERROR_CODE: '';
-  ERROR_FILTER: '';
-  ERROR_DESCRIPTION: '';
-  DB_DATA: T;
-}
-
 export interface ApiError {
   STATUS: 'ERROR';
   ERROR_FILTER: ErrorFilter;
