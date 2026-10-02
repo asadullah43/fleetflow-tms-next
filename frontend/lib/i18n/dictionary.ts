@@ -661,6 +661,22 @@ export const AR_STRINGS: Record<string, string> = {
   'Api keys': 'مفاتيح API',
   'Let other systems use FleetFlow on your company\'s behalf. Each key has only the permissions you give it and can be revoked at any time.': 'اسمح للأنظمة الأخرى باستخدام FleetFlow نيابةً عن شركتك. لكل مفتاح الصلاحيات التي تمنحها له فقط، ويمكن إلغاؤه في أي وقت.',
   'Your company\'s identity: shown in the app, in the browser tab, and on printed documents.': 'هوية شركتك: تظهر في التطبيق وفي تبويب المتصفح وعلى المستندات المطبوعة.',
+
+  // ── Action menus, sidebar, dashboard drill-downs ─────────
+  'More actions': 'إجراءات أخرى',
+  Duplicate: 'تكرار',
+  'Export to Excel': 'تصدير إلى Excel',
+  'Export to PDF': 'تصدير إلى PDF',
+  'Marked as paid.': 'تم تمييز الفاتورة كمدفوعة.',
+  'Submitted to ZATCA.': 'تم الإرسال إلى هيئة الزكاة والضريبة والجمارك.',
+  'Collapse sidebar': 'طي الشريط الجانبي',
+  'Expand sidebar': 'توسيع الشريط الجانبي',
+  'Fleet availability': 'جاهزية الأسطول',
+  'Share of the fleet that is active and able to run trips.': 'نسبة الأسطول النشطة والجاهزة لتنفيذ الرحلات.',
+  active: 'نشطة',
+  'not in service': 'خارج الخدمة',
+  'trucks are active; the rest are in maintenance or inactive.': 'شاحنات نشطة؛ والباقي في الصيانة أو غير نشط.',
+  'Open jobs': 'المهام المفتوحة',
 };
 
 const ARABIC_INDIC_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];

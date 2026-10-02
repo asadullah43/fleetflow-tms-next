@@ -2,10 +2,8 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { notifications } from '@mantine/notifications';
-import { useQuery } from '@tanstack/react-query';
 import { AssignmentDto, assignmentsApi } from '../../lib/api/assignments.api';
 import { errorMessage } from '../../lib/api/errors';
-import { queryKeys } from '../../lib/api/query-keys';
 import { trucksApi } from '../../lib/api/trucks.api';
 import { toDateInput } from '../../lib/date';
 import { newIdempotencyKey } from '../../lib/idempotency';
@@ -13,7 +11,7 @@ import { useT } from '../../lib/language-context';
 import { useAuth } from '../auth/session-provider';
 import { useTruckAssignments } from '../assignments/assignment.queries';
 import { assignmentState } from '../assignments/assignment-state';
-import { useResourceMutations } from '../crud/crud.queries';
+import { useResourceDetail, useResourceMutations } from '../crud/crud.queries';
 
 const blankForm = () => ({ driverId: '', startDate: '', endDate: '' });
 type AssignmentForm = ReturnType<typeof blankForm>;
@@ -22,7 +20,7 @@ type AssignmentForm = ReturnType<typeof blankForm>;
 export function useTruckDetailViewModel(truckId: number) {
   const t = useT();
   const { can } = useAuth();
-  const truck = useQuery({ queryKey: queryKeys.detail(trucksApi.key, truckId), queryFn: () => trucksApi.get(truckId), enabled: Number.isInteger(truckId) && truckId > 0 });
+  const truck = useResourceDetail(trucksApi, truckId, { enabled: Number.isInteger(truckId) && truckId > 0 });
   const assignments = useTruckAssignments(truck.data ? truckId : null);
   const mutations = useResourceMutations(assignmentsApi);
 

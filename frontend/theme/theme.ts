@@ -23,6 +23,22 @@ export const surface = {
   border: '#e6e1d6',
 } as const;
 
+/**
+ * The app's button/icon tones, all filled (no outline or ghost variants):
+ * spread onto Button / ActionIcon, e.g. `<Button {...tone.secondary}>`.
+ * `autoContrast` (below) picks dark or light text for each fill.
+ */
+export const tone = {
+  /** Cancel, Close, Clear filters, and other non-primary buttons. */
+  secondary: { variant: 'filled', color: 'sand.2' },
+  /** Icon buttons in dense places (row menus, toggles). */
+  quiet: { variant: 'filled', color: 'sand.1' },
+  /** A row's primary icon action. */
+  primarySoft: { variant: 'filled', color: 'brand.1' },
+  /** Destructive buttons outside confirm dialogs (e.g. Remove logo). */
+  danger: { variant: 'filled', color: 'red.7' },
+} as const;
+
 const SANS = "'IBM Plex Sans', 'IBM Plex Sans Arabic', system-ui, -apple-system, 'Segoe UI', sans-serif";
 const MONO = "'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace";
 
@@ -43,12 +59,18 @@ export const theme = createTheme({
   fontSizes: { xs: rem(12), sm: rem(13.5), md: rem(14.5), lg: rem(16), xl: rem(19) },
   black: '#22262f',
   cursorType: 'pointer',
+  // Filled surfaces pick black or white text by luminance, so every solid fill stays readable.
+  autoContrast: true,
+  luminanceThreshold: 0.45,
   components: {
     Paper: { defaultProps: { withBorder: true, radius: 'lg', shadow: 'none' } },
     Table: { defaultProps: { verticalSpacing: 'sm', horizontalSpacing: 'md', highlightOnHover: true } },
     Modal: { defaultProps: { centered: true, radius: 'lg', overlayProps: { backgroundOpacity: 0.45, blur: 2 } } },
     Button: { defaultProps: { radius: 'md' } },
-    Badge: { defaultProps: { variant: 'light', radius: 'sm' } },
+    Badge: { defaultProps: { variant: 'filled', radius: 'sm' } },
+    ThemeIcon: { defaultProps: { variant: 'filled' } },
+    Avatar: { defaultProps: { variant: 'filled' } },
+    Menu: { defaultProps: { radius: 'md' } },
     TextInput: { defaultProps: { size: 'sm' } },
     Select: { defaultProps: { size: 'sm' } },
   },

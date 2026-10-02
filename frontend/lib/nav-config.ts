@@ -112,3 +112,14 @@ export function firstAllowedHref(canView: (href: string) => boolean): string {
   }
   return '/dashboard';
 }
+
+/** The sidebar page a path belongs to (longest match, so nested pages resolve to their section). */
+export function navItemFor(pathname: string): NavItem | null {
+  let best: NavItem | null = null;
+  for (const group of NAV_GROUPS) {
+    for (const item of group.items) {
+      if ((pathname === item.href || pathname.startsWith(`${item.href}/`)) && (!best || item.href.length > best.href.length)) best = item;
+    }
+  }
+  return best;
+}

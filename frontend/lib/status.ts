@@ -40,3 +40,12 @@ export function statusLabel(status: string): string {
   const words = status.toLowerCase().split('_').join(' ');
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
+
+/** Shade per hue for a filled badge: dark enough for white text, or (yellow) light enough for dark text. */
+const FILLED_SHADE: Record<string, number> = { teal: 8, blue: 7, yellow: 5, red: 7, gray: 6 };
+
+/** The filled colour for a status code, e.g. 'teal.8'. */
+export function statusColor(status: string): string {
+  const hue = STATUS_COLOR[status] ?? 'gray';
+  return `${hue}.${FILLED_SHADE[hue] ?? 6}`;
+}

@@ -2,15 +2,15 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { notifications } from '@mantine/notifications';
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApiKeyDto, apiKeysApi, CreatedApiKeyDto } from '../../lib/api/api-keys.api';
 import { errorMessage } from '../../lib/api/errors';
 import { queryKeys } from '../../lib/api/query-keys';
 import type { PermissionDto } from '../../lib/api/roles.api';
 import { newIdempotencyKey } from '../../lib/idempotency';
 import { useT } from '../../lib/language-context';
-import { useAuth, usePagePermissions } from '../auth/session-provider';
-import { useListControls } from '../crud/use-list-controls';
+import { useAuth } from '../auth/session-provider';
+import { usePagedList } from '../crud/use-paged-list';
 import { emptyPermissions } from '../roles/PermissionMatrix';
 import { usePermissionModules } from '../roles/roles.queries';
 
@@ -26,18 +26,11 @@ interface Draft {
 /** State and actions of the API keys screen: list, create (key shown once), revoke. */
 export function useApiKeysViewModel() {
   const t = useT();
-  const allowed = usePagePermissions();
   const { can } = useAuth();
   const queryClient = useQueryClient();
-  const controls = useListControls();
+  const list = usePagedList(apiKeysApi, { errorFallback: 'Failed to load data.' });
+  const { allowed } = list;
   const modules = usePermissionModules();
-
-  const list = useQuery({
-    queryKey: queryKeys.list(apiKeysApi.key, controls.query),
-    queryFn: () => apiKeysApi.list(controls.query),
-    placeholderData: keepPreviousData,
-    enabled: allowed.view,
-  });
 
   /** Only modules the signed-in user can at least view are offered: nobody can grant what they lack. */
   const grantable = useMemo(() => (modules.data ?? []).filter((module) => !NOT_GRANTABLE.includes(module) && can(module, 'view')), [modules.data, can]);
@@ -84,13 +77,7 @@ export function useApiKeysViewModel() {
   });
 
   return {
-    allowed,
-    controls,
-    rows: list.data?.items,
-    pagination: list.data?.pagination,
-    loading: list.isPending && allowed.view,
-    fetching: list.isFetching && !list.isPending,
-    listError: list.isError ? errorMessage(list.error) : null,
+    ...list,
     canCreate: allowed.add && grantable.length > 0,
     draft,
     formError,
@@ -102,5 +89,6 @@ export function useApiKeysViewModel() {
     created,
     dismissCreated: () => setCreated(null),
     revoke: revoke.mutate,
+    revokingId: revoke.isPending ? revoke.variables?.id : null,
   };
 }

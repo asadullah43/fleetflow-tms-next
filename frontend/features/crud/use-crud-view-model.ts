@@ -2,15 +2,14 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { notifications } from '@mantine/notifications';
-import { usePagePermissions } from '../auth/session-provider';
 import { errorMessage } from '../../lib/api/errors';
 import { exportCsv, printTable } from '../../lib/export-table';
 import { newIdempotencyKey } from '../../lib/idempotency';
 import { useLanguage, useT } from '../../lib/language-context';
-import { useResourceList, useResourceMutations } from './crud.queries';
+import { useResourceMutations } from './crud.queries';
 import { emptyValues, rowToValues, validateValues, valuesToPayload } from './form-mapping';
 import type { CrudDefinition, DisplayContext, FormValues } from './types';
-import { useListControls } from './use-list-controls';
+import { useNotifiedRemove, usePagedList } from './use-paged-list';
 
 interface Editor<T> {
   mode: 'create' | 'edit';
@@ -22,17 +21,17 @@ interface Editor<T> {
 /**
  * ViewModel for a CRUD screen: everything the view shows and every
  * action it can trigger, with no JSX and no direct API calls — server
- * state comes from the query/mutation hooks.
+ * state comes from the query/mutation hooks, list criteria from the list
+ * store, and only the open form's draft is local to the screen.
  */
 export function useCrudViewModel<T extends { id: number }>(definition: CrudDefinition<T>) {
   const { api, fields, columns } = definition;
   const t = useT();
   const { language } = useLanguage();
   const ctx = useMemo<DisplayContext>(() => ({ language, t }), [language, t]);
-  const allowed = usePagePermissions();
 
-  const controls = useListControls();
-  const list = useResourceList(api, controls.query, allowed.view);
+  const list = usePagedList(api);
+  const { controls } = list;
   const mutations = useResourceMutations(api);
 
   const [editor, setEditor] = useState<Editor<T> | null>(null);
@@ -41,23 +40,25 @@ export function useCrudViewModel<T extends { id: number }>(definition: CrudDefin
   const [formError, setFormError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
 
-  const openCreate = useCallback(() => {
-    setValues(emptyValues(fields));
+  const openForm = useCallback((next: Editor<T>, initial: FormValues) => {
+    setValues(initial);
     setFieldErrors({});
     setFormError(null);
-    setEditor({ mode: 'create', idempotencyKey: newIdempotencyKey() });
-  }, [fields]);
+    setEditor(next);
+  }, []);
 
-  const openEdit = useCallback(
+  const valuesOf = useCallback(
     (row: T) => {
       const derived = rowToValues(fields, row as unknown as Record<string, unknown>);
-      setValues(definition.toFormValues ? definition.toFormValues(derived, row, ctx) : derived);
-      setFieldErrors({});
-      setFormError(null);
-      setEditor({ mode: 'edit', row, idempotencyKey: '' });
+      return definition.toFormValues ? definition.toFormValues(derived, row, ctx) : derived;
     },
     [fields, definition, ctx],
   );
+
+  const openCreate = useCallback(() => openForm({ mode: 'create', idempotencyKey: newIdempotencyKey() }, emptyValues(fields)), [openForm, fields]);
+  const openEdit = useCallback((row: T) => openForm({ mode: 'edit', row, idempotencyKey: '' }, valuesOf(row)), [openForm, valuesOf]);
+  /** A new record pre-filled from an existing one; nothing is saved until the user reviews it and presses Save. */
+  const openDuplicate = useCallback((row: T) => openForm({ mode: 'create', idempotencyKey: newIdempotencyKey() }, valuesOf(row)), [openForm, valuesOf]);
 
   const closeEditor = useCallback(() => setEditor(null), []);
 
@@ -87,17 +88,8 @@ export function useCrudViewModel<T extends { id: number }>(definition: CrudDefin
     }
   }, [editor, saving, fields, values, definition, mutations.update, mutations.create, t]);
 
-  const remove = useCallback(
-    async (row: T) => {
-      try {
-        await mutations.remove.mutateAsync(row.id);
-        notifications.show({ color: 'teal', message: t('Record deleted.') });
-      } catch (error) {
-        notifications.show({ color: 'red', title: t('Delete failed.'), message: t(errorMessage(error, 'Delete failed.')) });
-      }
-    },
-    [mutations.remove, t],
-  );
+  const removeById = useNotifiedRemove(mutations.remove.mutateAsync);
+  const remove = useCallback((row: T) => removeById(row.id), [removeById]);
 
   /** Exports every row matching the current search and filters — not just the page on screen. */
   const exportRows = useCallback(
@@ -124,14 +116,8 @@ export function useCrudViewModel<T extends { id: number }>(definition: CrudDefin
   );
 
   return {
+    ...list,
     ctx,
-    allowed,
-    controls,
-    rows: list.data?.items,
-    pagination: list.data?.pagination,
-    loading: list.isPending && allowed.view,
-    fetching: list.isFetching && !list.isPending,
-    listError: list.isError ? errorMessage(list.error, 'Failed to load data.') : null,
     editor,
     values,
     fieldErrors,
@@ -141,6 +127,7 @@ export function useCrudViewModel<T extends { id: number }>(definition: CrudDefin
     exporting,
     openCreate,
     openEdit,
+    openDuplicate,
     closeEditor,
     setValue,
     save,

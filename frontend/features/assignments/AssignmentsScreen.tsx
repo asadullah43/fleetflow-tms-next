@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Center, Loader, Modal } from '@mantine/core';
+import { actions } from '../../components/action-items';
 import { CrudScreen } from '../crud/CrudScreen';
 import { lookups } from '../crud/lookups';
 import type { CrudDefinition } from '../crud/types';
@@ -60,7 +61,7 @@ export function AssignmentsScreen() {
   const [viewing, setViewing] = useState<AssignmentDto | null>(null);
   return (
     <>
-      <CrudScreen definition={definition} rowActions={[{ label: 'View history', icon: 'eye', onClick: setViewing }]} />
+      <CrudScreen definition={definition} rowActions={[(row) => actions.viewHistory(() => setViewing(row))]} />
       <HistoryModal row={viewing} onClose={() => setViewing(null)} />
     </>
   );

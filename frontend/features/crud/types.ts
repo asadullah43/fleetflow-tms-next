@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { Lookup } from '../../components/AsyncSelect';
 import type { CrudApi } from '../../lib/api/crud-api';
-import type { IconName } from '../../components/icons';
+import type { ActionItem } from '../../components/action-items';
 import type { Language } from '../../lib/language-context';
 
 /** What a column / field definition may use to produce display text. */
@@ -59,11 +59,8 @@ export interface FilterDef {
 /** All form values are strings while editing; they are converted for the API on save. */
 export type FormValues = Record<string, string>;
 
-export interface RowAction<T> {
-  label: string;
-  icon: IconName;
-  onClick: (row: T) => void;
-}
+/** A screen's own action for one row, built with `actions` from components/action-items (e.g. `(row) => actions.viewHistory(() => open(row))`). */
+export type RowAction<T> = (row: T) => ActionItem;
 
 /** Everything that makes one list/create/edit/delete screen: declared once, rendered by CrudScreen. */
 export interface CrudDefinition<T extends { id: number }> {

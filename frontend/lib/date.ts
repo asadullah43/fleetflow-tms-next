@@ -8,6 +8,11 @@ export function today(): string {
   return dayjs().format(DATE_FORMAT);
 }
 
+/** The first day of the current month (YYYY-MM-DD) — the start of every "this month" figure. */
+export function monthStart(): string {
+  return dayjs().startOf('month').format(DATE_FORMAT);
+}
+
 /** An API timestamp or date -> the calendar date it was entered as (YYYY-MM-DD), or '' when absent/invalid. */
 export function toDateInput(value: string | null | undefined): string {
   if (!value) return '';

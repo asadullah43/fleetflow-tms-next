@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { NAV_GROUPS } from '../../lib/nav-config';
+import { navItemFor } from '../../lib/nav-config';
 import { useT } from '../../lib/language-context';
 import { useBranding } from './use-branding';
 
@@ -9,13 +9,8 @@ import { useBranding } from './use-branding';
 const DEFAULT_ICON = '/icon.svg';
 
 function pageLabel(pathname: string): string | null {
-  let best: { href: string; label: string } | null = null;
-  for (const group of NAV_GROUPS) {
-    for (const item of group.items) {
-      if ((pathname === item.href || pathname.startsWith(`${item.href}/`)) && (!best || item.href.length > best.href.length)) best = item;
-    }
-  }
-  if (best) return best.label;
+  const item = navItemFor(pathname);
+  if (item) return item.label;
   return pathname.startsWith('/login') ? 'Sign in' : null;
 }
 

@@ -1,11 +1,15 @@
 'use client';
 
-import { ActionIcon, Alert, Button, Paper, SimpleGrid, Stack, Text, TextInput, Tooltip } from '@mantine/core';
-import { modals } from '@mantine/modals';
+import { Alert, Button, Paper, SimpleGrid, Stack, TextInput } from '@mantine/core';
+import { actions } from '../../components/action-items';
+import { ActionMenu } from '../../components/ActionMenu';
 import { AppShell } from '../../components/AppShell';
 import { AsyncSelect } from '../../components/AsyncSelect';
+import { useConfirmDanger } from '../../components/confirm';
 import { DataTable, TableColumn } from '../../components/DataTable';
 import { Icon } from '../../components/icons';
+import { ListToolbar } from '../../components/ListToolbar';
+import { Mono } from '../../components/Mono';
 import { PageHeader } from '../../components/PageHeader';
 import type { LoadingOrderBatchDto } from '../../lib/api/loading-orders.api';
 import { formatDate } from '../../lib/date';
@@ -20,25 +24,17 @@ function LoadingOrdersBody() {
   const vm = useLoadingOrdersViewModel();
   const t = useT();
   const { language } = useLanguage();
+  const confirmDanger = useConfirmDanger();
 
   const columns: TableColumn<LoadingOrderBatchDto>[] = [
-    { id: 'serial', header: 'Loading order #', sortKey: 'batchId', cell: (batch) => <Text span ff="monospace" fz="sm" style={{ whiteSpace: 'nowrap' }}>{serialRange(batch)}</Text> },
+    { id: 'serial', header: 'Loading order #', sortKey: 'batchId', cell: (batch) => <Mono>{serialRange(batch)}</Mono> },
     { id: 'pickup', header: 'Pickup', cell: (batch) => localizedJoinedName(batch.pickupLocationName, batch.pickupLocationNameAr, language) },
     { id: 'delivery', header: 'Delivery', cell: (batch) => localizedJoinedName(batch.deliveryLocationName, batch.deliveryLocationNameAr, language) },
     { id: 'customer', header: 'Customer', cell: (batch) => localizedJoinedName(batch.customerName, batch.customerNameAr, language) },
     { id: 'cargo', header: 'Cargo', cell: (batch) => localizedJoinedName(batch.cargoTypeName, batch.cargoTypeNameAr, language) },
-    { id: 'qty', header: 'Qty', align: 'right', cell: (batch) => <Text span ff="monospace" fz="sm" fw={600}>{batch.quantity}</Text> },
-    { id: 'created', header: 'Generated on', cell: (batch) => <Text span ff="monospace" fz="sm" style={{ whiteSpace: 'nowrap' }}>{formatDate(batch.createdAt)}</Text> },
+    { id: 'qty', header: 'Qty', align: 'right', cell: (batch) => <Mono fw={600}>{batch.quantity}</Mono> },
+    { id: 'created', header: 'Generated on', cell: (batch) => <Mono>{formatDate(batch.createdAt)}</Mono> },
   ];
-
-  const confirmDelete = (batch: LoadingOrderBatchDto) =>
-    modals.openConfirmModal({
-      title: `${t('Delete loading order batch')} ${serialRange(batch)}?`,
-      children: <Text size="sm">{t('This cannot be undone.')}</Text>,
-      labels: { confirm: t('Delete'), cancel: t('Cancel') },
-      confirmProps: { color: 'red' },
-      onConfirm: () => vm.remove(batch.batchId),
-    });
 
   return (
     <>
@@ -62,14 +58,7 @@ function LoadingOrdersBody() {
           </Paper>
         )}
 
-        <TextInput
-          value={vm.controls.search}
-          onChange={(event) => vm.controls.setSearch(event.currentTarget.value)}
-          placeholder={t('Serial #, customer, location or cargo')}
-          aria-label={t('Search')}
-          leftSection={<Icon.search size={15} />}
-          w={{ base: '100%', xs: 320 }}
-        />
+        <ListToolbar controls={vm.controls} searchPlaceholder="Serial #, customer, location or cargo" />
 
         <DataTable
           columns={columns}
@@ -85,20 +74,15 @@ function LoadingOrdersBody() {
           onPageChange={vm.controls.setPage}
           onPageSizeChange={vm.controls.setPageSize}
           actions={(batch) => (
-            <>
-              <Tooltip label={t('Open PDF')} withArrow>
-                <ActionIcon variant="subtle" color="gray" aria-label={t('Open PDF')} loading={vm.openingBatchId === batch.batchId} onClick={() => void vm.openPdf(batch)}>
-                  <Icon.fileText size={16} />
-                </ActionIcon>
-              </Tooltip>
-              {vm.allowed.delete && (
-                <Tooltip label={t('Delete batch')} withArrow>
-                  <ActionIcon variant="subtle" color="red" aria-label={t('Delete batch')} onClick={() => confirmDelete(batch)}>
-                    <Icon.trash size={16} />
-                  </ActionIcon>
-                </Tooltip>
-              )}
-            </>
+            <ActionMenu
+              primary={actions.openPdf(() => void vm.openPdf(batch), { loading: vm.openingBatchId === batch.batchId })}
+              items={[
+                actions.deleteBatch(() => confirmDanger({ title: `${t('Delete loading order batch')} ${serialRange(batch)}?`, onConfirm: () => void vm.remove(batch.batchId) }), {
+                  hidden: !vm.allowed.delete,
+                  loading: vm.deletingBatchId === batch.batchId,
+                }),
+              ]}
+            />
           )}
         />
       </Stack>

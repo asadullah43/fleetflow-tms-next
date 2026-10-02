@@ -1,33 +1,42 @@
 'use client';
 
-import { ActionIcon, Alert, Anchor, Box, Button, Checkbox, CloseButton, Code, Divider, Group, Modal, Select, SimpleGrid, Stack, Table, Text, TextInput, Tooltip } from '@mantine/core';
+import { Alert, Anchor, Box, Button, Checkbox, CloseButton, Code, Divider, Group, Modal, SimpleGrid, Stack, Table, Text, TextInput } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
-import { modals } from '@mantine/modals';
+import { actions } from '../../components/action-items';
+import { ActionMenu } from '../../components/ActionMenu';
 import { AppShell } from '../../components/AppShell';
 import { AsyncSelect } from '../../components/AsyncSelect';
+import { useConfirmDanger } from '../../components/confirm';
 import { DataTable, TableColumn } from '../../components/DataTable';
+import { FormActions } from '../../components/FormActions';
 import { Icon } from '../../components/icons';
+import { ListToolbar } from '../../components/ListToolbar';
+import { Mono } from '../../components/Mono';
 import { PageHeader } from '../../components/PageHeader';
 import { StatusBadge } from '../../components/StatusBadge';
 import type { InvoiceDto } from '../../lib/api/invoices.api';
 import { formatDate } from '../../lib/date';
 import { useLanguage, useT } from '../../lib/language-context';
 import { localizedJoinedName } from '../../lib/localized-name';
+import { tone } from '../../theme/theme';
 import { lookups } from '../crud/lookups';
-import { useInvoicesViewModel } from './use-invoices-view-model';
+import type { FilterDef } from '../crud/types';
+import { canSubmitToZatca, useInvoicesViewModel } from './use-invoices-view-model';
 
 type ViewModel = ReturnType<typeof useInvoicesViewModel>;
 
-const INVOICE_STATUSES = [
-  { value: 'UNPAID', label: 'Unpaid' },
-  { value: 'PAID', label: 'Paid' },
+const FILTERS: FilterDef[] = [
+  {
+    name: 'status',
+    label: 'Status',
+    type: 'select',
+    options: [
+      { value: 'UNPAID', label: 'Unpaid' },
+      { value: 'PAID', label: 'Paid' },
+    ],
+  },
+  { name: 'customerId', label: 'Customer', type: 'lookup', lookup: lookups.customers },
 ];
-
-const Mono = ({ children }: { children: React.ReactNode }) => (
-  <Text span ff="monospace" fz="sm" style={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-    {children}
-  </Text>
-);
 
 function NewInvoiceModal({ vm }: { vm: ViewModel }) {
   const t = useT();
@@ -86,7 +95,7 @@ function NewInvoiceModal({ vm }: { vm: ViewModel }) {
                   </Group>
                 ))}
               </Stack>
-              <Button variant="default" size="xs" mt="sm" leftSection={<Icon.plus size={13} />} onClick={vm.addLine}>
+              <Button {...tone.secondary} size="xs" mt="sm" leftSection={<Icon.plus size={13} />} onClick={vm.addLine}>
                 {t('Add line')}
               </Button>
             </Box>
@@ -105,14 +114,7 @@ function NewInvoiceModal({ vm }: { vm: ViewModel }) {
               </Text>
             </Stack>
 
-            <Group justify="flex-end" gap="sm">
-              <Button variant="default" onClick={vm.closeCreate} disabled={vm.saving}>
-                {t('Cancel')}
-              </Button>
-              <Button type="submit" loading={vm.saving}>
-                {t('Create invoice')}
-              </Button>
-            </Group>
+            <FormActions onCancel={vm.closeCreate} saving={vm.saving} submitLabel="Create invoice" />
           </Stack>
         </form>
       )}
@@ -124,7 +126,7 @@ function InvoiceModal({ vm }: { vm: ViewModel }) {
   const t = useT();
   const { language } = useLanguage();
   const invoice = vm.viewing;
-  const canSubmit = invoice && (!invoice.zatcaStatus || invoice.zatcaStatus === 'PENDING_SIGN' || invoice.zatcaStatus === 'FAILED');
+  const canSubmit = invoice && canSubmitToZatca(invoice);
 
   return (
     <Modal opened={invoice !== null} onClose={vm.closeView} title={invoice ? `${t('Invoice')} ${invoice.invoiceNumber}` : ''} size="lg">
@@ -197,7 +199,7 @@ function InvoiceModal({ vm }: { vm: ViewModel }) {
           <Divider />
           <Group justify="flex-end" gap="sm">
             {vm.allowed.edit && invoice.status !== 'PAID' && (
-              <Button variant="default" loading={vm.acting} onClick={() => void vm.markPaid()}>
+              <Button {...tone.secondary} loading={vm.acting} onClick={() => void vm.markPaid()}>
                 {t('Mark as paid')}
               </Button>
             )}
@@ -206,7 +208,7 @@ function InvoiceModal({ vm }: { vm: ViewModel }) {
                 {t('Submit to ZATCA')}
               </Button>
             )}
-            <Button variant="default" onClick={vm.closeView}>
+            <Button {...tone.secondary} onClick={vm.closeView}>
               {t('Close')}
             </Button>
           </Group>
@@ -240,44 +242,18 @@ function InvoicesBody() {
     { id: 'zatca', header: 'ZATCA', cell: (invoice) => <StatusBadge status={invoice.zatcaStatus ?? 'PENDING_SIGN'} /> },
   ];
 
-  const confirmDelete = (invoice: InvoiceDto) =>
-    modals.openConfirmModal({
-      title: `${t('Delete invoice')} ${invoice.invoiceNumber}?`,
-      children: <Text size="sm">{t('This cannot be undone.')}</Text>,
-      labels: { confirm: t('Delete'), cancel: t('Cancel') },
-      confirmProps: { color: 'red' },
-      onConfirm: () => void vm.remove(invoice),
-    });
+  const confirmDanger = useConfirmDanger();
 
   return (
     <>
       <PageHeader title="Invoices" description="Bill customers for completed work, track payment, and issue the ZATCA QR code." />
       <Stack gap="md">
-        <Group justify="space-between" align="flex-start" gap="sm">
-          <Group gap="sm" style={{ flex: 1 }}>
-            <TextInput value={controls.search} onChange={(event) => controls.setSearch(event.currentTarget.value)} placeholder={t('Invoice # or customer')} aria-label={t('Search')} leftSection={<Icon.search size={15} />} w={{ base: '100%', xs: 260 }} />
-            <Select
-              data={INVOICE_STATUSES.map((status) => ({ value: status.value, label: t(status.label) }))}
-              value={controls.filters.status || null}
-              onChange={(value) => controls.setFilter('status', value ?? '')}
-              placeholder={t('Status')}
-              aria-label={t('Status')}
-              clearable
-              w={150}
-            />
-            <AsyncSelect lookup={lookups.customers} value={controls.filters.customerId ?? ''} onChange={(value) => controls.setFilter('customerId', value)} placeholder={t('Customer')} aria-label={t('Customer')} w={200} />
-            {controls.hasCriteria && (
-              <Button variant="subtle" color="gray" size="sm" onClick={controls.clearFilters}>
-                {t('Clear filters')}
-              </Button>
-            )}
-          </Group>
-          {vm.allowed.add && (
-            <Button size="sm" leftSection={<Icon.plus size={15} />} onClick={vm.openCreate}>
-              {t('Invoice')}
-            </Button>
-          )}
-        </Group>
+        <ListToolbar
+          controls={controls}
+          searchPlaceholder="Invoice # or customer"
+          filters={FILTERS}
+          actions={<ActionMenu layout="button" primary={actions.add('Invoice', vm.openCreate, { hidden: !vm.allowed.add })} />}
+        />
 
         <DataTable
           columns={columns}
@@ -292,22 +268,22 @@ function InvoicesBody() {
           pagination={vm.pagination}
           onPageChange={controls.setPage}
           onPageSizeChange={controls.setPageSize}
-          actions={(invoice) => (
-            <>
-              <Tooltip label={t('View')} withArrow>
-                <ActionIcon variant="subtle" color="gray" aria-label={t('View')} onClick={() => vm.openView(invoice)}>
-                  <Icon.eye size={16} />
-                </ActionIcon>
-              </Tooltip>
-              {vm.allowed.delete && (
-                <Tooltip label={t('Delete')} withArrow>
-                  <ActionIcon variant="subtle" color="red" aria-label={t('Delete')} onClick={() => confirmDelete(invoice)}>
-                    <Icon.trash size={16} />
-                  </ActionIcon>
-                </Tooltip>
-              )}
-            </>
-          )}
+          actions={(invoice) => {
+            const busy = vm.busyId === invoice.id;
+            return (
+              <ActionMenu
+                primary={actions.view(() => vm.openView(invoice))}
+                items={[
+                  actions.markPaid(() => void vm.markRowPaid(invoice), { hidden: !vm.allowed.edit || invoice.status === 'PAID', loading: busy }),
+                  actions.submitToZatca(() => void vm.submitRowToZatca(invoice), { hidden: !vm.allowed.edit || !canSubmitToZatca(invoice), disabled: busy }),
+                  actions.delete(() => confirmDanger({ title: `${t('Delete invoice')} ${invoice.invoiceNumber}?`, onConfirm: () => void vm.remove(invoice) }), {
+                    hidden: !vm.allowed.delete,
+                    disabled: busy,
+                  }),
+                ]}
+              />
+            );
+          }}
         />
       </Stack>
       <NewInvoiceModal vm={vm} />

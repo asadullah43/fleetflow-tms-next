@@ -19,4 +19,6 @@ export const queryKeys = {
   dashboard: (section: 'operations' | 'hr' | 'workshop' | 'fleet') => ['dashboard', section] as const,
   loadingOrderDocument: (batchId: number) => ['loadingOrders', 'document', batchId] as const,
   truckAssignment: (truckId: number, day: string) => ['assignments', 'current', truckId, day] as const,
+  /** A truck's whole assignment history (an array, not a page — so never under 'list'). */
+  truckAssignmentHistory: (truckId: number) => ['assignments', 'history', truckId] as const,
 };

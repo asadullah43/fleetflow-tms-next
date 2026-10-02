@@ -5,9 +5,12 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Alert, Anchor, Box, Button, Center, Group, Loader, Modal, Paper, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
-import { modals } from '@mantine/modals';
+import { actions } from '../../components/action-items';
+import { ActionMenu } from '../../components/ActionMenu';
 import { AppShell } from '../../components/AppShell';
 import { AsyncSelect } from '../../components/AsyncSelect';
+import { useConfirmDanger } from '../../components/confirm';
+import { FormActions } from '../../components/FormActions';
 import { Icon } from '../../components/icons';
 import { StatusBadge } from '../../components/StatusBadge';
 import type { AssignmentDto } from '../../lib/api/assignments.api';
@@ -66,6 +69,7 @@ function TruckDetailBody({ truckId }: { truckId: number }) {
   const t = useT();
   const n = useLocalizedDigits();
   const { language } = useLanguage();
+  const confirmDanger = useConfirmDanger();
   const driverName = (assignment: AssignmentDto) => localizedJoinedName(assignment.driverName, assignment.driverNameAr, language) ?? `#${assignment.driverId}`;
 
   const back = (
@@ -92,13 +96,7 @@ function TruckDetailBody({ truckId }: { truckId: number }) {
   const { truck } = vm;
 
   const confirmRemove = (assignment: AssignmentDto) =>
-    modals.openConfirmModal({
-      title: `${t('Remove this assignment for')} ${driverName(assignment)}?`,
-      children: <Text size="sm">{t('This cannot be undone.')}</Text>,
-      labels: { confirm: t('Remove'), cancel: t('Cancel') },
-      confirmProps: { color: 'red' },
-      onConfirm: () => void vm.remove(assignment),
-    });
+    confirmDanger({ title: `${t('Remove this assignment for')} ${driverName(assignment)}?`, confirmLabel: 'Remove', onConfirm: () => void vm.remove(assignment) });
 
   return (
     <>
@@ -136,7 +134,7 @@ function TruckDetailBody({ truckId }: { truckId: number }) {
             {vm.current ? (
               <Paper p="lg" style={{ borderColor: 'var(--mantine-color-teal-5)' }}>
                 <Group gap="md" wrap="nowrap">
-                  <ThemeIcon variant="light" color="teal" size={44} radius="md">
+                  <ThemeIcon color="teal.8" size={44} radius="md">
                     <Icon.driver size={20} />
                   </ThemeIcon>
                   <Box>
@@ -187,18 +185,12 @@ function TruckDetailBody({ truckId }: { truckId: number }) {
               actions={
                 vm.canEdit || vm.canRemove
                   ? (assignment) => (
-                      <>
-                        {vm.canEdit && (
-                          <Button variant="subtle" color="gray" size="compact-xs" leftSection={<Icon.pencil size={13} />} onClick={() => vm.openEdit(assignment)}>
-                            {t('Edit')}
-                          </Button>
-                        )}
-                        {vm.canRemove && (
-                          <Button variant="subtle" color="red" size="compact-xs" leftSection={<Icon.trash size={13} />} onClick={() => confirmRemove(assignment)}>
-                            {t('Remove')}
-                          </Button>
-                        )}
-                      </>
+                      <ActionMenu
+                        items={[
+                          actions.edit(() => vm.openEdit(assignment), { hidden: !vm.canEdit }),
+                          actions.remove(() => confirmRemove(assignment), { hidden: !vm.canRemove }),
+                        ]}
+                      />
                     )
                   : undefined
               }
@@ -225,14 +217,9 @@ function TruckDetailBody({ truckId }: { truckId: number }) {
         <Stack gap="sm">
           {vm.editError && <Alert color="red">{t(vm.editError)}</Alert>}
           <AssignmentFields form={vm.editForm} onChange={vm.setEditForm} />
-          <Group justify="flex-end" gap="sm" mt="sm">
-            <Button variant="default" onClick={vm.closeEdit} disabled={vm.savingEdit}>
-              {t('Cancel')}
-            </Button>
-            <Button loading={vm.savingEdit} disabled={!vm.editForm.driverId || !vm.editForm.startDate} onClick={() => void vm.saveEdit()}>
-              {t('Save')}
-            </Button>
-          </Group>
+          <Box mt="sm">
+            <FormActions onCancel={vm.closeEdit} saving={vm.savingEdit} disabled={!vm.editForm.driverId || !vm.editForm.startDate} onSubmit={() => void vm.saveEdit()} />
+          </Box>
         </Stack>
       </Modal>
     </>

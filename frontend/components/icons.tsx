@@ -79,6 +79,22 @@ export const Icon = {
     svg(size, <><path d="M4 20l.9-4.3 10-10 3.4 3.4-10 10L4 20z" /><path d="M13.6 6.4l3.4 3.4" /></>),
   trash: ({ size = 18 }: IconProps) =>
     svg(size, <><path d="M4.5 7h15" /><path d="M9.5 7V4.8c0-.7.5-1.3 1.2-1.3h2.6c.7 0 1.2.6 1.2 1.3V7" /><path d="M6.5 7l.9 12.1c.06.8.7 1.4 1.5 1.4h6.2c.8 0 1.44-.6 1.5-1.4L17.5 7" /><path d="M10.2 11v6M13.8 11v6" /></>),
+  dots: ({ size = 18 }: IconProps) =>
+    svg(size, <><circle cx="12" cy="5.5" r="1.4" fill="currentColor" /><circle cx="12" cy="12" r="1.4" fill="currentColor" /><circle cx="12" cy="18.5" r="1.4" fill="currentColor" /></>),
+  copy: ({ size = 18 }: IconProps) =>
+    svg(size, <><rect x="8.5" y="8.5" width="12" height="12" rx="1.5" /><path d="M15.5 8.5V5a1.5 1.5 0 0 0-1.5-1.5H5A1.5 1.5 0 0 0 3.5 5v9A1.5 1.5 0 0 0 5 15.5h3.5" /></>),
+  download: ({ size = 18 }: IconProps) =>
+    svg(size, <><path d="M12 3.5v12" /><path d="M7 11l5 5 5-5" /><path d="M4 20.5h16" /></>),
+  check: ({ size = 18 }: IconProps) =>
+    svg(size, <path d="M4.5 12.5l5 5 10-11" />),
+  send: ({ size = 18 }: IconProps) =>
+    svg(size, <><path d="M21 3 10 14" /><path d="M21 3l-7 18-4-7-7-4 18-7z" /></>),
+  chevronStart: ({ size = 18 }: IconProps) =>
+    svg(size, <path d="M15 5.5 8.5 12l6.5 6.5" />),
+  chevronEnd: ({ size = 18 }: IconProps) =>
+    svg(size, <path d="M9 5.5 15.5 12 9 18.5" />),
+  arrowEnd: ({ size = 18 }: IconProps) =>
+    svg(size, <><path d="M4.5 12h15" /><path d="M13.5 6l6 6-6 6" /></>),
 };
 
 export type IconName = keyof typeof Icon;

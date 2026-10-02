@@ -6,9 +6,8 @@ import { errorMessage } from '../../lib/api/errors';
 import { PermissionDto, RoleDto, rolesApi } from '../../lib/api/roles.api';
 import { newIdempotencyKey } from '../../lib/idempotency';
 import { useT } from '../../lib/language-context';
-import { usePagePermissions } from '../auth/session-provider';
-import { useResourceList, useResourceMutations } from '../crud/crud.queries';
-import { useListControls } from '../crud/use-list-controls';
+import { useResourceMutations } from '../crud/crud.queries';
+import { useNotifiedRemove, usePagedList } from '../crud/use-paged-list';
 import { emptyPermissions, fillPermissions } from './PermissionMatrix';
 import { usePermissionModules } from './roles.queries';
 
@@ -23,9 +22,7 @@ interface Editor {
 /** State and actions of the Roles screen: the paged list and the name + permission-matrix editor. */
 export function useRolesViewModel() {
   const t = useT();
-  const allowed = usePagePermissions();
-  const controls = useListControls();
-  const list = useResourceList(rolesApi, controls.query, allowed.view);
+  const list = usePagedList(rolesApi, { errorFallback: 'Failed to load roles.' });
   const modules = usePermissionModules();
   const mutations = useResourceMutations(rolesApi);
 
@@ -52,7 +49,6 @@ export function useRolesViewModel() {
   const saving = mutations.create.isPending || mutations.update.isPending;
   const { mutateAsync: create } = mutations.create;
   const { mutateAsync: update } = mutations.update;
-  const { mutateAsync: removeAsync } = mutations.remove;
 
   const save = useCallback(async () => {
     if (!editor || saving) return;
@@ -72,30 +68,16 @@ export function useRolesViewModel() {
     }
   }, [editor, saving, create, update, t]);
 
-  const remove = useCallback(
-    async (role: RoleDto) => {
-      try {
-        await removeAsync(role.id);
-        notifications.show({ color: 'teal', message: t('Record deleted.') });
-      } catch (error) {
-        notifications.show({ color: 'red', title: t('Delete failed.'), message: t(errorMessage(error, 'Delete failed.')) });
-      }
-    },
-    [removeAsync, t],
-  );
+  const removeById = useNotifiedRemove(mutations.remove.mutateAsync);
+  const remove = useCallback((role: RoleDto) => removeById(role.id), [removeById]);
 
   return {
-    allowed,
-    controls,
-    rows: list.data?.items,
-    pagination: list.data?.pagination,
-    loading: list.isPending && allowed.view,
-    fetching: list.isFetching && !list.isPending,
-    listError: list.isError ? errorMessage(list.error, 'Failed to load roles.') : null,
+    ...list,
     modulesReady: !!moduleList,
     editor,
     formError,
     saving,
+    deletingId: mutations.remove.isPending ? mutations.remove.variables : null,
     openCreate,
     openEdit,
     close,

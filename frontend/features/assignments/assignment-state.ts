@@ -9,4 +9,3 @@ export function assignmentState(assignment: AssignmentDto): AssignmentState {
 
 /** Status code per state, rendered through StatusBadge (label + colour). */
 export const STATE_STATUS: Record<AssignmentState, string> = { active: 'ACTIVE', upcoming: 'UPCOMING', completed: 'COMPLETED' };
-export const STATE_COLOR: Record<AssignmentState, string> = { active: 'teal', upcoming: 'orange', completed: 'blue' };
