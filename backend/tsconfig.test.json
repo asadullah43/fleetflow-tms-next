@@ -23,6 +23,7 @@
     "validations",
     "test",
     "prisma/seed.ts",
+    "prisma/seed-dev-data.ts",
     "technical_dev_docs"
   ]
 }
