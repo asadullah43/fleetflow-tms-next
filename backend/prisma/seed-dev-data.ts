@@ -261,7 +261,14 @@ async function main() {
       );
     }
 
-    for (let i = 0; i < 10; i++) await sparePartTransactionsService.create({ sparePartId: pick(spareParts, i).id, transactionType: pick(['IN', 'OUT'], i), quantity: num(1, 10, i), referenceNote: 'Dev seed stock movement' });
+    for (let i = 0; i < 10; i++) {
+      try {
+        await sparePartTransactionsService.create({ sparePartId: pick(spareParts, i).id, transactionType: pick(['IN', 'OUT'], i), quantity: num(1, 10, i), referenceNote: 'Dev seed stock movement' });
+      } catch {
+        // OUT exceeding what's left on hand (e.g. a prior run already took stock) - correct
+        // behaviour from the real stock-safety check, not an error; just skip this one.
+      }
+    }
 
     for (let i = 0; i < 15; i++) {
       await workOrdersService.create({
