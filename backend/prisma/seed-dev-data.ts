@@ -72,6 +72,10 @@ async function main() {
   console.log(`Seeding dev data into company #${company.id} (${company.name})...`);
 
   await runWithTenant(company.id, async () => {
+    // Vehicle inspections are signed off by a User (inspectorId -> User),
+    // not a Driver - use whichever users already exist (at least the admin).
+    const users = await prisma.user.findMany({ select: { id: true } });
+
     // ── Master data (no dependencies) ────────────────────────────────
     const trucks = [];
     for (let i = 1; i <= 15; i++) trucks.push(await trucksService.create({ truckNumber: `TRK-${String(i).padStart(3, '0')}`, truckType: pick(['Flatbed', 'Reefer', 'Box Truck', 'Tanker', 'Lowboy'], i), status: 'ACTIVE' }));
@@ -211,7 +215,7 @@ async function main() {
 
     for (let i = 0; i < 10; i++) await maintenanceSchedulesService.create({ truckId: pick(trucks, i).id, maintenanceType: pick(['Oil Change', 'Tyre Rotation', 'Full Service', 'Brake Inspection'], i), mileageInterval: '10000', status: 'ACTIVE' });
 
-    for (let i = 0; i < 15; i++) await vehicleInspectionsService.create({ truckId: pick(trucks, i).id, inspectorId: pick(drivers, i).id, inspectDate: dateOffset(-num(0, 15, i)), odometer: String(num(10000, 200000, i * 11)), result: pick(['PASS', 'FAIL', 'PASS'], i) });
+    for (let i = 0; i < 15; i++) await vehicleInspectionsService.create({ truckId: pick(trucks, i).id, inspectorId: pick(users, i).id, inspectDate: dateOffset(-num(0, 15, i)), odometer: String(num(10000, 200000, i * 11)), result: pick(['PASS', 'FAIL', 'PASS'], i) });
 
     for (let i = 0; i < 10; i++) await workshopExpensesService.create({ truckId: pick(trucks, i).id, category: pick(['Fuel', 'Tyres', 'Parts', 'Labor', 'Insurance'], i), amount: String(num(100, 3000, i * 5)), expenseDate: dateOffset(-num(0, 30, i)) });
 
