@@ -66,6 +66,14 @@ message CreateWorkOrderRequest {
   optional string parts_cost = 13;
   optional string other_cost = 14;
   optional string notes = 15;
+  // Inventory used, taken from stock as the order is created (all lines or none); added to the parts cost.
+  repeated WorkOrderPartLine parts = 16;
+}
+// One inventory line: an item, the warehouse it is taken from, how many.
+message WorkOrderPartLine {
+  int32 item_id = 1;
+  int32 warehouse_id = 2;
+  int32 quantity = 3;
 }
 message UpdateWorkOrderRequest {
   int32 id = 1;
@@ -181,61 +189,6 @@ message UpdateVehicleInspectionRequest {
   optional string attachments = 8;
 }
 
-// ---- Spare parts ----
-service SparePartsService {
-  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: SparePartList
-  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: SparePart
-  rpc Create(CreateSparePartRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: SparePart
-  rpc Update(UpdateSparePartRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: SparePart
-  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
-}
-
-message SparePart {
-  int32 id = 1;
-  string name = 2;
-  optional string name_ar = 3;
-  optional string part_number = 4;
-  optional string category = 5;
-  int32 quantity = 6;
-  int32 minimum_stock = 7;
-  string unit_cost = 8;
-  optional int32 supplier_id = 9;
-  string status = 10;
-  optional string supplier_name = 11;
-  optional string supplier_name_ar = 12;
-}
-message SparePartList {
-  repeated SparePart items = 1;
-  fleetflow.common.Pagination pagination = 100;
-}
-message CreateSparePartRequest {
-  string name = 1;
-  optional string language = 2;
-  optional string part_number = 3;
-  optional string category = 4;
-  optional int32 quantity = 5;
-  optional int32 minimum_stock = 6;
-  optional string unit_cost = 7;
-  optional int32 supplier_id = 8;
-  optional string status = 9;
-  // Arabic value entered alongside the English one (preferred over the legacy `language` tag).
-  optional string name_ar = 50;
-}
-message UpdateSparePartRequest {
-  int32 id = 1;
-  optional string name = 2;
-  optional string language = 3;
-  optional string part_number = 4;
-  optional string category = 5;
-  optional int32 quantity = 6;
-  optional int32 minimum_stock = 7;
-  optional string unit_cost = 8;
-  optional int32 supplier_id = 9;
-  optional string status = 10;
-  // Arabic value entered alongside the English one (preferred over the legacy `language` tag).
-  optional string name_ar = 50;
-}
-
 // ---- Workshop expenses ----
 service WorkshopExpensesService {
   rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: WorkshopExpenseList
@@ -277,22 +230,30 @@ message UpdateWorkshopExpenseRequest {
   optional string expense_date = 7;
 }
 
-// ---- Work order parts (line items on a WorkOrder) ----
+// ---- Work order parts: inventory used on a work order ----
+// Each line draws from one warehouse, is valued at the item's unit cost at the
+// time, and adds to the work order's parts cost. Lines are added or removed
+// (removing returns the stock to its warehouse), never edited.
 service WorkOrderPartsService {
   rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: WorkOrderPartList
   rpc Create(CreateWorkOrderPartRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: WorkOrderPart
-  rpc Update(UpdateWorkOrderPartRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: WorkOrderPart
   rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
 }
 
 message WorkOrderPart {
   int32 id = 1;
   int32 work_order_id = 2;
-  int32 spare_part_id = 3;
-  int32 quantity = 4;
-  string unit_cost = 5;
-  string total_cost = 6;
-  optional string spare_part_name = 7;
+  int32 item_id = 3;
+  int32 warehouse_id = 4;
+  int32 quantity = 5;
+  string unit_cost = 6;
+  string total_cost = 7;
+  optional string item_name = 8;
+  optional string item_name_ar = 9;
+  optional string item_number = 10;
+  optional string warehouse_name = 11;
+  optional string warehouse_name_ar = 12;
+  optional string created_at = 13;
 }
 message WorkOrderPartList {
   repeated WorkOrderPart items = 1;
@@ -300,14 +261,9 @@ message WorkOrderPartList {
 }
 message CreateWorkOrderPartRequest {
   int32 work_order_id = 1;
-  int32 spare_part_id = 2;
-  int32 quantity = 3;
-  string unit_cost = 4;
-}
-message UpdateWorkOrderPartRequest {
-  int32 id = 1;
-  optional int32 quantity = 2;
-  optional string unit_cost = 3;
+  int32 item_id = 2;
+  int32 warehouse_id = 3; // which warehouse the stock is taken from
+  int32 quantity = 4;
 }
 
 // ---- Inspection checklist items ----
@@ -341,30 +297,4 @@ message UpdateInspectionItemRequest {
   int32 id = 1;
   optional string status = 2;
   optional string defect = 3;
-}
-
-// ---- Spare part stock transactions ----
-service SparePartTransactionsService {
-  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: SparePartTransactionList
-  rpc Create(CreateSparePartTransactionRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: SparePartTransaction
-  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
-}
-
-message SparePartTransaction {
-  int32 id = 1;
-  int32 spare_part_id = 2;
-  string transaction_type = 3; // IN | OUT | ADJUSTMENT
-  int32 quantity = 4;
-  optional string reference_note = 5;
-  optional string spare_part_name = 6;
-}
-message SparePartTransactionList {
-  repeated SparePartTransaction items = 1;
-  fleetflow.common.Pagination pagination = 100;
-}
-message CreateSparePartTransactionRequest {
-  int32 spare_part_id = 1;
-  string transaction_type = 2;
-  int32 quantity = 3;
-  optional string reference_note = 4;
 }

@@ -1,5 +1,5 @@
-import { workOrdersController, maintenanceSchedulesController, vehicleInspectionsController, sparePartsController, workshopExpensesController, workOrderPartsController, inspectionItemsController, sparePartTransactionsController } from '../controllers/workshop.controller.js';
-import { createInspectionItemRequest, createMaintenanceScheduleRequest, createSparePartRequest, createSparePartTransactionRequest, createVehicleInspectionRequest, createWorkOrderPartRequest, createWorkOrderRequest, createWorkshopExpenseRequest, updateInspectionItemRequest, updateMaintenanceScheduleRequest, updateSparePartRequest, updateVehicleInspectionRequest, updateWorkOrderPartRequest, updateWorkOrderRequest, updateWorkshopExpenseRequest } from '../validations/workshop.validation.js';
+import { workOrdersController, maintenanceSchedulesController, vehicleInspectionsController, workshopExpensesController, workOrderPartsController, inspectionItemsController } from '../controllers/workshop.controller.js';
+import { createInspectionItemRequest, createMaintenanceScheduleRequest, createVehicleInspectionRequest, createWorkOrderPartRequest, createWorkOrderRequest, createWorkshopExpenseRequest, updateInspectionItemRequest, updateMaintenanceScheduleRequest, updateVehicleInspectionRequest, updateWorkOrderRequest, updateWorkshopExpenseRequest } from '../validations/workshop.validation.js';
 import { crudRoutes } from './crud.routes.js';
 import type { ServiceRoutes } from './router.js';
 
@@ -25,13 +25,6 @@ export const workshopRoutes: ServiceRoutes = {
     createSchema: createVehicleInspectionRequest,
     updateSchema: updateVehicleInspectionRequest,
   }),
-  'fleetflow.workshop.SparePartsService': crudRoutes({
-    type: 'fleetflow.workshop.SparePart',
-    module: 'workshop',
-    controller: sparePartsController,
-    createSchema: createSparePartRequest,
-    updateSchema: updateSparePartRequest,
-  }),
   'fleetflow.workshop.WorkshopExpensesService': crudRoutes({
     type: 'fleetflow.workshop.WorkshopExpense',
     module: 'workshop',
@@ -44,8 +37,7 @@ export const workshopRoutes: ServiceRoutes = {
     module: 'workshop',
     controller: workOrderPartsController,
     createSchema: createWorkOrderPartRequest,
-    updateSchema: updateWorkOrderPartRequest,
-    operations: ['list', 'create', 'update', 'delete'],
+    operations: ['list', 'create', 'delete'],
   }),
   'fleetflow.workshop.InspectionItemsService': crudRoutes({
     type: 'fleetflow.workshop.InspectionItem',
@@ -54,12 +46,5 @@ export const workshopRoutes: ServiceRoutes = {
     createSchema: createInspectionItemRequest,
     updateSchema: updateInspectionItemRequest,
     operations: ['list', 'create', 'update', 'delete'],
-  }),
-  'fleetflow.workshop.SparePartTransactionsService': crudRoutes({
-    type: 'fleetflow.workshop.SparePartTransaction',
-    module: 'workshop',
-    controller: sparePartTransactionsController,
-    createSchema: createSparePartTransactionRequest,
-    operations: ['list', 'create', 'delete'],
   }),
 };

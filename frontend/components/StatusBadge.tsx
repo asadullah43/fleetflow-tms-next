@@ -2,7 +2,7 @@
 
 import { Badge } from '@mantine/core';
 import { useT } from '../lib/language-context';
-import { STATUS_COLOR, statusLabel } from '../lib/status';
+import { statusColor, statusLabel } from '../lib/status';
 
 export { statusLabel };
 
@@ -10,5 +10,5 @@ export { statusLabel };
 export function StatusBadge({ status }: { status: string }) {
   const t = useT();
   if (!status) return null;
-  return <Badge color={STATUS_COLOR[status] ?? 'gray'}>{t(statusLabel(status))}</Badge>;
+  return <Badge color={statusColor(status)}>{t(statusLabel(status))}</Badge>;
 }

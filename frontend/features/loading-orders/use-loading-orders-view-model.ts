@@ -2,20 +2,22 @@
 
 import { useCallback, useState } from 'react';
 import { notifications } from '@mantine/notifications';
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { errorMessage } from '../../lib/api/errors';
 import { LoadingOrderBatchDto, loadingOrdersApi, NewLoadingOrders } from '../../lib/api/loading-orders.api';
 import { queryKeys } from '../../lib/api/query-keys';
 import { newIdempotencyKey } from '../../lib/idempotency';
 import { useLanguage, useT } from '../../lib/language-context';
-import { usePagePermissions } from '../auth/session-provider';
-import { useListControls } from '../crud/use-list-controls';
+import { useNotifiedRemove, usePagedList } from '../crud/use-paged-list';
 import { buildLoadingOrderPdf } from './loading-order-pdf';
 
 export const MAX_QUANTITY = 200;
 
 const emptyForm = () => ({ pickupLocationId: '', deliveryLocationId: '', customerId: '', cargoTypeId: '', quantity: '1' });
 type Form = ReturnType<typeof emptyForm>;
+
+/** The list shows one row per generated batch. */
+const BATCHES = { key: loadingOrdersApi.key, list: loadingOrdersApi.listGrouped };
 
 /**
  * "Generate" creates N individually-serialled slips sharing one batch and
@@ -25,16 +27,8 @@ type Form = ReturnType<typeof emptyForm>;
 export function useLoadingOrdersViewModel() {
   const t = useT();
   const { language } = useLanguage();
-  const allowed = usePagePermissions();
   const queryClient = useQueryClient();
-  const controls = useListControls();
-
-  const list = useQuery({
-    queryKey: queryKeys.list(loadingOrdersApi.key, controls.query),
-    queryFn: () => loadingOrdersApi.listGrouped(controls.query),
-    placeholderData: keepPreviousData,
-    enabled: allowed.view,
-  });
+  const list = usePagedList(BATCHES, { errorFallback: 'Failed to load loading orders.' });
 
   const [form, setForm] = useState<Form>(emptyForm);
   // One key per filled-in form: pressing Generate twice cannot issue two runs of serial numbers.
@@ -128,21 +122,12 @@ export function useLoadingOrdersViewModel() {
 
   const removeBatch = useMutation({
     mutationFn: (batchId: number) => loadingOrdersApi.removeBatch(batchId),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.resource(loadingOrdersApi.key) });
-      notifications.show({ color: 'teal', message: t('Record deleted.') });
-    },
-    onError: (error) => notifications.show({ color: 'red', title: t('Delete failed.'), message: t(errorMessage(error, 'Delete failed.')) }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: queryKeys.resource(loadingOrdersApi.key) }),
   });
+  const remove = useNotifiedRemove(removeBatch.mutateAsync);
 
   return {
-    allowed,
-    controls,
-    rows: list.data?.items,
-    pagination: list.data?.pagination,
-    loading: list.isPending && allowed.view,
-    fetching: list.isFetching && !list.isPending,
-    listError: list.isError ? errorMessage(list.error, 'Failed to load loading orders.') : null,
+    ...list,
     form,
     setField,
     formError,
@@ -150,6 +135,7 @@ export function useLoadingOrdersViewModel() {
     submit,
     openingBatchId,
     openPdf,
-    remove: removeBatch.mutate,
+    remove,
+    deletingBatchId: removeBatch.isPending ? removeBatch.variables : null,
   };
 }

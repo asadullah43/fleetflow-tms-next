@@ -4,6 +4,7 @@ import { Alert, Box, Button, Center, FileButton, Group, Image, Loader, Paper, Si
 import { AppShell } from '../../components/AppShell';
 import { PageHeader } from '../../components/PageHeader';
 import { useT } from '../../lib/language-context';
+import { tone } from '../../theme/theme';
 import { SETTINGS_FIELDS, useCompanySettingsViewModel } from './use-company-settings-view-model';
 
 function CompanySettingsBody() {
@@ -50,13 +51,13 @@ function CompanySettingsBody() {
                   <Group gap="xs">
                     <FileButton onChange={(file) => void vm.chooseLogo(file)} accept="image/*" disabled={!vm.canEdit}>
                       {(props) => (
-                        <Button {...props} variant="default" size="xs">
+                        <Button {...props} {...tone.secondary} size="xs">
                           {vm.logoUrl ? t('Replace logo') : t('Upload logo')}
                         </Button>
                       )}
                     </FileButton>
                     {vm.logoUrl && (
-                      <Button variant="subtle" color="red" size="xs" onClick={vm.removeLogo} disabled={!vm.canEdit}>
+                      <Button {...tone.danger} size="xs" onClick={vm.removeLogo} disabled={!vm.canEdit}>
                         {t('Remove')}
                       </Button>
                     )}

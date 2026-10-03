@@ -7,6 +7,7 @@ import { buildLocalizedWriteData } from '../utils/language.js';
 import { fromCents, toCents } from '../utils/money.js';
 import { filter } from '../utils/pagination.js';
 import { createWithSequence } from '../utils/sequence.js';
+import { addToStock, currentUnitCost, takeFromStock } from './inventory.service.js';
 
 /** A cost field: blank means "use the fallback"; anything else must be a valid non-negative amount. */
 function costCents(value: unknown, fallback: number): number {
@@ -37,7 +38,9 @@ const workOrdersRepository = createCrudRepository({
   model: 'workOrder',
   errors: {
     notFound: ErrorCode.WKS_NOT_FOUND,
-    inUse: ErrorCode.SYS_RECORD_IN_USE,
+    // The only reference that blocks a delete is an inventory line (WorkOrderPart: onDelete Restrict). Refused until each
+    // line is removed — which returns its stock — rather than deleting the lines and keeping the stock consumed.
+    inUse: ErrorCode.WKS_HAS_INVENTORY,
     createFailed: ErrorCode.WKS_CREATE_FAILED,
     fetchFailed: ErrorCode.WKS_FETCH_FAILED,
     updateFailed: ErrorCode.WKS_UPDATE_FAILED,
@@ -69,11 +72,36 @@ const workOrdersRepository = createCrudRepository({
   },
 });
 
+interface PartInput {
+  itemId: number;
+  warehouseId: number;
+  quantity: number;
+}
+
+/**
+ * Takes one line's stock out of its warehouse (refused, per warehouse, if
+ * it holds too few) and values it at the item's unit cost. Every way a
+ * work order uses inventory — at creation or later — goes through here.
+ */
+async function consumeLine(tx: any, line: PartInput) {
+  await takeFromStock(tx, line.itemId, line.warehouseId, line.quantity);
+  const unitCost = await currentUnitCost(tx, line.itemId);
+  return { ...line, unitCost, cents: decimalCents(unitCost) * line.quantity };
+}
+
+const usedOn = (orderNumber: string) => `Used on work order ${orderNumber}`;
+
 export const workOrdersService = {
   ...workOrdersRepository,
 
-  /** Order numbers (WO-00007) are assigned here, one running sequence per company. */
+  /**
+   * Order numbers (WO-00007) are assigned here, one running sequence per
+   * company. `parts`: inventory used, taken from stock in the same
+   * transaction as the order is created — all of it, or (one line short
+   * of stock) nothing at all. Their total is added to the parts cost.
+   */
   async create(input: Record<string, any>) {
+    const lines: PartInput[] = input.parts ?? [];
     const laborCost = costCents(input.laborCost, 0);
     const partsCost = costCents(input.partsCost, 0);
     const otherCost = costCents(input.otherCost, 0);
@@ -83,28 +111,58 @@ export const workOrdersService = {
         async () => (await prisma.workOrder.findFirst({ orderBy: { id: 'desc' }, select: { orderNumber: true } }))?.orderNumber,
         (n) => `WO-${String(n).padStart(5, '0')}`,
         (orderNumber) =>
-          prisma.workOrder.create({
-            data: {
-              companyId: currentCompanyId(),
-              orderNumber,
-              truckId: input.truckId,
-              driverId: input.driverId,
-              supplierId: input.supplierId,
-              issue: input.issue,
-              diagnosis: input.diagnosis,
-              description: input.description,
-              priority: input.priority || 'MEDIUM',
-              status,
-              startDate: input.startDate ? new Date(input.startDate) : undefined,
-              completionDate: completionDateFor(status, input.completionDate),
-              odometer: input.odometer || undefined,
-              laborCost: fromCents(laborCost),
-              partsCost: fromCents(partsCost),
-              otherCost: fromCents(otherCost),
-              totalCost: fromCents(laborCost + partsCost + otherCost),
-              notes: input.notes,
-            },
-            include: WO_INCLUDE,
+          prisma.$transaction(async (tx) => {
+            const consumed = [];
+            for (const line of lines) consumed.push(await consumeLine(tx, line));
+            const linesCents = consumed.reduce((sum, line) => sum + line.cents, 0);
+            const companyId = currentCompanyId();
+            // One nested write: the order with its lines and their ledger entries. (Separate writes would fail the
+            // tenant check on foreign keys, which reads committed rows — this order is not committed yet. The items
+            // and warehouses were verified by consumeLine: their stock rows were found and updated in this company.)
+            return tx.workOrder.create({
+              data: {
+                companyId,
+                orderNumber,
+                truckId: input.truckId,
+                driverId: input.driverId,
+                supplierId: input.supplierId,
+                issue: input.issue,
+                diagnosis: input.diagnosis,
+                description: input.description,
+                priority: input.priority || 'MEDIUM',
+                status,
+                startDate: input.startDate ? new Date(input.startDate) : undefined,
+                completionDate: completionDateFor(status, input.completionDate),
+                odometer: input.odometer || undefined,
+                laborCost: fromCents(laborCost),
+                partsCost: fromCents(partsCost + linesCents),
+                otherCost: fromCents(otherCost),
+                totalCost: fromCents(laborCost + partsCost + linesCents + otherCost),
+                notes: input.notes,
+                parts: {
+                  create: consumed.map((line) => ({
+                    companyId,
+                    itemId: line.itemId,
+                    warehouseId: line.warehouseId,
+                    quantity: line.quantity,
+                    unitCost: line.unitCost,
+                    totalCost: fromCents(line.cents),
+                  })),
+                },
+                inventoryTransactions: {
+                  create: consumed.map((line) => ({
+                    companyId,
+                    itemId: line.itemId,
+                    warehouseId: line.warehouseId,
+                    type: 'OUT',
+                    quantity: line.quantity,
+                    unitCost: line.unitCost,
+                    remarks: usedOn(orderNumber),
+                  })),
+                },
+              } as any,
+              include: WO_INCLUDE,
+            });
           }),
       );
       return mapWorkOrder(row);
@@ -161,31 +219,6 @@ export const vehicleInspectionsService = createCrudRepository({
   toUpdate: (input) => blankToUndefined(withDates(input, ['inspectDate']), ['result']),
 });
 
-// ── Spare parts ─────────────────────────────────────────────────────────
-export const sparePartsService = createCrudRepository({
-  model: 'sparePart',
-  errors: {
-    notFound: ErrorCode.WKS_SPK_NOT_FOUND,
-    inUse: ErrorCode.SYS_RECORD_IN_USE,
-    createFailed: ErrorCode.WKS_SPK_CREATE_FAILED,
-    fetchFailed: ErrorCode.WKS_SPK_FETCH_FAILED,
-    updateFailed: ErrorCode.WKS_SPK_UPDATE_FAILED,
-    deleteFailed: ErrorCode.WKS_SPK_DELETE_FAILED,
-    duplicate: ErrorCode.WKS_SPK_DUPLICATE,
-  },
-  include: { supplier: { select: { name: true, nameAr: true } } },
-  list: {
-    searchFields: ['name', 'nameAr', 'partNumber', 'category', 'supplier.name'],
-    sortFields: { id: 'id', name: 'name', partNumber: 'partNumber', quantity: 'quantity', unitCost: 'unitCost', status: 'status' },
-    defaultSort: { field: 'id', order: 'desc' },
-    filters: { status: filter.equals('status'), category: filter.equals('category'), supplierId: filter.id('supplierId') },
-  },
-  map: (row) => ({ ...row, supplierName: row.supplier?.name, supplierNameAr: row.supplier?.nameAr }),
-  // Part numbers are unique per company but optional: blank means "none".
-  toCreate: (input) => blankToUndefined(buildLocalizedWriteData(input, true), ['partNumber', 'unitCost']),
-  toUpdate: (input) => blankToUndefined(blankToNull(buildLocalizedWriteData(input, false), ['partNumber']), ['unitCost']),
-});
-
 // ── Workshop expenses ───────────────────────────────────────────────────
 export const workshopExpensesService = createCrudRepository({
   model: 'workshopExpense',
@@ -215,19 +248,16 @@ export const workshopExpensesService = createCrudRepository({
   toUpdate: (input) => withDates(input, ['expenseDate']),
 });
 
-// ── Line items: work order parts, inspection items, stock movements ─────
-const PART_NAME = { sparePart: { select: { name: true, nameAr: true } } } as const;
-const withPartName = (row: any) => ({ ...row, sparePartName: row.sparePart?.name, sparePartNameAr: row.sparePart?.nameAr });
-
-/** Takes `quantity` out of stock, refusing to go below zero. Runs inside the caller's transaction. */
-async function takeFromStock(tx: any, sparePartId: number, quantity: number): Promise<void> {
-  if (quantity <= 0) return;
-  const changed = await tx.sparePart.updateMany({ where: { id: sparePartId, quantity: { gte: quantity } }, data: { quantity: { decrement: quantity } } });
-  if (changed.count === 0) {
-    const exists = await tx.sparePart.count({ where: { id: sparePartId } });
-    throw AppError.from(exists ? ErrorCode.WKS_SPK_LOW_STOCK : ErrorCode.WKS_SPK_NOT_FOUND, exists ? 400 : 404);
-  }
-}
+// ── Line items: inventory used on a work order, inspection items ───────
+const PART_INCLUDE = { item: { select: { name: true, nameAr: true, itemNumber: true } }, warehouse: { select: { name: true, nameAr: true } } } as const;
+const mapPart = (row: any) => ({
+  ...row,
+  itemName: row.item?.name,
+  itemNameAr: row.item?.nameAr,
+  itemNumber: row.item?.itemNumber,
+  warehouseName: row.warehouse?.name,
+  warehouseNameAr: row.warehouse?.nameAr,
+});
 
 const workOrderPartsRepository = createCrudRepository({
   model: 'workOrderPart',
@@ -239,58 +269,99 @@ const workOrderPartsRepository = createCrudRepository({
     updateFailed: ErrorCode.WKS_UPDATE_FAILED,
     deleteFailed: ErrorCode.WKS_DELETE_FAILED,
   },
-  include: PART_NAME,
+  include: PART_INCLUDE,
   list: {
-    searchFields: ['sparePart.name', 'sparePart.partNumber'],
+    searchFields: ['item.name', 'item.nameAr', 'item.itemNumber', 'warehouse.name'],
     sortFields: { id: 'id', quantity: 'quantity', totalCost: 'totalCost' },
     defaultSort: { field: 'id', order: 'desc' },
-    filters: { workOrderId: filter.id('workOrderId'), sparePartId: filter.id('sparePartId') },
+    filters: { workOrderId: filter.id('workOrderId'), itemId: filter.id('itemId'), warehouseId: filter.id('warehouseId') },
   },
-  map: withPartName,
+  map: mapPart,
 });
 
-function lineTotal(unitCost: string, quantity: number): string {
-  const cents = toCents(unitCost);
-  if (cents === null) throw AppError.from(ErrorCode.SYS_VALIDATION_ERROR, 400);
-  return fromCents(cents * quantity);
+/** Moves a work order's parts cost (and so its total) by `cents`, inside the caller's transaction. */
+function adjustWorkOrderCost(tx: any, workOrderId: number, cents: number) {
+  const amount = fromCents(Math.abs(cents));
+  const change = cents >= 0 ? { increment: amount } : { decrement: amount };
+  return tx.workOrder.update({ where: { id: workOrderId }, data: { partsCost: change, totalCost: change } });
 }
 
+/**
+ * Inventory used on a repair. Each line names the warehouse it was taken
+ * from (an item can be stocked in several, with separate quantities), is
+ * valued at the item's unit cost at the time, and adds that amount to the
+ * work order's parts cost and total. Lines are added or removed, not
+ * edited: removing one puts the stock back where it came from and takes
+ * its amount off the work order. Every line is also an OUT (or, removed,
+ * an IN) in the inventory ledger, linked to the work order.
+ */
 export const workOrderPartsService = {
   list: workOrderPartsRepository.list,
-  remove: workOrderPartsRepository.remove,
 
-  /** Using a part on a work order takes it out of stock in the same transaction. */
-  async create(input: { workOrderId: number; sparePartId: number; quantity: number; unitCost: string }) {
-    const totalCost = lineTotal(input.unitCost, input.quantity);
+  async create(input: { workOrderId: number; itemId: number; warehouseId: number; quantity: number }) {
     try {
       const row = await prisma.$transaction(async (tx) => {
-        await takeFromStock(tx, input.sparePartId, input.quantity);
-        return tx.workOrderPart.create({
-          data: { companyId: currentCompanyId(), workOrderId: input.workOrderId, sparePartId: input.sparePartId, quantity: input.quantity, unitCost: input.unitCost, totalCost },
-          include: PART_NAME,
+        const workOrder = await tx.workOrder.findUnique({ where: { id: input.workOrderId }, select: { orderNumber: true } });
+        if (!workOrder) throw AppError.from(ErrorCode.WKS_NOT_FOUND, 404);
+        const { unitCost, cents } = await consumeLine(tx, input);
+        const part = await tx.workOrderPart.create({
+          data: {
+            companyId: currentCompanyId(),
+            workOrderId: input.workOrderId,
+            itemId: input.itemId,
+            warehouseId: input.warehouseId,
+            quantity: input.quantity,
+            unitCost,
+            totalCost: fromCents(cents),
+          },
+          include: PART_INCLUDE,
         });
+        await adjustWorkOrderCost(tx, input.workOrderId, cents);
+        await tx.inventoryTransaction.create({
+          data: {
+            companyId: currentCompanyId(),
+            itemId: input.itemId,
+            warehouseId: input.warehouseId,
+            type: 'OUT',
+            quantity: input.quantity,
+            unitCost,
+            workOrderId: input.workOrderId,
+            remarks: usedOn(workOrder.orderNumber),
+          },
+        });
+        return part;
       });
-      return withPartName(row);
+      return mapPart(row);
     } catch (error) {
       if (error instanceof AppError) throw error;
       throw AppError.from(ErrorCode.WKS_CREATE_FAILED, 500, error);
     }
   },
 
-  async update(id: number, input: { quantity?: number; unitCost?: string }) {
-    const existing = await workOrderPartsRepository.findOne(id);
-    const quantity = input.quantity || existing.quantity;
-    const unitCost = input.unitCost || existing.unitCost.toString();
+  async remove(id: number) {
     try {
-      const row = await prisma.workOrderPart.update({
-        where: { id },
-        data: { quantity, unitCost, totalCost: lineTotal(unitCost, quantity) },
-        include: PART_NAME,
+      await prisma.$transaction(async (tx) => {
+        const part = await tx.workOrderPart.findUnique({ where: { id }, include: { workOrder: { select: { orderNumber: true } } } });
+        if (!part) throw AppError.from(ErrorCode.WKS_PART_NOT_FOUND, 404);
+        await tx.workOrderPart.delete({ where: { id } });
+        await addToStock(tx, part.itemId, part.warehouseId, part.quantity);
+        await adjustWorkOrderCost(tx, part.workOrderId, -decimalCents(part.totalCost));
+        await tx.inventoryTransaction.create({
+          data: {
+            companyId: currentCompanyId(),
+            itemId: part.itemId,
+            warehouseId: part.warehouseId,
+            type: 'IN',
+            quantity: part.quantity,
+            unitCost: part.unitCost,
+            workOrderId: part.workOrderId,
+            remarks: `Returned from work order ${part.workOrder.orderNumber}`,
+          },
+        });
       });
-      return withPartName(row);
     } catch (error) {
       if (error instanceof AppError) throw error;
-      throw AppError.from(ErrorCode.WKS_UPDATE_FAILED, 500, error);
+      throw AppError.from(ErrorCode.WKS_DELETE_FAILED, 500, error);
     }
   },
 };
@@ -314,51 +385,3 @@ export const inspectionItemsService = createCrudRepository({
   toCreate: (input) => ({ ...input, status: input.status || 'PASS' }),
   toUpdate: (input) => blankToUndefined(input, ['status']),
 });
-
-const stockMovementsRepository = createCrudRepository({
-  model: 'sparePartTransaction',
-  errors: {
-    notFound: ErrorCode.WKS_SPK_TX_NOT_FOUND,
-    inUse: ErrorCode.SYS_RECORD_IN_USE,
-    createFailed: ErrorCode.WKS_SPK_TX_CREATE_FAILED,
-    fetchFailed: ErrorCode.WKS_SPK_TX_FETCH_FAILED,
-    updateFailed: ErrorCode.WKS_SPK_TX_CREATE_FAILED,
-    deleteFailed: ErrorCode.WKS_SPK_TX_DELETE_FAILED,
-  },
-  include: PART_NAME,
-  list: {
-    searchFields: ['sparePart.name', 'sparePart.partNumber', 'referenceNote'],
-    sortFields: { id: 'id', quantity: 'quantity', transactionType: 'transactionType', createdAt: 'createdAt' },
-    defaultSort: { field: 'id', order: 'desc' },
-    filters: { sparePartId: filter.id('sparePartId'), transactionType: filter.equals('transactionType') },
-  },
-  map: withPartName,
-});
-
-export const sparePartTransactionsService = {
-  list: stockMovementsRepository.list,
-  remove: stockMovementsRepository.remove,
-
-  /** Records a stock movement and adjusts the part's quantity on hand in the same transaction. */
-  async create(input: { sparePartId: number; transactionType: string; quantity: number; referenceNote?: string }) {
-    const quantity = Math.abs(input.quantity);
-    try {
-      const row = await prisma.$transaction(async (tx) => {
-        if (input.transactionType === 'OUT') {
-          await takeFromStock(tx, input.sparePartId, quantity);
-        } else {
-          await tx.sparePart.update({ where: { id: input.sparePartId }, data: { quantity: { increment: quantity } } });
-        }
-        return tx.sparePartTransaction.create({
-          data: { companyId: currentCompanyId(), sparePartId: input.sparePartId, transactionType: input.transactionType, quantity, referenceNote: input.referenceNote },
-          include: PART_NAME,
-        });
-      });
-      return withPartName(row);
-    } catch (error) {
-      if (error instanceof AppError) throw error;
-      if ((error as { code?: string })?.code === 'P2025') throw AppError.from(ErrorCode.WKS_SPK_NOT_FOUND, 404, error);
-      throw AppError.from(ErrorCode.WKS_SPK_TX_CREATE_FAILED, 500, error);
-    }
-  },
-};

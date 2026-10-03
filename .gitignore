@@ -9,6 +9,16 @@ node_modules/
 # Backend build output & generated Prisma client
 backend/dist/
 backend/generated/
+backend/src/generated/
+**/generated/prisma/
+
+# Database dumps/backups - never commit real data.
+# Scoped to dump filenames only, NOT backend/prisma/migrations/**/*.sql -
+# those are tracked on purpose and must never be gitignored.
+/backup.sql
+/*.sql
+backup*.sql
+*.dump
 
 # Frontend build output & generated proto client
 frontend/.next/
@@ -19,6 +29,9 @@ frontend/tsconfig.tsbuildinfo
 # Proto codegen output that isn't backend/frontend-specific
 proto/**/*.js
 proto/**/*.d.ts
+
+# Uploaded files from running the backend locally (UPLOADS_DIR)
+backend/uploads/
 
 # Logs
 *.log

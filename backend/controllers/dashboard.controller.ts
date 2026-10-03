@@ -6,4 +6,5 @@ export const dashboardController = {
   getHrSummary: (() => dashboardService.getHrSummary()) as Controller,
   getWorkshopSummary: (() => dashboardService.getWorkshopSummary()) as Controller,
   getFleetSummary: (() => dashboardService.getFleetSummary()) as Controller,
+  getInventorySummary: (() => dashboardService.getInventorySummary()) as Controller,
 };

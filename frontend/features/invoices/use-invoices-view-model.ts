@@ -6,9 +6,7 @@ import { errorMessage } from '../../lib/api/errors';
 import { InvoiceDto, invoicesApi } from '../../lib/api/invoices.api';
 import { newIdempotencyKey } from '../../lib/idempotency';
 import { useT } from '../../lib/language-context';
-import { usePagePermissions } from '../auth/session-provider';
-import { useResourceList } from '../crud/crud.queries';
-import { useListControls } from '../crud/use-list-controls';
+import { useNotifiedRemove, usePagedList } from '../crud/use-paged-list';
 import { DraftLine, filledLines, lineProblems, previewTotals } from './invoice-totals';
 import { useInvoiceMutations } from './invoices.queries';
 
@@ -28,9 +26,7 @@ const newDraft = (): Draft => ({ customerId: '', fromDate: '', toDate: '', dueDa
 /** State and actions of the Invoices screen: the paged list, the new-invoice draft, and the open invoice's actions. */
 export function useInvoicesViewModel() {
   const t = useT();
-  const allowed = usePagePermissions();
-  const controls = useListControls();
-  const list = useResourceList(invoicesApi, controls.query, allowed.view);
+  const list = usePagedList(invoicesApi, { errorFallback: 'Failed to load invoices.' });
   const mutations = useInvoiceMutations();
 
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -107,26 +103,28 @@ export function useInvoicesViewModel() {
   const markPaid = useCallback(() => runOnViewing(markPaidAsync, 'Failed to mark as paid.'), [runOnViewing, markPaidAsync]);
   const submitToZatca = useCallback(() => runOnViewing(submitAsync, 'ZATCA submission failed.'), [runOnViewing, submitAsync]);
 
-  const remove = useCallback(
-    async (invoice: InvoiceDto) => {
+  /** The same status actions, straight from a list row's menu; the outcome is reported as a notice. */
+  const runOnRow = useCallback(
+    async (invoice: InvoiceDto, action: (id: number) => Promise<InvoiceDto>, success: string, fallback: string) => {
       try {
-        await removeAsync(invoice.id);
-        notifications.show({ color: 'teal', message: t('Record deleted.') });
+        await action(invoice.id);
+        notifications.show({ color: 'teal', message: t(success) });
       } catch (error) {
-        notifications.show({ color: 'red', title: t('Delete failed.'), message: t(errorMessage(error, 'Delete failed.')) });
+        notifications.show({ color: 'red', message: t(errorMessage(error, fallback)) });
       }
     },
-    [removeAsync, t],
+    [t],
   );
+  const markRowPaid = useCallback((invoice: InvoiceDto) => runOnRow(invoice, markPaidAsync, 'Marked as paid.', 'Failed to mark as paid.'), [runOnRow, markPaidAsync]);
+  const submitRowToZatca = useCallback((invoice: InvoiceDto) => runOnRow(invoice, submitAsync, 'Submitted to ZATCA.', 'ZATCA submission failed.'), [runOnRow, submitAsync]);
+
+  const removeById = useNotifiedRemove(removeAsync);
+  const remove = useCallback((invoice: InvoiceDto) => removeById(invoice.id), [removeById]);
+
+  const pendingId = (mutation: { isPending: boolean; variables?: number }) => (mutation.isPending ? mutation.variables : null);
 
   return {
-    allowed,
-    controls,
-    rows: list.data?.items,
-    pagination: list.data?.pagination,
-    loading: list.isPending && allowed.view,
-    fetching: list.isFetching && !list.isPending,
-    listError: list.isError ? errorMessage(list.error, 'Failed to load invoices.') : null,
+    ...list,
     draft,
     draftErrors,
     lineErrors,
@@ -147,6 +145,15 @@ export function useInvoicesViewModel() {
     closeView,
     markPaid,
     submitToZatca,
+    markRowPaid,
+    submitRowToZatca,
+    /** Row whose status action or delete is running (its menu shows a spinner). */
+    busyId: pendingId(mutations.markPaid) ?? pendingId(mutations.submitToZatca) ?? pendingId(mutations.remove),
     remove,
   };
+}
+
+/** Not yet submitted, or a previous attempt needs redoing. */
+export function canSubmitToZatca(invoice: InvoiceDto): boolean {
+  return !invoice.zatcaStatus || invoice.zatcaStatus === 'PENDING_SIGN' || invoice.zatcaStatus === 'FAILED';
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { Checkbox, Table } from '@mantine/core';
+import { Checkbox, Table, Text } from '@mantine/core';
 import type { PermissionDto } from '../../lib/api/roles.api';
 import { useT } from '../../lib/language-context';
 import { formatModule } from '../../lib/permissions';
@@ -25,13 +25,28 @@ export function fillPermissions(modules: string[], existing: PermissionDto[]): P
   return emptyPermissions(modules).map((blank) => ({ ...blank, ...byModule.get(blank.module) }));
 }
 
-/** The module × view/add/edit/delete grid, used for roles and for API keys. */
+const MIN_HEIGHT = 180;
+
+/** What the flags mean where it isn't the usual view / add / edit / delete of records. */
+const MODULE_NOTES: Record<string, string> = {
+  leaveRequests: 'Add = apply for leave · Edit = approve or reject',
+};
+
+/**
+ * The module × view/add/edit/delete grid, used for roles and for API keys.
+ * It takes its full height when there is room and scrolls (header row
+ * pinned) when its parent column is shorter — see PermissionsFormModal.
+ * Never below MIN_HEIGHT: on a tiny screen the whole modal scrolls instead.
+ */
 export function PermissionMatrix({ value, onChange }: { value: PermissionDto[]; onChange: (next: PermissionDto[]) => void }) {
   const t = useT();
   const toggle = (module: string, flag: Flag) => onChange(value.map((row) => (row.module === module ? { ...row, [flag]: !row[flag] } : row)));
 
   return (
-    <Table.ScrollContainer minWidth={420} mah={360}>
+    // type="native": the container itself is the scroll box, so shrinking it (flex) is enough to make it scroll.
+    // (The default ScrollArea sizes its viewport as height: 100%, which a parent with only a max-height can't resolve —
+    // the rows were clipped with nothing to scroll; the old `mah` cap had the same defect.)
+    <Table.ScrollContainer type="native" minWidth={420} style={{ flex: '0 1 auto', minHeight: MIN_HEIGHT }}>
       <Table withTableBorder verticalSpacing={6} stickyHeader>
         <Table.Thead>
           <Table.Tr>
@@ -46,7 +61,14 @@ export function PermissionMatrix({ value, onChange }: { value: PermissionDto[]; 
         <Table.Tbody>
           {value.map((row) => (
             <Table.Tr key={row.module}>
-              <Table.Td>{t(formatModule(row.module))}</Table.Td>
+              <Table.Td>
+                {t(formatModule(row.module))}
+                {MODULE_NOTES[row.module] && (
+                  <Text size="xs" c="dimmed">
+                    {t(MODULE_NOTES[row.module])}
+                  </Text>
+                )}
+              </Table.Td>
               {FLAGS.map(({ flag, label }) => (
                 <Table.Td key={flag}>
                   <Checkbox

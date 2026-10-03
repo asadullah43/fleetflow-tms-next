@@ -5,6 +5,7 @@ import { Loader, Select } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { CrudApi } from '../lib/api/crud-api';
+import { useResourceDetail } from '../features/crud/crud.queries';
 import { queryKeys } from '../lib/api/query-keys';
 import { Language, useLanguage, useT } from '../lib/language-context';
 
@@ -38,27 +39,30 @@ interface AsyncSelectProps {
 
 const SEARCH_DEBOUNCE_MS = 300;
 const OPTIONS_PER_SEARCH = 20;
+const LOOKUP_STALE_MS = 5 * 60_000;
 
 /**
  * A dropdown that searches on the server as you type (debounced), so it
  * works the same with twenty customers or twenty thousand: only the
- * matching page of options is ever loaded. The current value's label is
- * fetched by id when it is not among the loaded options.
+ * matching page of options is ever loaded, and only once the dropdown is
+ * first opened. The current value's label is fetched by id only when it
+ * was not picked from the loaded options (e.g. an edit form's saved value).
  */
 export function AsyncSelect({ lookup, value, onChange, label, placeholder, required, disabled, error, clearable = true, w, ...rest }: AsyncSelectProps) {
   const t = useT();
   const { language } = useLanguage();
   const [search, setSearch] = useState('');
   const [debouncedSearch] = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
+  // Options are only worth loading once someone opens the dropdown: a page full of filters costs nothing until used.
+  const [opened, setOpened] = useState(false);
+  // The row just picked from the options: its label is already known, so it is not fetched again by id.
+  const [picked, setPicked] = useState<{ id: number } | null>(null);
   const selectedId = value ? Number(value) : null;
+  const pickedRow = picked && picked.id === selectedId ? picked : null;
 
-  const selected = useQuery({
-    queryKey: queryKeys.detail(lookup.api.key, selectedId ?? 0),
-    queryFn: () => lookup.api.get(selectedId as number),
-    enabled: selectedId !== null,
-    staleTime: 5 * 60_000,
-  });
-  const selectedLabel = selected.data ? lookup.label(selected.data, language) : '';
+  const selected = useResourceDetail(lookup.api, selectedId ?? 0, { enabled: selectedId !== null && !pickedRow, staleTime: LOOKUP_STALE_MS });
+  const selectedRow = pickedRow ?? selected.data ?? null;
+  const selectedLabel = selectedRow ? lookup.label(selectedRow, language) : '';
 
   // With a value chosen, the input shows that value's label — that is not a search.
   const term = debouncedSearch.trim() === selectedLabel ? '' : debouncedSearch.trim();
@@ -66,15 +70,22 @@ export function AsyncSelect({ lookup, value, onChange, label, placeholder, requi
     queryKey: queryKeys.lookup(lookup.api.key, term, lookup.filters),
     queryFn: () => lookup.api.list({ search: term, pageSize: OPTIONS_PER_SEARCH, filters: lookup.filters }),
     placeholderData: keepPreviousData,
-    enabled: !disabled,
+    enabled: !disabled && opened,
+    // Any write to the resource invalidates these, so they can safely be reused for a while.
+    staleTime: LOOKUP_STALE_MS,
   });
 
   const data = useMemo(() => {
     const rows = options.data?.items ?? [];
     const list = rows.map((row) => ({ value: String(row.id), label: lookup.label(row, language) }));
-    if (selected.data && !rows.some((row) => row.id === selected.data.id)) list.unshift({ value: String(selected.data.id), label: selectedLabel });
+    if (selectedRow && !rows.some((row) => row.id === selectedRow.id)) list.unshift({ value: String(selectedRow.id), label: selectedLabel });
     return list;
-  }, [options.data, selected.data, selectedLabel, lookup, language]);
+  }, [options.data, selectedRow, selectedLabel, lookup, language]);
+
+  const change = (next: string | null) => {
+    setPicked(next ? (options.data?.items.find((row) => String(row.id) === next) ?? null) : null);
+    onChange(next ?? '');
+  };
 
   return (
     <Select
@@ -87,7 +98,8 @@ export function AsyncSelect({ lookup, value, onChange, label, placeholder, requi
       w={w}
       data={data}
       value={value || null}
-      onChange={(next) => onChange(next ?? '')}
+      onChange={change}
+      onDropdownOpen={() => setOpened(true)}
       searchable
       searchValue={search}
       onSearchChange={setSearch}

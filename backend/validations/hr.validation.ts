@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { dateString, id, language, optionalDateString, optionalDecimalString, optionalId, optionalText, requiredText } from './common.validation.js';
+import { dateString, fileReference, id, language, optionalDateString, optionalDecimalString, optionalId, optionalText, requiredText } from './common.validation.js';
 
 export const createAttendanceRequest = z.object({
   employeeId: id,
@@ -36,8 +36,9 @@ export const createEmployeeDocumentRequest = z.object({
   documentNumber: optionalText,
   issueDate: optionalDateString,
   expiryDate: optionalDateString,
-  fileUrl: optionalText,
   notes: optionalText,
+  /** An upload (POST /files?purpose=EMPLOYEE_DOCUMENT) to attach. */
+  fileId: optionalId,
 });
 
 export const createEmployeeRequest = z.object({
@@ -71,9 +72,10 @@ export const createEmploymentContractRequest = z.object({
   currency: optionalText,
   terms: optionalText,
   status: optionalText,
-  documentUrl: optionalText,
   title: optionalText,
   notes: optionalText,
+  /** An upload (POST /files?purpose=CONTRACT_DOCUMENT) to attach. documentUrl / documentUploadedAt / documentUploadedBy follow from it. */
+  documentFileId: optionalId,
 });
 
 export const createLeaveRequestRequest = z.object({
@@ -125,8 +127,8 @@ export const updateEmployeeDocumentRequest = z.object({
   documentNumber: optionalText,
   issueDate: optionalDateString,
   expiryDate: optionalDateString,
-  fileUrl: optionalText,
   notes: optionalText,
+  fileId: fileReference,
 });
 
 export const updateEmployeeRequest = z.object({
@@ -162,9 +164,9 @@ export const updateEmploymentContractRequest = z.object({
   currency: optionalText,
   terms: optionalText,
   status: optionalText,
-  documentUrl: optionalText,
   title: optionalText,
   notes: optionalText,
+  documentFileId: fileReference,
 });
 
 export const updateLeaveRequestRequest = z.object({

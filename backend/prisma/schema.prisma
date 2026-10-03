@@ -93,10 +93,10 @@ model Supplier {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  trips      Trip[]
-  payments   SupplierPayment[]
-  workOrders WorkOrder[]
-  spareParts SparePart[]
+  trips          Trip[]
+  payments       SupplierPayment[]
+  workOrders     WorkOrder[]
+  inventoryItems InventoryItem[]
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
 
@@ -538,12 +538,13 @@ model WorkOrder {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  truck           Truck             @relation(fields: [truckId], references: [id], onDelete: Restrict)
-  driver          Driver?           @relation(fields: [driverId], references: [id], onDelete: SetNull)
-  supplier        Supplier?         @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  parts           WorkOrderPart[]
-  inspectionItems InspectionItem[]
-  expenses        WorkshopExpense[]
+  truck                 Truck                  @relation(fields: [truckId], references: [id], onDelete: Restrict)
+  driver                Driver?                @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  supplier              Supplier?              @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  parts                 WorkOrderPart[]
+  inspectionItems       InspectionItem[]
+  expenses              WorkshopExpense[]
+  inventoryTransactions InventoryTransaction[]
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
 
@@ -557,24 +558,31 @@ model WorkOrder {
   @@index([companyId])
 }
 
+/// An inventory item consumed by a work order, drawn from one warehouse.
+/// unitCost is the item's cost when it was used (a snapshot); totalCost
+/// = unitCost × quantity, and is added to the work order's partsCost.
 model WorkOrderPart {
   id          Int      @id @default(autoincrement())
   companyId   Int
   workOrderId Int
-  sparePartId Int
+  itemId      Int
+  warehouseId Int
   quantity    Int      @default(1)
   unitCost    Decimal  @default(0) @db.Decimal(12, 2)
   totalCost   Decimal  @default(0) @db.Decimal(12, 2)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
-  sparePart SparePart @relation(fields: [sparePartId], references: [id], onDelete: Restrict)
+  // Restrict: a work order with inventory lines cannot be deleted until they are removed (which returns the stock).
+  workOrder WorkOrder     @relation(fields: [workOrderId], references: [id], onDelete: Restrict)
+  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  warehouse Warehouse     @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
 
   @@index([workOrderId])
-  @@index([sparePartId])
+  @@index([itemId])
+  @@index([warehouseId])
   @@index([companyId])
 }
 
@@ -646,53 +654,6 @@ model InspectionItem {
 
   @@index([inspectionId])
   @@index([workOrderId])
-  @@index([companyId])
-}
-
-model SparePart {
-  id           Int      @id @default(autoincrement())
-  companyId    Int
-  name         String
-  nameAr       String?
-  partNumber   String?
-  category     String?
-  quantity     Int      @default(0)
-  minimumStock Int      @default(0)
-  unitCost     Decimal  @default(0) @db.Decimal(12, 2)
-  supplierId   Int?
-  status       String   @default("ACTIVE")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  supplier       Supplier?              @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  workOrderParts WorkOrderPart[]
-  transactions   SparePartTransaction[]
-
-  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
-
-  @@unique([companyId, partNumber])
-  @@index([supplierId])
-  @@index([category])
-  @@index([status])
-  @@index([partNumber])
-  @@index([companyId])
-}
-
-model SparePartTransaction {
-  id              Int      @id @default(autoincrement())
-  companyId       Int
-  sparePartId     Int
-  transactionType String
-  quantity        Int
-  referenceNote   String?
-  createdAt       DateTime @default(now())
-
-  sparePart SparePart @relation(fields: [sparePartId], references: [id], onDelete: Restrict)
-
-  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
-
-  @@index([sparePartId])
-  @@index([createdAt])
   @@index([companyId])
 }
 
@@ -868,12 +829,16 @@ model EmployeeDocument {
   documentNumber String?
   issueDate      DateTime?
   expiryDate     DateTime?
+  /// The uploaded file's API path (/files/<fileId>), set by the server from fileId. Rows from before uploads may hold a typed URL instead.
   fileUrl        String?
+  /// The uploaded scan/PDF. A file belongs to at most one record.
+  fileId         Int?      @unique
   notes          String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  employee Employee    @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  file     StoredFile? @relation("EmployeeDocumentFile", fields: [fileId], references: [id], onDelete: Restrict)
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
 
@@ -895,15 +860,18 @@ model EmploymentContract {
   currency           String?
   terms              String?
   status             String    @default("ACTIVE")
+  /// documentUrl / documentUploadedAt / documentUploadedBy are set by the server from documentFileId (the upload), never by the client.
   documentUrl        String?
   title              String?
   documentUploadedAt DateTime?
   documentUploadedBy String?
+  documentFileId     Int?      @unique
   notes              String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  employee     Employee    @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  documentFile StoredFile? @relation("EmploymentContractDocument", fields: [documentFileId], references: [id], onDelete: Restrict)
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
 
@@ -949,8 +917,6 @@ model Company {
   maintenanceSchedules   MaintenanceSchedule[]
   vehicleInspections     VehicleInspection[]
   inspectionItems        InspectionItem[]
-  spareParts             SparePart[]
-  sparePartTransactions  SparePartTransaction[]
   workshopExpenses       WorkshopExpense[]
   departments            Department[]
   designations           Designation[]
@@ -959,7 +925,12 @@ model Company {
   leaveRequests          LeaveRequest[]
   employeeDocuments      EmployeeDocument[]
   employmentContracts    EmploymentContract[]
+  storedFiles            StoredFile[]
   apiKeys                ApiKey[]
+  warehouses             Warehouse[]
+  inventoryItems         InventoryItem[]
+  inventoryStocks        InventoryStock[]
+  inventoryTransactions  InventoryTransaction[]
   idempotencyRecords     IdempotencyRecord[]
 }
 
@@ -985,6 +956,36 @@ model ApiKey {
   @@index([companyId])
 }
 
+/// An uploaded file (employee document scan, contract PDF). The bytes are
+/// on disk under the uploads directory at `storageKey`; this row is the
+/// only way to reach them. Uploaded first, then attached to a record by
+/// its fileId; one never attached is deleted after a day.
+model StoredFile {
+  id             Int      @id @default(autoincrement())
+  companyId      Int
+  /// What it was uploaded for (EMPLOYEE_DOCUMENT | CONTRACT_DOCUMENT): decides who may upload and read it.
+  purpose        String
+  /// The name the user's file had, for display and downloads only — never used as a path.
+  originalName   String
+  /// Detected from the file's content, not taken from the browser.
+  contentType    String
+  size           Int
+  sha256         String
+  /// Path relative to the uploads directory: <companyId>/<random>.
+  storageKey     String   @unique
+  uploadedById   Int?
+  uploadedByName String
+  createdAt      DateTime @default(now())
+
+  employeeDocument   EmployeeDocument?   @relation("EmployeeDocumentFile")
+  employmentContract EmploymentContract? @relation("EmploymentContractDocument")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@index([companyId])
+  @@index([createdAt])
+}
+
 /// One row per (tenant, operation, Idempotency-Key): a retried create
 /// returns the stored result instead of creating a duplicate.
 model IdempotencyRecord {
@@ -1002,4 +1003,112 @@ model IdempotencyRecord {
 
   @@unique([companyId, operation, key])
   @@index([expiresAt])
+}
+
+// ── Inventory ─────────────────────────────────────────────────────────────
+
+/// A place stock is kept. Stock is tracked per (item, warehouse).
+model Warehouse {
+  id        Int      @id @default(autoincrement())
+  companyId Int
+  name      String
+  nameAr    String?
+  location  String?
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stock          InventoryStock[]
+  transactions   InventoryTransaction[]
+  workOrderParts WorkOrderPart[]
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@unique([companyId, name])
+  @@index([status])
+  @@index([companyId])
+}
+
+/// A stocked item. Quantities live in InventoryStock (one row per
+/// warehouse); totalQuantity is their sum, kept in the same transaction
+/// as every stock change, so "low stock" is one indexed comparison.
+model InventoryItem {
+  id            Int      @id @default(autoincrement())
+  companyId     Int
+  name          String
+  nameAr        String?
+  itemNumber    String?
+  category      String?
+  minimumStock  Int      @default(0)
+  unitCost      Decimal  @default(0) @db.Decimal(12, 2)
+  totalQuantity Int      @default(0)
+  supplierId    Int?
+  status        String   @default("ACTIVE")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  supplier       Supplier?              @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  stock          InventoryStock[]
+  transactions   InventoryTransaction[]
+  workOrderParts WorkOrderPart[]
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@unique([companyId, itemNumber])
+  @@index([supplierId])
+  @@index([category])
+  @@index([status])
+  @@index([companyId])
+}
+
+/// How many of one item one warehouse holds. Never negative: every
+/// decrease is a conditional update (see takeFromStock).
+model InventoryStock {
+  id          Int      @id @default(autoincrement())
+  companyId   Int
+  itemId      Int
+  warehouseId Int
+  quantity    Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  warehouse Warehouse     @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@unique([itemId, warehouseId])
+  @@index([warehouseId])
+  @@index([companyId])
+}
+
+/// The stock ledger: every IN and OUT, never edited or deleted. OUT rows
+/// written by a work order carry its id (cleared if the order is deleted).
+/// movementDate is when the stock actually moved (chosen by the user,
+/// today by default); createdAt is when the entry was recorded.
+model InventoryTransaction {
+  id           Int      @id @default(autoincrement())
+  companyId    Int
+  itemId       Int
+  warehouseId  Int
+  type         String
+  quantity     Int
+  unitCost     Decimal  @default(0) @db.Decimal(12, 2)
+  remarks      String?
+  workOrderId  Int?
+  movementDate DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  warehouse Warehouse     @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+  workOrder WorkOrder?    @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@index([itemId])
+  @@index([warehouseId])
+  @@index([workOrderId])
+  @@index([type])
+  @@index([movementDate])
+  @@index([createdAt])
+  @@index([companyId])
 }

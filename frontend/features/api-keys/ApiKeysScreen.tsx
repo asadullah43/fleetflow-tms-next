@@ -1,26 +1,40 @@
 'use client';
 
-import { ActionIcon, Alert, Box, Button, Code, CopyButton, Group, Modal, Select, Stack, Text, TextInput, Tooltip } from '@mantine/core';
-import { modals } from '@mantine/modals';
+import { Alert, Button, Code, CopyButton, Group, Modal, Stack, Text, TextInput } from '@mantine/core';
+import { actions } from '../../components/action-items';
+import { ActionMenu } from '../../components/ActionMenu';
 import { AppShell } from '../../components/AppShell';
+import { useConfirmDanger } from '../../components/confirm';
 import { DataTable, TableColumn } from '../../components/DataTable';
-import { Icon } from '../../components/icons';
+import { ListToolbar } from '../../components/ListToolbar';
+import { Mono } from '../../components/Mono';
 import { PageHeader } from '../../components/PageHeader';
 import { StatusBadge } from '../../components/StatusBadge';
 import type { ApiKeyDto } from '../../lib/api/api-keys.api';
 import { formatDateTime } from '../../lib/date';
 import { useT } from '../../lib/language-context';
-import { formatModule, PermissionMatrix } from '../roles/PermissionMatrix';
+import { tone } from '../../theme/theme';
+import type { FilterDef } from '../crud/types';
+import { formatModule } from '../roles/PermissionMatrix';
+import { PermissionsFormModal } from '../roles/PermissionsFormModal';
 import { useApiKeysViewModel } from './use-api-keys-view-model';
 
-const KEY_STATUSES = [
-  { value: 'ACTIVE', label: 'Active' },
-  { value: 'REVOKED', label: 'Revoked' },
+const FILTERS: FilterDef[] = [
+  {
+    name: 'status',
+    label: 'Status',
+    type: 'select',
+    options: [
+      { value: 'ACTIVE', label: 'Active' },
+      { value: 'REVOKED', label: 'Revoked' },
+    ],
+  },
 ];
 
 function ApiKeysBody() {
   const vm = useApiKeysViewModel();
   const t = useT();
+  const confirmDanger = useConfirmDanger();
 
   const columns: TableColumn<ApiKeyDto>[] = [
     { id: 'name', header: 'Name', sortKey: 'name', cell: (key) => <Text span fw={600} fz="sm">{key.name}</Text> },
@@ -34,43 +48,21 @@ function ApiKeysBody() {
         </Text>
       ),
     },
-    { id: 'lastUsed', header: 'Last used', sortKey: 'lastUsedAt', cell: (key) => <Text span ff="monospace" fz="sm">{formatDateTime(key.lastUsedAt, t('Never'))}</Text> },
+    { id: 'lastUsed', header: 'Last used', sortKey: 'lastUsedAt', cell: (key) => <Mono>{formatDateTime(key.lastUsedAt, t('Never'))}</Mono> },
     { id: 'createdBy', header: 'Created by', cell: (key) => key.createdByName || '—' },
     { id: 'status', header: 'Status', sortKey: 'status', cell: (key) => <StatusBadge status={key.status} /> },
   ];
-
-  const confirmRevoke = (key: ApiKeyDto) =>
-    modals.openConfirmModal({
-      title: `${t('Revoke API key')} "${key.name}"?`,
-      children: <Text size="sm">{t('Anything using this key will stop working immediately. This cannot be undone.')}</Text>,
-      labels: { confirm: t('Revoke'), cancel: t('Cancel') },
-      confirmProps: { color: 'red' },
-      onConfirm: () => vm.revoke(key),
-    });
 
   return (
     <>
       <PageHeader title="API Keys" description="Let other systems use FleetFlow on your company's behalf. Each key has only the permissions you give it and can be revoked at any time." />
       <Stack gap="md">
-        <Group justify="space-between" gap="sm">
-          <Group gap="sm">
-            <TextInput value={vm.controls.search} onChange={(event) => vm.controls.setSearch(event.currentTarget.value)} placeholder={t('Key name')} aria-label={t('Search')} leftSection={<Icon.search size={15} />} w={{ base: '100%', xs: 260 }} />
-            <Select
-              data={KEY_STATUSES.map((status) => ({ value: status.value, label: t(status.label) }))}
-              value={vm.controls.filters.status || null}
-              onChange={(value) => vm.controls.setFilter('status', value ?? '')}
-              placeholder={t('Status')}
-              aria-label={t('Status')}
-              clearable
-              w={150}
-            />
-          </Group>
-          {vm.canCreate && (
-            <Button size="sm" leftSection={<Icon.plus size={15} />} onClick={vm.openCreate}>
-              {t('API key')}
-            </Button>
-          )}
-        </Group>
+        <ListToolbar
+          controls={vm.controls}
+          searchPlaceholder="Key name"
+          filters={FILTERS}
+          actions={<ActionMenu layout="button" primary={actions.add('API key', vm.openCreate, { hidden: !vm.canCreate })} />}
+        />
 
         <DataTable
           columns={columns}
@@ -87,52 +79,44 @@ function ApiKeysBody() {
           onPageSizeChange={vm.controls.setPageSize}
           actions={
             vm.allowed.delete
-              ? (key) =>
-                  key.status === 'ACTIVE' && (
-                    <Tooltip label={t('Revoke')} withArrow>
-                      <ActionIcon variant="subtle" color="red" aria-label={t('Revoke')} onClick={() => confirmRevoke(key)}>
-                        <Icon.trash size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-                  )
+              ? (key) => (
+                  <ActionMenu
+                    items={[
+                      actions.revoke(
+                        () =>
+                          confirmDanger({
+                            title: `${t('Revoke API key')} "${key.name}"?`,
+                            message: 'Anything using this key will stop working immediately. This cannot be undone.',
+                            confirmLabel: 'Revoke',
+                            onConfirm: () => vm.revoke(key),
+                          }),
+                        { hidden: key.status !== 'ACTIVE', loading: vm.revokingId === key.id },
+                      ),
+                    ]}
+                  />
+                )
               : undefined
           }
         />
       </Stack>
 
-      <Modal opened={vm.draft !== null} onClose={vm.closeCreate} title={t('New API key')} size="lg" closeOnClickOutside={false}>
-        {vm.draft && (
-          <form
-            noValidate
-            onSubmit={(event) => {
-              event.preventDefault();
-              vm.save();
-            }}
-          >
-            <Stack gap="md">
-              {vm.formError && <Alert color="red">{t(vm.formError)}</Alert>}
-              <TextInput label={t('Name')} description={t('What will use this key, e.g. "Accounting sync".')} required value={vm.draft.name} onChange={(event) => vm.patch({ name: event.currentTarget.value })} />
-              <Box>
-                <Text size="sm" fw={500}>
-                  {t('Permissions')}
-                </Text>
-                <Text size="xs" c="dimmed" mb={6}>
-                  {t('Grant only what the integration needs. You can only grant permissions you have yourself.')}
-                </Text>
-                <PermissionMatrix value={vm.draft.scopes} onChange={(scopes) => vm.patch({ scopes })} />
-              </Box>
-              <Group justify="flex-end" gap="sm">
-                <Button variant="default" onClick={vm.closeCreate} disabled={vm.saving}>
-                  {t('Cancel')}
-                </Button>
-                <Button type="submit" loading={vm.saving}>
-                  {t('Create key')}
-                </Button>
-              </Group>
-            </Stack>
-          </form>
-        )}
-      </Modal>
+      <PermissionsFormModal
+        opened={vm.draft !== null}
+        onClose={vm.closeCreate}
+        title={t('New API key')}
+        onSubmit={() => vm.save()}
+        error={vm.formError}
+        fields={
+          vm.draft && (
+            <TextInput label={t('Name')} description={t('What will use this key, e.g. "Accounting sync".')} required value={vm.draft.name} onChange={(event) => vm.patch({ name: event.currentTarget.value })} />
+          )
+        }
+        hint="Grant only what the integration needs. You can only grant permissions you have yourself."
+        permissions={vm.draft?.scopes ?? []}
+        onPermissionsChange={(scopes) => vm.patch({ scopes })}
+        saving={vm.saving}
+        submitLabel="Create key"
+      />
 
       <Modal opened={vm.created !== null} onClose={vm.dismissCreated} title={t('Copy your new API key')} size="lg" closeOnClickOutside={false}>
         {vm.created && (
@@ -147,7 +131,7 @@ function ApiKeysBody() {
             <Group justify="flex-end" gap="sm">
               <CopyButton value={vm.created.plaintextKey}>
                 {({ copied, copy }) => (
-                  <Button variant="default" onClick={copy}>
+                  <Button {...tone.secondary} onClick={copy}>
                     {copied ? t('Copied') : t('Copy key')}
                   </Button>
                 )}

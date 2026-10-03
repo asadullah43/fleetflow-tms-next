@@ -7,10 +7,17 @@
  *
  * Tenant isolation comes from the scoped Prisma client: every query here
  * is automatically limited to the caller's company.
+ *
+ * `list` (pages and dropdown options) is served from the company's Redis
+ * read cache when the cached page is still current; any write to a table
+ * it shows invalidates it at once (see _core_app_connectivities/cache.ts).
+ * findOne is not cached: update/remove read the current row through it.
  */
+import { cachedRead } from '../_core_app_connectivities/cache.js';
 import { prisma } from '../_core_app_connectivities/prisma.js';
 import { currentCompanyId } from '../_core_app_connectivities/tenant-context.js';
 import { AppError, ErrorCodeEntry } from '../classes/app-error.js';
+import { config } from '../global_config/index.js';
 import type { ListQuery, Paginated } from '../models/api-response.js';
 import { ListConfig, paginate } from '../utils/pagination.js';
 
@@ -51,6 +58,19 @@ export interface CrudRepositoryOptions<Out> {
   toUpdate?: (input: any, existing: Out) => Data | Promise<Data>;
 }
 
+const listScopes = new Set<string>();
+
+/**
+ * Claims a cache scope for one repository's list. Two repositories with
+ * the same scope (same model, different include/map) would serve each
+ * other's rows, so a clash stops the process at start-up instead.
+ */
+export function registerListScope(scope: string): string {
+  if (listScopes.has(scope)) throw new Error(`Cache scope "${scope}" is registered twice; give the second repository its own scope`);
+  listScopes.add(scope);
+  return scope;
+}
+
 function prismaCode(error: unknown): string | undefined {
   return (error as { code?: string } | null)?.code;
 }
@@ -68,10 +88,14 @@ export function createCrudRepository<Out = any>(options: CrudRepositoryOptions<O
   const map = options.map ?? ((row: any) => row as Out);
   const extra = include ? { include } : {};
 
+  // Named by model ("Truck.list"), the same way services name their own cached reads.
+  const cacheScope = registerListScope(`${options.model[0].toUpperCase()}${options.model.slice(1)}.list`);
+
   // Plain closures (no `this`), so a service may re-export individual operations.
+  /** One page of the list (also the dropdown options), served from the company's read cache when it is still current. */
   async function list(query: ListQuery, baseWhere: Data = {}): Promise<Paginated<Out>> {
     try {
-      return await paginate(delegate, query, options.list, { baseWhere, extra, map });
+      return await cachedRead(cacheScope, { query, baseWhere }, config.cache.listTtlSeconds, () => paginate(delegate, query, options.list, { baseWhere, extra, map }));
     } catch (error) {
       rethrow(error, errors.fetchFailed);
     }

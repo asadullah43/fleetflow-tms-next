@@ -1,0 +1,177 @@
+syntax = "proto3";
+
+package fleetflow.inventory;
+
+import "common.proto";
+
+message ListRequest {
+  int32 page = 1;        // 1-based; default 1
+  int32 page_size = 2;   // default 20, max 100
+  string search = 3;     // server-side, case-insensitive partial match
+  string sort_by = 4;    // one of the service's sortable fields
+  string sort_order = 5; // asc | desc
+  map<string, string> filters = 6; // service-specific exact/range filters
+}
+message IdRequest { int32 id = 1; }
+
+// ---- Warehouses ----
+service WarehousesService {
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: WarehouseList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Warehouse
+  rpc Create(CreateWarehouseRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Warehouse
+  rpc Update(UpdateWarehouseRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: Warehouse
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
+}
+
+message Warehouse {
+  int32 id = 1;
+  string name = 2;
+  optional string name_ar = 3;
+  optional string location = 4;
+  string status = 5;
+}
+message WarehouseList {
+  repeated Warehouse items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
+message CreateWarehouseRequest {
+  string name = 1;
+  optional string name_ar = 2;
+  optional string location = 3;
+  optional string status = 4;
+  optional string language = 5;
+}
+message UpdateWarehouseRequest {
+  int32 id = 1;
+  optional string name = 2;
+  optional string name_ar = 3;
+  optional string location = 4;
+  optional string status = 5;
+  optional string language = 6;
+}
+
+// ---- Items ----
+// Quantities are not set here: stock changes only through IN / OUT movements
+// (and work orders), so every change has a ledger entry.
+service InventoryItemsService {
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: InventoryItemList
+  rpc Get(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: InventoryItem
+  rpc Create(CreateInventoryItemRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: InventoryItem
+  rpc Update(UpdateInventoryItemRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: InventoryItem
+  rpc Delete(IdRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: fleetflow.common.Empty
+}
+
+message InventoryItem {
+  int32 id = 1;
+  string name = 2;
+  optional string name_ar = 3;
+  optional string item_number = 4;
+  optional string category = 5;
+  int32 minimum_stock = 6;
+  string unit_cost = 7;
+  int32 total_quantity = 8; // sum over all warehouses
+  optional int32 supplier_id = 9;
+  string status = 10;
+  optional string supplier_name = 11;
+  optional string supplier_name_ar = 12;
+}
+message InventoryItemList {
+  repeated InventoryItem items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
+message CreateInventoryItemRequest {
+  string name = 1;
+  optional string name_ar = 2;
+  optional string item_number = 3;
+  optional string category = 4;
+  optional int32 minimum_stock = 5;
+  optional string unit_cost = 6;
+  optional int32 supplier_id = 7;
+  optional string status = 8;
+  optional string language = 9;
+}
+message UpdateInventoryItemRequest {
+  int32 id = 1;
+  optional string name = 2;
+  optional string name_ar = 3;
+  optional string item_number = 4;
+  optional string category = 5;
+  optional int32 minimum_stock = 6;
+  optional string unit_cost = 7;
+  optional int32 supplier_id = 8;
+  optional string status = 9;
+  optional string language = 10;
+}
+
+// ---- Stock levels: how many of each item each warehouse holds (read only) ----
+service InventoryStockService {
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: StockLevelList
+}
+
+message StockLevel {
+  int32 id = 1;
+  int32 item_id = 2;
+  int32 warehouse_id = 3;
+  int32 quantity = 4;
+  optional string item_name = 5;
+  optional string item_name_ar = 6;
+  optional string item_number = 7;
+  optional string item_status = 8;
+  int32 minimum_stock = 9;
+  int32 total_quantity = 10; // the item's total across all warehouses
+  string unit_cost = 11;
+  optional string warehouse_name = 12;
+  optional string warehouse_name_ar = 13;
+  optional string updated_at = 14;
+}
+message StockLevelList {
+  repeated StockLevel items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
+
+// ---- Movements: the stock ledger (IN / OUT), never edited or deleted ----
+service InventoryTransactionsService {
+  rpc List(ListRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: InventoryTransactionList
+  rpc StockIn(StockInRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: InventoryTransaction
+  rpc StockOut(StockOutRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: InventoryTransaction
+}
+
+message InventoryTransaction {
+  int32 id = 1;
+  int32 item_id = 2;
+  int32 warehouse_id = 3;
+  string type = 4; // IN | OUT
+  int32 quantity = 5;
+  string unit_cost = 6;
+  optional string remarks = 7;
+  optional int32 work_order_id = 8;
+  string created_at = 9;
+  optional string item_name = 10;
+  optional string item_name_ar = 11;
+  optional string item_number = 12;
+  optional string warehouse_name = 13;
+  optional string warehouse_name_ar = 14;
+  optional string work_order_number = 15;
+  string movement_date = 16; // when the stock moved (chosen by the user); created_at is when it was recorded
+}
+message InventoryTransactionList {
+  repeated InventoryTransaction items = 1;
+  fleetflow.common.Pagination pagination = 100;
+}
+// IN: give item_id for an item already in the system, or new_item to create it in the same step.
+message StockInRequest {
+  optional int32 item_id = 1;
+  optional CreateInventoryItemRequest new_item = 2;
+  int32 warehouse_id = 3;
+  int32 quantity = 4;
+  optional string remarks = 5;
+  optional string movement_date = 6; // YYYY-MM-DD; blank = today
+}
+// OUT: refused if the chosen warehouse holds fewer than `quantity` of the item.
+message StockOutRequest {
+  int32 item_id = 1;
+  int32 warehouse_id = 2;
+  int32 quantity = 3;
+  optional string remarks = 4;
+  optional string movement_date = 5; // YYYY-MM-DD; blank = today
+}

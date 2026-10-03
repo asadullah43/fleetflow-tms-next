@@ -8,6 +8,7 @@
  * and every outcome — success or failure — leaves as the standard
  * ApiResponse envelope, with one structured log line per request.
  */
+import { trackRequestWrites } from '../_core_app_connectivities/cache.js';
 import type * as grpc from '@grpc/grpc-js';
 import { encodePayload } from '../_core_app_connectivities/grpc-proto.js';
 import { OperationKind, toAppError } from '../middlewares/error-handler.js';
@@ -39,7 +40,7 @@ export function route(data: string, op: OperationKind, ...chain: [...Middleware[
 /** Middleware every route gets, in front of its own. */
 const GLOBAL_MIDDLEWARES: Middleware[] = [rateLimitByIp];
 
-function logRequest(ctx: RequestContext, outcome: { status: 'SUCCESSFUL' | 'ERROR'; errorCode?: string; statusCode?: number; cause?: unknown }): void {
+export function logRequest(ctx: RequestContext, outcome: { status: 'SUCCESSFUL' | 'ERROR'; errorCode?: string; statusCode?: number; cause?: unknown }): void {
   const fields = {
     requestId: ctx.requestId,
     rpc: ctx.rpc,
@@ -67,7 +68,8 @@ export function buildService(serviceName: string, routes: RouteTable): grpc.Unty
       call.request = stripOneofMarkers(call.request);
       const ctx = createContext(rpc, call);
       try {
-        const result = await run(ctx);
+        // Writes are invalidated again once the request (and any transaction in it) has finished — before the response goes out.
+        const result = await trackRequestWrites(() => run(ctx));
         const payload = encodePayload(definition.data, serialize(result ?? {}));
         logRequest(ctx, { status: 'SUCCESSFUL' });
         callback(null, { STATUS: 'SUCCESSFUL', ERROR_CODE: '', ERROR_FILTER: '', ERROR_DESCRIPTION: '', DB_DATA: payload, DB_DATA_TYPE: definition.data });

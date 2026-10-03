@@ -8,6 +8,11 @@ export function today(): string {
   return dayjs().format(DATE_FORMAT);
 }
 
+/** The first day of the current month (YYYY-MM-DD) — the start of every "this month" figure. */
+export function monthStart(): string {
+  return dayjs().startOf('month').format(DATE_FORMAT);
+}
+
 /** An API timestamp or date -> the calendar date it was entered as (YYYY-MM-DD), or '' when absent/invalid. */
 export function toDateInput(value: string | null | undefined): string {
   if (!value) return '';
@@ -27,6 +32,20 @@ export function formatDateTime(value: string | null | undefined, fallback = '—
   if (!value) return fallback;
   const parsed = dayjs(value);
   return parsed.isValid() ? parsed.format('YYYY-MM-DD HH:mm') : fallback;
+}
+
+/** An API timestamp -> the time of day in the viewer's time zone (HH:mm), or '' when absent/invalid. */
+export function toTimeInput(value: string | null | undefined): string {
+  if (!value) return '';
+  const parsed = dayjs(value);
+  return parsed.isValid() ? parsed.format('HH:mm') : '';
+}
+
+/** A calendar date (YYYY-MM-DD) and a time of day (HH:mm) in the viewer's time zone -> the API timestamp, or '' when either is missing. */
+export function combineDateTime(date: string, time: string, addDays = 0): string {
+  if (!date || !time) return '';
+  const parsed = dayjs(`${date}T${time}`);
+  return parsed.isValid() ? parsed.add(addDays, 'day').toISOString() : '';
 }
 
 /** For printed documents: 05-Oct-2026. */

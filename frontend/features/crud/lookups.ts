@@ -3,12 +3,20 @@ import { cargoTypesApi } from '../../lib/api/cargo-types.api';
 import { customersApi } from '../../lib/api/customers.api';
 import { driversApi } from '../../lib/api/drivers.api';
 import { departmentsApi, designationsApi, employeesApi } from '../../lib/api/hr.api';
+import { InventoryItemDto, inventoryItemsApi, warehousesApi } from '../../lib/api/inventory.api';
 import { locationsApi } from '../../lib/api/locations.api';
 import { rolesApi } from '../../lib/api/roles.api';
 import { suppliersApi } from '../../lib/api/suppliers.api';
 import { trucksApi } from '../../lib/api/trucks.api';
+import type { Language } from '../../lib/language-context';
 import { localizedName } from '../../lib/localized-name';
 import type { Option } from './types';
+
+/** "Brake pads (ITM-0001)": an item with its number, since names can repeat. */
+export function inventoryItemLabel(row: InventoryItemDto, language: Language): string {
+  const name = localizedName(row, language);
+  return row.itemNumber ? `${name} (${row.itemNumber})` : name;
+}
 
 /** The pickable resources, each searched on the server and labelled in the active language. */
 export const lookups = {
@@ -22,6 +30,8 @@ export const lookups = {
   designations: defineLookup({ api: designationsApi, label: localizedName }),
   employees: defineLookup({ api: employeesApi, label: (row, language) => `${localizedName(row, language)} (${row.employeeNumber})` }),
   roles: defineLookup({ api: rolesApi, label: (row) => row.name }),
+  warehouses: defineLookup({ api: warehousesApi, label: localizedName }),
+  inventoryItems: defineLookup({ api: inventoryItemsApi, label: inventoryItemLabel }),
 };
 
 export const ACTIVE_INACTIVE: Option[] = [

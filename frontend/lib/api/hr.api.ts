@@ -1,5 +1,6 @@
 import { fleetflow } from '../generated/proto/messages.js';
 import { createCrudApi } from './crud-api';
+import type { FileInfoDto } from './files.api';
 
 const hr = fleetflow.hr;
 
@@ -85,9 +86,12 @@ export interface EmployeeDocumentDto {
   documentNumber?: string;
   issueDate?: string;
   expiryDate?: string;
+  /** /files/{fileId} for an uploaded file; older records may hold a typed-in link instead. */
   fileUrl?: string;
   notes?: string;
   employeeName?: string;
+  fileId?: number;
+  file?: FileInfoDto;
 }
 export const employeeDocumentsApi = createCrudApi<EmployeeDocumentDto>('employeeDocuments', 'fleetflow.hr.EmployeeDocumentsService', hr, 'EmployeeDocument');
 
@@ -106,5 +110,9 @@ export interface EmploymentContractDto {
   title?: string;
   notes?: string;
   employeeName?: string;
+  documentFileId?: number;
+  documentFile?: FileInfoDto;
+  documentUploadedAt?: string;
+  documentUploadedBy?: string;
 }
 export const employmentContractsApi = createCrudApi<EmploymentContractDto>('employmentContracts', 'fleetflow.hr.EmploymentContractsService', hr, 'EmploymentContract');

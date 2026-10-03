@@ -8,7 +8,7 @@ import { today } from '../../lib/date';
 /** A truck's full assignment history, newest first. */
 export function useTruckAssignments(truckId: number | null) {
   return useQuery({
-    queryKey: queryKeys.list(assignmentsApi.key, { filters: { truckId: String(truckId) }, sortBy: 'startDate', sortOrder: 'desc', pageSize: 100 }),
+    queryKey: queryKeys.truckAssignmentHistory(truckId ?? 0),
     queryFn: () => assignmentsApi.listAll({ filters: { truckId: String(truckId) }, sortBy: 'startDate', sortOrder: 'desc' }, 500),
     enabled: truckId !== null,
   });

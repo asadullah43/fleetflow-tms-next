@@ -13,7 +13,8 @@ import { fileURLToPath } from 'node:url';
 process.env.DATABASE_URL ??= 'postgresql://unused@127.0.0.1:1/unused';
 const { TENANT_MODELS, TENANT_REFERENCES } = await import('../_core_app_connectivities/prisma.js');
 
-const schema = fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../prisma/schema.prisma'), 'utf8');
+// LF line endings whatever the checkout used (a Windows checkout with core.autocrlf has CRLF), so the regexes below match.
+const schema = fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../prisma/schema.prisma'), 'utf8').replace(/\r\n/g, '\n');
 const models = new Map<string, string>([...schema.matchAll(/^model (\w+) \{\n([\s\S]*?)^\}/gm)].map((m) => [m[1], m[2]]));
 const delegate = (model: string) => model[0].toLowerCase() + model.slice(1);
 

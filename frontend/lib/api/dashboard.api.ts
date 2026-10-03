@@ -12,7 +12,8 @@ export interface DashboardSummaryDto {
   unpaidInvoicesTotal: string;
   unpaidInvoicesCount: number;
   pendingLeaveRequests: number;
-  lowStockSpareParts: number;
+  /** Active inventory items at or below their minimum (total across warehouses). */
+  lowStockItems: number;
 }
 
 export interface LabelCountDto {
@@ -41,9 +42,50 @@ export interface WorkshopSummaryDto {
   completedThisMonth: number;
   overdueMaintenance: number;
   failedInspections: number;
-  lowStockSpareParts: number;
   expensesThisMonth: string;
   openByPriority: LabelCountDto[];
+}
+
+export interface WarehouseStockDto {
+  warehouseId: number;
+  name: string;
+  nameAr?: string;
+  /** Distinct items with stock here. */
+  items: number;
+  units: number;
+}
+
+export interface StockLevelRowDto {
+  warehouseId: number;
+  warehouseName: string;
+  warehouseNameAr?: string;
+  itemId: number;
+  itemName: string;
+  itemNameAr?: string;
+  itemNumber?: string;
+  quantity: number;
+}
+
+export interface LowStockItemDto {
+  itemId: number;
+  name: string;
+  nameAr?: string;
+  itemNumber?: string;
+  totalQuantity: number;
+  minimumStock: number;
+}
+
+/** Low stock = an active item whose total across all warehouses is at or below its minimum. */
+export interface InventorySummaryDto {
+  activeItems: number;
+  activeWarehouses: number;
+  totalUnits: number;
+  lowStockItems: number;
+  byWarehouse: WarehouseStockDto[];
+  /** Per warehouse per item — the first rows only; `stockLevelsTotal` says how many exist. */
+  stockLevels: StockLevelRowDto[];
+  stockLevelsTotal: number;
+  lowStock: LowStockItemDto[];
 }
 
 export interface FleetSummaryDto {
@@ -59,4 +101,5 @@ export const dashboardApi = {
   getHrSummary: () => summary<HrSummaryDto>('GetHrSummary'),
   getWorkshopSummary: () => summary<WorkshopSummaryDto>('GetWorkshopSummary'),
   getFleetSummary: () => summary<FleetSummaryDto>('GetFleetSummary'),
+  getInventorySummary: () => summary<InventorySummaryDto>('GetInventorySummary'),
 };

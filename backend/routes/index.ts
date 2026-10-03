@@ -14,6 +14,7 @@ import { customersRoutes } from './customers.routes.js';
 import { dashboardRoutes } from './dashboard.routes.js';
 import { driversRoutes } from './drivers.routes.js';
 import { hrRoutes } from './hr.routes.js';
+import { inventoryRoutes } from './inventory.routes.js';
 import { invoicesRoutes } from './invoices.routes.js';
 import { loadingOrdersRoutes } from './loading-orders.routes.js';
 import { locationsRoutes } from './locations.routes.js';
@@ -37,6 +38,7 @@ export const allRoutes: ServiceRoutes = {
   ...dashboardRoutes,
   ...driversRoutes,
   ...hrRoutes,
+  ...inventoryRoutes,
   ...invoicesRoutes,
   ...loadingOrdersRoutes,
   ...locationsRoutes,

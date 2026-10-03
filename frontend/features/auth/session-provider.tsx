@@ -11,6 +11,7 @@ import { queryKeys } from '../../lib/api/query-keys';
 import { msUntil } from '../../lib/date';
 import { translate } from '../../lib/i18n/dictionary';
 import { hasPermission, moduleForPath, PermissionAction, PermissionRow } from '../../lib/permissions';
+import { useListStore } from '../../stores/list.store';
 import { readSessionNotice, readStoredSession, StoredSession, writeSessionNotice, writeStoredSession } from './session-storage';
 
 export const SESSION_EXPIRED_MESSAGE = 'Your session has expired. Please sign in again.';
@@ -65,8 +66,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       writeSessionNotice(notice);
       setSessionNotice(notice);
       setStored(null);
-      // Nothing fetched for the previous user may be shown to the next one.
+      // Nothing fetched or filtered by the previous user may be shown to the next one.
       queryClient.clear();
+      useListStore.getState().reset();
     },
     [queryClient],
   );
@@ -114,6 +116,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const { accessToken, expiresAt, user } = await authApi.login(username, password, language);
       const permissions = await authApi.getMyPermissions(accessToken);
       queryClient.clear();
+      useListStore.getState().reset();
       queryClient.setQueryData<SessionData>(queryKeys.session(), { user, permissions });
       setAuthToken(accessToken);
       writeStoredSession({ token: accessToken, expiresAt });

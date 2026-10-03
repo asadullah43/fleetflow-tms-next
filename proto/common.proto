@@ -37,3 +37,15 @@ message Pagination {
 }
 
 message Empty {}
+
+// An uploaded file attached to a record. The bytes are not in the
+// message: they are uploaded with POST /files and read with GET
+// /files/{id} (plain HTTP next to this API — see the API reference).
+message FileInfo {
+  int32 id = 1;
+  string name = 2;           // the uploader's file name, for display / download
+  string content_type = 3;   // detected from the content: application/pdf, image/jpeg, image/png, image/webp
+  int32 size = 4;            // bytes
+  string uploaded_at = 5;
+  string uploaded_by = 6;
+}

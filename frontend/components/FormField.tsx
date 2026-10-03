@@ -1,7 +1,8 @@
 'use client';
 
 import { Input, PasswordInput, Select, Text, Textarea, TextInput } from '@mantine/core';
-import { DateInput } from '@mantine/dates';
+import { DateInput, TimeInput } from '@mantine/dates';
+import { FileUploadInput } from '../features/files/FileUploadInput';
 import type { DisplayContext, FieldDef, FormValues } from '../features/crud/types';
 import { AsyncSelect } from './AsyncSelect';
 
@@ -28,6 +29,19 @@ export function FormField({ field, values, error, ctx, onChange, mode }: FormFie
   const set = (next: string) => onChange(field.name, next);
 
   switch (field.type) {
+    case 'file':
+      if (!field.purpose) throw new Error(`Field "${field.name}" is a file without a purpose`);
+      return (
+        <Input.Wrapper label={common.label} description={common.description} error={common.error}>
+          <FileUploadInput purpose={field.purpose} value={value} onChange={set} />
+        </Input.Wrapper>
+      );
+    case 'custom':
+      return (
+        <Input.Wrapper label={common.label} description={common.description} error={common.error}>
+          {field.input?.({ value, onChange: set, ctx })}
+        </Input.Wrapper>
+      );
     case 'display':
       return (
         <Input.Wrapper label={common.label} description={common.description}>
@@ -52,6 +66,8 @@ export function FormField({ field, values, error, ctx, onChange, mode }: FormFie
       );
     case 'date':
       return <DateInput {...common} value={value || null} onChange={(next) => set(next ?? '')} valueFormat="YYYY-MM-DD" placeholder="YYYY-MM-DD" clearable={!field.required} popoverProps={{ withinPortal: true }} />;
+    case 'time':
+      return <TimeInput {...common} value={value} onChange={(event) => set(event.currentTarget.value)} dir="ltr" />;
     case 'textarea':
       return <Textarea {...common} value={value} onChange={(event) => set(event.currentTarget.value)} autosize minRows={2} maxRows={6} />;
     case 'password':

@@ -11,6 +11,7 @@ several companies from one installation, each seeing only its own data.
 | Backend | Node.js (TypeScript), native gRPC |
 | Browser ↔ backend | grpc-web, bridged to gRPC by Envoy; nginx puts both behind one origin |
 | Database | PostgreSQL + Prisma (with migration history) |
+| Read cache | Redis (optional): lists, dropdown options and dashboard figures, per company; every write invalidates at once, and the API reads PostgreSQL whenever Redis is unset or down. See `backend/_core_app_connectivities/cache.ts` |
 | Auth | 12-hour JWT sessions for people, API keys for integrations |
 
 ## Modules
@@ -194,6 +195,6 @@ tenant-isolation and session-expiry tests also need the backend's own
 ## Known limits
 
 - Rate-limit counters live in the backend's memory: they reset on restart and assume one backend instance.
-- The company logo is stored as a small image on the company record; there is no general file-upload storage.
+- The company logo is stored as a small image on the company record. Employee documents and contract files are real uploads (PDF, JPEG, PNG or WebP, up to 10 MB): the backend serves them over plain HTTP on port 8081 (Envoy routes `/files/` there) and stores them on the `uploads_data` Docker volume — back that volume up together with the database.
 - Before sign-in, the login screen shows company #1's name and logo (`DEFAULT_COMPANY_ID`).
 - Live GPS tracking (the dashboard's Map tab) is a placeholder.

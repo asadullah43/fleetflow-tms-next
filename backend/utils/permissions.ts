@@ -6,6 +6,11 @@
  * `settings` (company settings + ZATCA page) and `apiKeys` (integration
  * keys) were added later — existing roles have no row for them, which
  * means "no access" until an admin grants it on the Roles page.
+ *
+ * `leaveRequests` was split out of `hr` so filing leave and deciding it
+ * can go to different roles: add = apply for leave (create a request,
+ * always PENDING), edit = approve / reject (change its status). Its
+ * migration copied each role's `hr` grants, so nobody lost access.
  */
 export const PERMISSION_MODULES = [
   'dashboard',
@@ -22,7 +27,9 @@ export const PERMISSION_MODULES = [
   'supplierPayments',
   'invoices',
   'workshop',
+  'inventory',
   'hr',
+  'leaveRequests',
   'users',
   'roles',
   'settings',

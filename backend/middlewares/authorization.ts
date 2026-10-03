@@ -17,6 +17,15 @@ export function authorize(module: PermissionModule, action: PermissionAction): M
   };
 }
 
+/** Requires `action` on at least one of `modules` (a list two modules' screens both pick from). */
+export function authorizeAny(modules: PermissionModule[], action: PermissionAction): Middleware {
+  return async (ctx, next) => {
+    if (!ctx.principal) throw AppError.from(ErrorCode.AUTH_TOKEN_MISSING, 401);
+    if (!modules.some((module) => principalCan(ctx.principal!, module, action))) throw AppError.from(ErrorCode.AUTH_PERMISSION_DENIED, 403);
+    return next();
+  };
+}
+
 /**
  * For shared reference lists that other modules' forms pick from (trucks,
  * drivers, customers, ...): any signed-in user may read them — someone

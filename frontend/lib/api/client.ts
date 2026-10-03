@@ -110,3 +110,51 @@ export function apiCall<Res = unknown, Req = object>(options: CallOptions<Req>):
     });
   });
 }
+
+// ── Plain HTTP, for what gRPC-web does not carry: file upload and download ──
+
+/** An address on the backend's HTTP file endpoint (Envoy routes /files/ there), e.g. "/files/12?token=…". */
+export function backendUrl(path: string): string {
+  return `${GRPC_WEB_URL}${path}`;
+}
+
+/**
+ * Calls the backend's HTTP file endpoint with the session, unwrapping the
+ * same envelope as apiCall (DATA on success, the ERROR_* fields as an
+ * ApiError otherwise) and reporting expiry / rate limits the same way.
+ */
+export async function httpCall<Res>(method: 'GET' | 'POST', path: string, body?: FormData): Promise<Res> {
+  const token = currentToken;
+  let response: Response;
+  try {
+    response = await fetch(backendUrl(path), { method, body, headers: token ? { authorization: `Bearer ${token}` } : {} });
+  } catch {
+    throw new ApiError({ code: 'CLIENT-NETWORK', filter: 'TECHNICAL_ISSUE', message: CONNECTION_ERROR_MESSAGE, transport: true });
+  }
+  let envelope: { STATUS?: string; ERROR_CODE?: string; ERROR_FILTER?: string; ERROR_DESCRIPTION?: string; RATE_LIMIT?: RateLimitEnvelope; DATA?: Res };
+  try {
+    envelope = await response.json();
+  } catch {
+    // Not the backend's answer (e.g. a proxy's own error page for a body it refused).
+    const message = response.status === 413 ? 'The file is too large.' : CONNECTION_ERROR_MESSAGE;
+    throw new ApiError({ code: `CLIENT-HTTP${response.status}`, filter: response.status === 413 ? 'INVALID_REQUEST' : 'TECHNICAL_ISSUE', message, transport: response.status !== 413 });
+  }
+  if (envelope.STATUS === 'SUCCESSFUL') return envelope.DATA as Res;
+
+  const limit = envelope.RATE_LIMIT;
+  const error = new ApiError({
+    code: envelope.ERROR_CODE ?? `CLIENT-HTTP${response.status}`,
+    filter: (envelope.ERROR_FILTER as ErrorFilter) ?? 'TECHNICAL_ISSUE',
+    message: envelope.ERROR_DESCRIPTION ?? 'Something went wrong. Please try again.',
+    rateLimit: limit ? { type: limit.type ?? '', retryAfterSeconds: limit.retryAfterSeconds ?? 0, remainingPoints: limit.remainingPoints ?? 0 } : undefined,
+  });
+  if (error.filter === 'USER_NOT_AUTHENTICATED' && token) handlers.onUnauthenticated?.(error);
+  if (error.filter === 'RATE_LIMIT_EXCEEDED') handlers.onRateLimited?.(error);
+  throw error;
+}
+
+interface RateLimitEnvelope {
+  type?: string;
+  retryAfterSeconds?: number;
+  remainingPoints?: number;
+}
