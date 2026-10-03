@@ -8,7 +8,7 @@ import { DashboardTab, useUiStore } from '../../stores/ui.store';
 import { useAuth } from '../auth/session-provider';
 import { useResourceList } from '../crud/crud.queries';
 import { useListControls } from '../crud/use-list-controls';
-import { useFleetSummary, useHrSummary, useOperationsSummary, useWorkshopSummary } from './dashboard.queries';
+import { useFleetSummary, useHrSummary, useInventorySummary, useOperationsSummary, useWorkshopSummary } from './dashboard.queries';
 
 export type { DashboardTab };
 
@@ -17,6 +17,7 @@ const TABS: { key: DashboardTab; label: string; icon: IconName; module?: string 
   { key: 'operations', label: 'Operations', icon: 'gauge' },
   { key: 'hr', label: 'HR Dashboard', icon: 'userCog', module: 'hr' },
   { key: 'workshop', label: 'Workshop Dashboard', icon: 'wrench', module: 'workshop' },
+  { key: 'inventory', label: 'Inventory Dashboard', icon: 'box', module: 'inventory' },
   { key: 'map', label: 'Map', icon: 'mapPin' },
 ];
 
@@ -39,6 +40,7 @@ export function useDashboardViewModel() {
   const operations = useOperationsSummary(tab === 'operations');
   const hr = useHrSummary(tab === 'hr');
   const workshop = useWorkshopSummary(tab === 'workshop');
+  const inventory = useInventorySummary(tab === 'inventory');
   const fleet = useFleetSummary(tab === 'operations' || tab === 'map');
   const rosterControls = useListControls({ scope: 'dashboard:roster', initialPageSize: ROSTER_PAGE_SIZE });
   const roster = useResourceList(trucksApi, { ...rosterControls.query, sortBy: 'truckNumber', sortOrder: 'asc' }, tab === 'map');
@@ -55,6 +57,7 @@ export function useDashboardViewModel() {
     fleetForOperations: fleet.data,
     hr: { data: hr.data, error: failure(hr) },
     workshop: { data: workshop.data, error: failure(workshop) },
+    inventory: { data: inventory.data, error: failure(inventory) },
     fleet: { data: fleet.data, error: failure(fleet) },
     roster: { rows: roster.data?.items, pagination: roster.data?.pagination, loading: roster.isPending, fetching: roster.isFetching && !roster.isPending, error: failure(roster), setPage: rosterControls.setPage },
   };

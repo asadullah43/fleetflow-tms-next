@@ -21,26 +21,6 @@ export const createMaintenanceScheduleRequest = z.object({
   notes: optionalText,
 });
 
-export const createSparePartRequest = z.object({
-  name: requiredText,
-  language: language.optional(),
-  partNumber: optionalText,
-  category: optionalText,
-  quantity: z.number().int().optional(),
-  minimumStock: z.number().int().optional(),
-  unitCost: optionalDecimalString,
-  supplierId: optionalId,
-  status: optionalText,
-  nameAr: optionalText,
-});
-
-export const createSparePartTransactionRequest = z.object({
-  sparePartId: id,
-  transactionType: requiredText,
-  quantity: z.number().int(),
-  referenceNote: optionalText,
-});
-
 export const createVehicleInspectionRequest = z.object({
   truckId: id,
   inspectorId: id,
@@ -51,12 +31,16 @@ export const createVehicleInspectionRequest = z.object({
   attachments: optionalText,
 });
 
+/** Valued at the item's own unit cost (server-side), so no cost is sent. */
 export const createWorkOrderPartRequest = z.object({
   workOrderId: id,
-  sparePartId: id,
-  quantity: z.number().int(),
-  unitCost: decimalString,
+  itemId: id,
+  warehouseId: id,
+  quantity: z.number().int().positive().max(1_000_000),
 });
+
+/** One inventory line: an item, the warehouse it is taken from, how many. */
+const workOrderPartLine = z.object({ itemId: id, warehouseId: id, quantity: z.number().int().positive().max(1_000_000) });
 
 export const createWorkOrderRequest = z.object({
   truckId: id,
@@ -74,6 +58,8 @@ export const createWorkOrderRequest = z.object({
   partsCost: optionalDecimalString,
   otherCost: optionalDecimalString,
   notes: optionalText,
+  /** Inventory used, taken from stock as the order is created (proto3: absent = []). */
+  parts: z.array(workOrderPartLine).max(50).default([]),
 });
 
 export const createWorkshopExpenseRequest = z.object({
@@ -104,20 +90,6 @@ export const updateMaintenanceScheduleRequest = z.object({
   notes: optionalText,
 });
 
-export const updateSparePartRequest = z.object({
-  id: id,
-  name: optionalText,
-  language: language.optional(),
-  partNumber: optionalText,
-  category: optionalText,
-  quantity: z.number().int().optional(),
-  minimumStock: z.number().int().optional(),
-  unitCost: optionalDecimalString,
-  supplierId: optionalId,
-  status: optionalText,
-  nameAr: optionalText,
-});
-
 export const updateVehicleInspectionRequest = z.object({
   id: id,
   truckId: optionalId,
@@ -127,12 +99,6 @@ export const updateVehicleInspectionRequest = z.object({
   notes: optionalText,
   result: optionalText,
   attachments: optionalText,
-});
-
-export const updateWorkOrderPartRequest = z.object({
-  id: id,
-  quantity: z.number().int().optional(),
-  unitCost: optionalDecimalString,
 });
 
 export const updateWorkOrderRequest = z.object({

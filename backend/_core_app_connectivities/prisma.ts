@@ -53,8 +53,6 @@ export const TENANT_MODELS: ReadonlySet<string> = new Set([
   'MaintenanceSchedule',
   'VehicleInspection',
   'InspectionItem',
-  'SparePart',
-  'SparePartTransaction',
   'WorkshopExpense',
   'Department',
   'Designation',
@@ -65,6 +63,10 @@ export const TENANT_MODELS: ReadonlySet<string> = new Set([
   'EmploymentContract',
   'ApiKey',
   'IdempotencyRecord',
+  'Warehouse',
+  'InventoryItem',
+  'InventoryStock',
+  'InventoryTransaction',
 ]);
 
 /** model -> { foreign-key column: client delegate of the tenant model it references } */
@@ -86,12 +88,10 @@ export const TENANT_REFERENCES: Readonly<Record<string, Readonly<Record<string, 
   LoadingOrder: { pickupLocationId: 'location', deliveryLocationId: 'location', customerId: 'customer', cargoTypeId: 'cargoType' },
   User: { roleId: 'role' },
   WorkOrder: { truckId: 'truck', driverId: 'driver', supplierId: 'supplier' },
-  WorkOrderPart: { workOrderId: 'workOrder', sparePartId: 'sparePart' },
+  WorkOrderPart: { workOrderId: 'workOrder', itemId: 'inventoryItem', warehouseId: 'warehouse' },
   MaintenanceSchedule: { truckId: 'truck' },
   VehicleInspection: { truckId: 'truck', inspectorId: 'user' },
   InspectionItem: { inspectionId: 'vehicleInspection', workOrderId: 'workOrder' },
-  SparePart: { supplierId: 'supplier' },
-  SparePartTransaction: { sparePartId: 'sparePart' },
   WorkshopExpense: { truckId: 'truck', workOrderId: 'workOrder' },
   Designation: { departmentId: 'department' },
   Employee: { departmentId: 'department', designationId: 'designation', driverId: 'driver' },
@@ -99,6 +99,9 @@ export const TENANT_REFERENCES: Readonly<Record<string, Readonly<Record<string, 
   LeaveRequest: { employeeId: 'employee' },
   EmployeeDocument: { employeeId: 'employee' },
   EmploymentContract: { employeeId: 'employee' },
+  InventoryItem: { supplierId: 'supplier' },
+  InventoryStock: { itemId: 'inventoryItem', warehouseId: 'warehouse' },
+  InventoryTransaction: { itemId: 'inventoryItem', warehouseId: 'warehouse', workOrderId: 'workOrder' },
 };
 
 type CountDelegate = { count(args: { where: { id: number; companyId: number } }): Promise<number> };

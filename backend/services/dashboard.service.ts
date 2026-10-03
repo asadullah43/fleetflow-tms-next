@@ -22,8 +22,18 @@ function startOfToday(): Date {
 /** Figures depend on the date ("this month", "today"), so cached ones are kept per local day. */
 const cacheDay = () => ({ day: startOfToday().toISOString() });
 
-/** Spare parts at or below their own minimum stock (a column-to-column comparison, done in the database). */
-const lowStockCount = () => prisma.sparePart.count({ where: { quantity: { lte: prisma.sparePart.fields.minimumStock } } });
+/**
+ * Low stock: an active item whose total across ALL warehouses is at or
+ * below its minimum. The minimum is set per item, so it is compared with
+ * the item's total; the per-warehouse split is shown alongside on the
+ * inventory dashboard. A column-to-column comparison, done in the database.
+ */
+const LOW_STOCK = () => ({ status: 'ACTIVE', totalQuantity: { lte: prisma.inventoryItem.fields.minimumStock } });
+const lowStockCount = () => prisma.inventoryItem.count({ where: LOW_STOCK() });
+
+/** How many rows the inventory dashboard lists (each list has a "see all" link to its full page). */
+const STOCK_LEVEL_ROWS = 50;
+const LOW_STOCK_ROWS = 20;
 
 const OPEN_WORK_ORDER = { status: { in: ['OPEN', 'IN_PROGRESS'] } };
 
@@ -36,7 +46,7 @@ export const dashboardService = {
   async getSummary() {
     return cachedRead('dashboard.operations', cacheDay(), config.cache.dashboardTtlSeconds, async () => {
       try {
-        const [activeTrucks, activeDrivers, tripsThisMonth, openWorkOrders, unpaid, pendingLeaveRequests, lowStockSpareParts] = await Promise.all([
+        const [activeTrucks, activeDrivers, tripsThisMonth, openWorkOrders, unpaid, pendingLeaveRequests, lowStockItems] = await Promise.all([
           prisma.truck.count({ where: { status: 'ACTIVE' } }),
           prisma.driver.count({ where: { status: 'ACTIVE' } }),
           prisma.trip.count({ where: { tripDate: { gte: startOfMonth() } } }),
@@ -53,7 +63,7 @@ export const dashboardService = {
           unpaidInvoicesTotal: unpaid._sum.total?.toString() ?? '0',
           unpaidInvoicesCount: unpaid._count,
           pendingLeaveRequests,
-          lowStockSpareParts,
+          lowStockItems,
         };
       } catch (error) {
         throw AppError.from(ErrorCode.DSH_FETCH_FAILED, 500, error);
@@ -113,13 +123,12 @@ export const dashboardService = {
       try {
         const today = startOfToday();
         const monthStart = startOfMonth();
-        const [open, inProgress, completedThisMonth, overdueMaintenance, failedInspections, lowStockSpareParts, expenses, byPriority] = await Promise.all([
+        const [open, inProgress, completedThisMonth, overdueMaintenance, failedInspections, expenses, byPriority] = await Promise.all([
           prisma.workOrder.count({ where: { status: 'OPEN' } }),
           prisma.workOrder.count({ where: { status: 'IN_PROGRESS' } }),
           prisma.workOrder.count({ where: { status: 'COMPLETED', completionDate: { gte: monthStart } } }),
           prisma.maintenanceSchedule.count({ where: { status: { not: 'DONE' }, nextService: { lt: today } } }),
           prisma.vehicleInspection.count({ where: { result: 'FAIL' } }),
-          lowStockCount(),
           prisma.workshopExpense.aggregate({ where: { expenseDate: { gte: monthStart } }, _sum: { amount: true } }),
           prisma.workOrder.groupBy({ by: ['priority'], where: { status: { notIn: ['COMPLETED', 'CANCELLED'] } }, _count: { _all: true } }),
         ]);
@@ -129,7 +138,6 @@ export const dashboardService = {
           completedThisMonth,
           overdueMaintenance,
           failedInspections,
-          lowStockSpareParts,
           expensesThisMonth: expenses._sum.amount?.toFixed(2) ?? '0.00',
           openByPriority: ['URGENT', 'HIGH', 'MEDIUM', 'LOW'].map((priority) => ({
             label: priority,
@@ -138,6 +146,74 @@ export const dashboardService = {
         };
       } catch (error) {
         throw AppError.from(ErrorCode.WKS_DASH_FETCH_FAILED, 500, error);
+      }
+    });
+  },
+
+  /** Stock per warehouse and per item, and the items at or below their minimum (see LOW_STOCK). */
+  async getInventorySummary() {
+    return cachedRead('dashboard.inventory', cacheDay(), config.cache.dashboardTtlSeconds, async () => {
+      try {
+        const inStock = { quantity: { gt: 0 } };
+        const [activeItems, warehouses, totals, byWarehouse, stockLevels, stockLevelsTotal, lowStockItems, lowStock] = await Promise.all([
+          prisma.inventoryItem.count({ where: { status: 'ACTIVE' } }),
+          prisma.warehouse.findMany({ select: { id: true, name: true, nameAr: true, status: true }, orderBy: { name: 'asc' } }),
+          prisma.inventoryStock.aggregate({ _sum: { quantity: true } }),
+          prisma.inventoryStock.groupBy({ by: ['warehouseId'], where: inStock, _sum: { quantity: true }, _count: { _all: true } }),
+          prisma.inventoryStock.findMany({
+            where: inStock,
+            select: { quantity: true, warehouseId: true, itemId: true, warehouse: { select: { name: true, nameAr: true } }, item: { select: { name: true, nameAr: true, itemNumber: true } } },
+            orderBy: [{ warehouse: { name: 'asc' } }, { item: { name: 'asc' } }, { id: 'asc' }],
+            take: STOCK_LEVEL_ROWS,
+          }),
+          prisma.inventoryStock.count({ where: inStock }),
+          lowStockCount(),
+          prisma.inventoryItem.findMany({
+            where: LOW_STOCK(),
+            select: { id: true, name: true, nameAr: true, itemNumber: true, totalQuantity: true, minimumStock: true },
+            orderBy: [{ totalQuantity: 'asc' }, { name: 'asc' }],
+            take: LOW_STOCK_ROWS,
+          }),
+        ]);
+
+        const perWarehouse = new Map(byWarehouse.map((row) => [row.warehouseId, row]));
+        return {
+          activeItems,
+          activeWarehouses: warehouses.filter((warehouse) => warehouse.status === 'ACTIVE').length,
+          totalUnits: totals._sum.quantity ?? 0,
+          lowStockItems,
+          // Every active warehouse, plus any inactive one still holding stock.
+          byWarehouse: warehouses
+            .filter((warehouse) => warehouse.status === 'ACTIVE' || perWarehouse.has(warehouse.id))
+            .map((warehouse) => ({
+              warehouseId: warehouse.id,
+              name: warehouse.name,
+              nameAr: warehouse.nameAr ?? undefined,
+              items: perWarehouse.get(warehouse.id)?._count._all ?? 0,
+              units: perWarehouse.get(warehouse.id)?._sum.quantity ?? 0,
+            })),
+          stockLevels: stockLevels.map((row) => ({
+            warehouseId: row.warehouseId,
+            warehouseName: row.warehouse.name,
+            warehouseNameAr: row.warehouse.nameAr ?? undefined,
+            itemId: row.itemId,
+            itemName: row.item.name,
+            itemNameAr: row.item.nameAr ?? undefined,
+            itemNumber: row.item.itemNumber ?? undefined,
+            quantity: row.quantity,
+          })),
+          stockLevelsTotal,
+          lowStock: lowStock.map((item) => ({
+            itemId: item.id,
+            name: item.name,
+            nameAr: item.nameAr ?? undefined,
+            itemNumber: item.itemNumber ?? undefined,
+            totalQuantity: item.totalQuantity,
+            minimumStock: item.minimumStock,
+          })),
+        };
+      } catch (error) {
+        throw AppError.from(ErrorCode.STK_DASH_FETCH_FAILED, 500, error);
       }
     });
   },

@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-export type DashboardTab = 'operations' | 'hr' | 'workshop' | 'map';
+export type DashboardTab = 'operations' | 'hr' | 'workshop' | 'inventory' | 'map';
 
 interface UiState {
   /** Desktop rail shows icons only. Ignored on small screens, where the rail is a full-width drawer. */

@@ -1,5 +1,7 @@
 import { fleetflow } from '../generated/proto/messages.js';
-import { createCrudApi } from './crud-api';
+import { apiCall } from './client';
+import { createCrudApi, listCall } from './crud-api';
+import type { ListQuery, Page } from './types';
 
 const ws = fleetflow.workshop;
 
@@ -57,22 +59,6 @@ export interface VehicleInspectionDto {
 }
 export const vehicleInspectionsApi = createCrudApi<VehicleInspectionDto>('vehicleInspections', 'fleetflow.workshop.VehicleInspectionsService', ws, 'VehicleInspection');
 
-export interface SparePartDto {
-  id: number;
-  name: string;
-  nameAr?: string;
-  partNumber?: string;
-  category?: string;
-  quantity: number;
-  minimumStock: number;
-  unitCost: string;
-  supplierId?: number;
-  status: string;
-  supplierName?: string;
-  supplierNameAr?: string;
-}
-export const sparePartsApi = createCrudApi<SparePartDto>('spareParts', 'fleetflow.workshop.SparePartsService', ws, 'SparePart');
-
 export interface WorkshopExpenseDto {
   id: number;
   truckId: number;
@@ -84,3 +70,37 @@ export interface WorkshopExpenseDto {
   truckNumber?: string;
 }
 export const workshopExpensesApi = createCrudApi<WorkshopExpenseDto>('workshopExpenses', 'fleetflow.workshop.WorkshopExpensesService', ws, 'WorkshopExpense');
+
+/** Inventory used on a work order: drawn from one warehouse, valued at the item's cost, added to the order's parts cost. */
+export interface WorkOrderPartDto {
+  id: number;
+  workOrderId: number;
+  itemId: number;
+  warehouseId: number;
+  quantity: number;
+  unitCost: string;
+  totalCost: string;
+  itemName?: string;
+  itemNameAr?: string;
+  itemNumber?: string;
+  warehouseName?: string;
+  warehouseNameAr?: string;
+  createdAt?: string;
+}
+
+export interface NewWorkOrderPart {
+  workOrderId: number;
+  itemId: number;
+  warehouseId: number;
+  quantity: number;
+}
+
+const PARTS = 'fleetflow.workshop.WorkOrderPartsService';
+
+/** Lines are added or removed, never edited (removing one returns its stock to the warehouse). */
+export const workOrderPartsApi = {
+  key: 'workOrderParts',
+  list: (query?: ListQuery): Promise<Page<WorkOrderPartDto>> => listCall<WorkOrderPartDto>(PARTS, 'List', ws.ListRequest, query),
+  create: (values: NewWorkOrderPart, idempotencyKey: string) => apiCall<WorkOrderPartDto>({ service: PARTS, method: 'Create', RequestType: ws.CreateWorkOrderPartRequest, request: { ...values }, idempotencyKey }),
+  remove: (id: number) => apiCall({ service: PARTS, method: 'Delete', RequestType: ws.IdRequest, request: { id } }).then(() => undefined),
+};

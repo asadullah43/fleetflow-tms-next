@@ -2,7 +2,8 @@
  * LOCAL DEV ONLY. Fills every module with realistic bulk data by calling
  * the same services the API uses (not raw Prisma inserts), so every
  * create goes through the real business logic: tenant stamping, number
- * sequences (EMP-/WO-/INV-/LDO- series), overlap checks, computed totals.
+ * sequences (EMP-/WO-/INV-/LDO- series), overlap checks, computed totals,
+ * per-warehouse stock safety.
  * That's what makes the generated rows safe to edit/update/delete through
  * the UI exactly like real data would behave.
  *
@@ -35,14 +36,8 @@ import { supplierPaymentsService } from '../services/supplier-payments.service.j
 import { suppliersService } from '../services/suppliers.service.js';
 import { tripsService } from '../services/trips.service.js';
 import { trucksService } from '../services/trucks.service.js';
-import {
-  maintenanceSchedulesService,
-  sparePartsService,
-  sparePartTransactionsService,
-  vehicleInspectionsService,
-  workOrdersService,
-  workshopExpensesService,
-} from '../services/workshop.service.js';
+import { inventoryItemsService, inventoryTransactionsService, warehousesService } from '../services/inventory.service.js';
+import { maintenanceSchedulesService, vehicleInspectionsService, workOrderPartsService, workOrdersService, workshopExpensesService } from '../services/workshop.service.js';
 
 if (config.env === 'production') {
   console.error('Refusing to run: NODE_ENV=production. This script is for local/dev databases only.');
@@ -248,30 +243,41 @@ async function main() {
     // ── Supplier payments ──────────────────────────────────────────────
     for (let i = 0; i < 10; i++) await supplierPaymentsService.create({ supplierId: pick(suppliers, i).id, amount: String(num(500, 8000, i * 4)), currency: 'SAR', paymentDate: dateOffset(-num(0, 30, i)), description: 'Spare parts / fuel settlement' });
 
-    // ── Workshop ───────────────────────────────────────────────────────
-    const spareParts: any[] = [];
-    const PART_NAMES = ['Brake Pads', 'Oil Filter', 'Air Filter', 'Tyre 295/80R22.5', 'Clutch Plate', 'Fuel Injector', 'Alternator', 'Radiator Hose', 'Shock Absorber', 'Battery 12V', 'Headlight Assembly', 'Windscreen Wiper', 'Fan Belt', 'Brake Disc', 'Suspension Bushing'];
-    for (let i = 0; i < PART_NAMES.length; i++) {
-      const partNumber = `SP-${String(i + 1).padStart(4, '0')}`;
-      spareParts.push(
+    // ── Inventory: warehouses, items, stock in / out ───────────────────
+    const warehouses: any[] = [];
+    for (const [name, location] of [['Main Warehouse', 'Riyadh - 2nd Industrial City'], ['Jeddah Depot', 'Jeddah - Al Khumrah'], ['Dammam Store', 'Dammam - 1st Industrial City']]) {
+      warehouses.push(await findOrCreate(() => prisma.warehouse.findFirst({ where: { name } }), () => warehousesService.create({ name, location, status: 'ACTIVE' })));
+    }
+
+    const items: any[] = [];
+    const ITEM_NAMES = ['Brake Pads', 'Oil Filter', 'Air Filter', 'Tyre 295/80R22.5', 'Clutch Plate', 'Fuel Injector', 'Alternator', 'Radiator Hose', 'Shock Absorber', 'Battery 12V', 'Headlight Assembly', 'Windscreen Wiper', 'Fan Belt', 'Brake Disc', 'Suspension Bushing'];
+    for (let i = 0; i < ITEM_NAMES.length; i++) {
+      const itemNumber = `ITM-${String(i + 1).padStart(4, '0')}`;
+      items.push(
         await findOrCreate(
-          () => prisma.sparePart.findFirst({ where: { partNumber } }),
-          () => sparePartsService.create({ name: PART_NAMES[i], partNumber, category: pick(['Engine', 'Brakes', 'Electrical', 'Tyres', 'Body'], i), quantity: num(5, 100, i), minimumStock: 10, unitCost: String(num(30, 1200, i * 6)), supplierId: pick(suppliers, i).id, status: 'ACTIVE' }),
+          () => prisma.inventoryItem.findFirst({ where: { itemNumber } }),
+          () => inventoryItemsService.create({ name: ITEM_NAMES[i], itemNumber, category: pick(['Engine', 'Brakes', 'Electrical', 'Tyres', 'Body'], i), minimumStock: 10, unitCost: String(num(30, 1200, i * 6)), supplierId: pick(suppliers, i).id, status: 'ACTIVE' }),
         ),
       );
     }
 
-    for (let i = 0; i < 10; i++) {
+    // Stock arrives through IN (every item in one warehouse, some in a second), so each quantity has a ledger entry.
+    for (let i = 0; i < items.length; i++) {
+      await inventoryTransactionsService.stockIn({ itemId: items[i].id, warehouseId: pick(warehouses, i).id, quantity: num(5, 60, i * 7), remarks: 'Dev seed opening stock' });
+      if (i % 3 === 0) await inventoryTransactionsService.stockIn({ itemId: items[i].id, warehouseId: pick(warehouses, i + 1).id, quantity: num(2, 20, i), remarks: 'Dev seed transfer stock' });
+    }
+    for (let i = 0; i < 8; i++) {
       try {
-        await sparePartTransactionsService.create({ sparePartId: pick(spareParts, i).id, transactionType: pick(['IN', 'OUT'], i), quantity: num(1, 10, i), referenceNote: 'Dev seed stock movement' });
+        await inventoryTransactionsService.stockOut({ itemId: pick(items, i).id, warehouseId: pick(warehouses, i).id, quantity: num(1, 6, i), remarks: `Used for truck ${pick(trucks, i).truckNumber}` });
       } catch {
-        // OUT exceeding what's left on hand (e.g. a prior run already took stock) - correct
-        // behaviour from the real stock-safety check, not an error; just skip this one.
+        // Not enough left in that warehouse (e.g. a previous run took it): the stock-safety check working, not an error.
       }
     }
 
+    // ── Workshop ───────────────────────────────────────────────────────
+    const workOrders: any[] = [];
     for (let i = 0; i < 15; i++) {
-      await workOrdersService.create({
+      const workOrder = await workOrdersService.create({
         truckId: pick(trucks, i).id,
         driverId: pick(drivers, i).id,
         issue: pick(['Engine overheating', 'Brake noise', 'Tyre puncture', 'AC not cooling', 'Electrical fault', 'Suspension noise'], i),
@@ -281,6 +287,16 @@ async function main() {
         laborCost: String(num(100, 800, i * 3)),
         partsCost: String(num(50, 500, i * 2)),
       });
+      workOrders.push(workOrder);
+    }
+
+    // Some work orders use inventory: drawn from the item's own warehouse, added to the order's parts cost.
+    for (let i = 0; i < 6; i++) {
+      try {
+        await workOrderPartsService.create({ workOrderId: pick(workOrders, i).id, itemId: pick(items, i).id, warehouseId: pick(warehouses, i).id, quantity: 1 });
+      } catch {
+        // Out of stock in that warehouse - skip.
+      }
     }
 
     for (let i = 0; i < 10; i++) await maintenanceSchedulesService.create({ truckId: pick(trucks, i).id, maintenanceType: pick(['Oil Change', 'Tyre Rotation', 'Full Service', 'Brake Inspection'], i), mileageInterval: '10000', status: 'ACTIVE' });
@@ -310,9 +326,10 @@ async function main() {
 
     console.log('Dev data seeded:');
     console.log(`  Trucks: ${trucks.length}, Drivers: ${drivers.length}, Customers: ${customers.length}, Suppliers: ${suppliers.length}`);
-    console.log(`  Locations: ${locations.length}, Cargo types: ${cargoTypes.length}, Trips: ${trips.length}, Spare parts: ${spareParts.length}`);
+    console.log(`  Locations: ${locations.length}, Cargo types: ${cargoTypes.length}, Trips: ${trips.length}`);
+    console.log(`  Warehouses: ${warehouses.length}, Inventory items: ${items.length}`);
     console.log(`  Departments: ${Object.keys(departments).length}, Designations: ${designations.length}, Employees: ${employees.length}`);
-    console.log('Invoices, loading orders, supplier payments, work orders, maintenance schedules, inspections, workshop expenses, attendance, leave requests and employment contracts were also seeded.');
+    console.log('Invoices, loading orders, supplier payments, stock movements, work orders (some using inventory), maintenance schedules, inspections, workshop expenses, attendance, leave requests and employment contracts were also seeded.');
   });
 }
 

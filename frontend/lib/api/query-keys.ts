@@ -16,7 +16,7 @@ export const queryKeys = {
   branding: () => ['branding'] as const,
   companySettings: () => ['companySettings'] as const,
   permissionModules: () => ['roles', 'modules'] as const,
-  dashboard: (section: 'operations' | 'hr' | 'workshop' | 'fleet') => ['dashboard', section] as const,
+  dashboard: (section: 'operations' | 'hr' | 'workshop' | 'fleet' | 'inventory') => ['dashboard', section] as const,
   loadingOrderDocument: (batchId: number) => ['loadingOrders', 'document', batchId] as const,
   truckAssignment: (truckId: number, day: string) => ['assignments', 'current', truckId, day] as const,
   /** A truck's whole assignment history (an array, not a page — so never under 'list'). */

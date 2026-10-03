@@ -31,6 +31,10 @@ export const STATUS_COLOR: Record<string, string> = {
   FAILED: 'red',
   ABSENT: 'red',
   REVOKED: 'red',
+  LOW_STOCK: 'red',
+  IN_STOCK: 'teal',
+  IN: 'teal',
+  OUT: 'blue',
   TERMINATED: 'red',
   SUSPENDED: 'red',
 };

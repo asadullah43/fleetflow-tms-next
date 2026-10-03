@@ -159,7 +159,7 @@ test('nested writes invalidate every table they reach (role permissions updated 
 
 test('the dashboard is invalidated by a write to any table it counts', async () => {
   await freshCache();
-  const tables: [string][] = [['Truck'], ['Driver'], ['Trip'], ['WorkOrder'], ['Invoice'], ['LeaveRequest'], ['SparePart']];
+  const tables: [string][] = [['Truck'], ['Driver'], ['Trip'], ['WorkOrder'], ['Invoice'], ['LeaveRequest'], ['InventoryItem']];
   const { read, counter } = fakeList(() => ({ activeTrucks: 1 }), tables);
   const dashboard = () => read('dashboard.operations', { day: '2026-10-03T00:00:00.000Z' });
   await runWithTenant(1, dashboard);
@@ -235,7 +235,7 @@ test('number sequences, ZATCA submission and single-record reads are not wrapped
   for (const file of fs.readdirSync(path.join(ROOT, 'services'))) {
     const source = read(`services/${file}`);
     for (const match of source.matchAll(/cachedRead\('([^']+)'/g)) assert.match(match[1], /^(\w+\.(list|batches)|dashboard\.\w+)$/, `${file}: ${match[1]}`);
-    for (const method of ['create', 'update', 'remove', 'markPaid', 'submitToZatca', 'findOne', 'findByBatch', 'getBatchDocument', 'revoke']) {
+    for (const method of ['create', 'update', 'remove', 'markPaid', 'submitToZatca', 'findOne', 'findByBatch', 'getBatchDocument', 'revoke', 'stockIn', 'stockOut']) {
       const body = new RegExp(`\\n  async ${method}\\([^)]*\\)[^{]*\\{([\\s\\S]*?)\\n  \\},`).exec(source)?.[1] ?? '';
       assert.doesNotMatch(body, /cachedRead/, `${file}: ${method} must always read the database`);
     }

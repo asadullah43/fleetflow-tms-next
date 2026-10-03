@@ -48,6 +48,7 @@ const MODULES: Record<string, string> = {
   INV: 'Invoices',
   ZATCA: 'ZATCA E-Invoicing',
   WKS: 'Workshop',
+  STK: 'Inventory',
   HR: 'Human Resources',
   DSH: 'Dashboard',
   SET: 'Company Settings',

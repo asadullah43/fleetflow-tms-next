@@ -11,6 +11,7 @@ service DashboardService {
   rpc GetHrSummary(SummaryRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: HrSummary
   rpc GetWorkshopSummary(SummaryRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: WorkshopSummary
   rpc GetFleetSummary(SummaryRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: FleetSummary
+  rpc GetInventorySummary(SummaryRequest) returns (fleetflow.common.ApiResponse); // DB_DATA: InventorySummary
 }
 
 message SummaryRequest {}
@@ -23,7 +24,7 @@ message SummaryResponse {
   string unpaid_invoices_total = 5;
   int32 unpaid_invoices_count = 6;
   int32 pending_leave_requests = 7;
-  int32 low_stock_spare_parts = 8;
+  int32 low_stock_items = 8; // active inventory items at or below their minimum (total across warehouses)
 }
 
 message LabelCount {
@@ -52,7 +53,7 @@ message WorkshopSummary {
   int32 completed_this_month = 3;
   int32 overdue_maintenance = 4;
   int32 failed_inspections = 5;
-  int32 low_stock_spare_parts = 6;
+  reserved 6; // was low_stock_spare_parts: inventory is its own module now (InventorySummary)
   string expenses_this_month = 7;
   repeated LabelCount open_by_priority = 8; // URGENT, HIGH, MEDIUM, LOW
 }
@@ -60,4 +61,45 @@ message WorkshopSummary {
 message FleetSummary {
   int32 fleet_size = 1;
   int32 active_trucks = 2;
+}
+
+// Low stock = an active item whose total across ALL warehouses is at or below
+// its minimum (the minimum is set per item, not per warehouse).
+message InventorySummary {
+  int32 active_items = 1;
+  int32 active_warehouses = 2;
+  int32 total_units = 3;
+  int32 low_stock_items = 4;
+  repeated WarehouseStock by_warehouse = 5;
+  repeated StockLevelRow stock_levels = 6; // per warehouse per item, first rows only
+  int32 stock_levels_total = 7;            // how many such rows exist in all
+  repeated LowStockItem low_stock = 8;      // lowest totals first, first rows only
+}
+
+message WarehouseStock {
+  int32 warehouse_id = 1;
+  string name = 2;
+  optional string name_ar = 3;
+  int32 items = 4; // distinct items with stock here
+  int32 units = 5;
+}
+
+message StockLevelRow {
+  int32 warehouse_id = 1;
+  string warehouse_name = 2;
+  optional string warehouse_name_ar = 3;
+  int32 item_id = 4;
+  string item_name = 5;
+  optional string item_name_ar = 6;
+  optional string item_number = 7;
+  int32 quantity = 8;
+}
+
+message LowStockItem {
+  int32 item_id = 1;
+  string name = 2;
+  optional string name_ar = 3;
+  optional string item_number = 4;
+  int32 total_quantity = 5;
+  int32 minimum_stock = 6;
 }

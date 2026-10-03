@@ -28,6 +28,12 @@ export function FormField({ field, values, error, ctx, onChange, mode }: FormFie
   const set = (next: string) => onChange(field.name, next);
 
   switch (field.type) {
+    case 'custom':
+      return (
+        <Input.Wrapper label={common.label} description={common.description} error={common.error}>
+          {field.input?.({ value, onChange: set, ctx })}
+        </Input.Wrapper>
+      );
     case 'display':
       return (
         <Input.Wrapper label={common.label} description={common.description}>

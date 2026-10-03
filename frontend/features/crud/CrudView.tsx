@@ -66,6 +66,8 @@ export function CrudView<T extends { id: number }>({ definition, vm, rowActions 
   };
 
   const hasRowActions = rowActions.length > 0 || allowed.edit || allowed.add || allowed.delete;
+  const mode = vm.editor?.mode ?? 'create';
+  const formFields = definition.fields.filter((field) => !(field.createOnly && mode === 'edit'));
 
   return (
     <Stack gap="md">
@@ -98,7 +100,7 @@ export function CrudView<T extends { id: number }>({ definition, vm, rowActions 
         actions={hasRowActions ? rowMenu : undefined}
       />
 
-      <Modal opened={vm.editor !== null} onClose={vm.closeEditor} title={vm.editor?.mode === 'edit' ? `${t('Edit')} — ${t(definition.addLabel)}` : `${t('Add')} — ${t(definition.addLabel)}`} size="lg" closeOnClickOutside={false}>
+      <Modal opened={vm.editor !== null} onClose={vm.closeEditor} title={vm.editor?.mode === 'edit' ? `${t('Edit')} — ${t(definition.addLabel)}` : `${t('Add')} — ${t(definition.addLabel)}`} size={formFields.some((field) => field.type === 'custom') ? 'xl' : 'lg'} closeOnClickOutside={false}>
         <form
           noValidate
           onSubmit={(event) => {
@@ -109,10 +111,13 @@ export function CrudView<T extends { id: number }>({ definition, vm, rowActions 
           <Stack gap="md">
             {vm.formError && <Alert color="red">{t(vm.formError)}</Alert>}
             <SimpleGrid cols={{ base: 1, sm: definition.fields.length > 4 ? 2 : 1 }} spacing="md">
-              {definition.fields.map((field) => (
-                <FormField key={field.name} field={field} values={vm.values} error={vm.fieldErrors[field.name]} ctx={ctx} onChange={vm.setValue} mode={vm.editor?.mode ?? 'create'} />
+              {formFields.filter((field) => field.type !== 'custom').map((field) => (
+                <FormField key={field.name} field={field} values={vm.values} error={vm.fieldErrors[field.name]} ctx={ctx} onChange={vm.setValue} mode={mode} />
               ))}
             </SimpleGrid>
+            {formFields.filter((field) => field.type === 'custom').map((field) => (
+              <FormField key={field.name} field={field} values={vm.values} error={vm.fieldErrors[field.name]} ctx={ctx} onChange={vm.setValue} mode={mode} />
+            ))}
             <FormActions onCancel={vm.closeEditor} saving={vm.saving} />
           </Stack>
         </form>

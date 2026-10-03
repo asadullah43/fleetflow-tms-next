@@ -32,6 +32,7 @@ export const actions = {
   view: make('View', 'eye'),
   viewHistory: make('View history', 'eye'),
   openPdf: make('Open PDF', 'fileText'),
+  inventoryUsed: make('Inventory used', 'box'),
   // Changing a record
   edit: make('Edit', 'pencil'),
   duplicate: make('Duplicate', 'copy'),

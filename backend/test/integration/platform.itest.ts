@@ -324,21 +324,25 @@ describe('sessions and tenant isolation', { skip: SKIP || (!hasBackendEnv && 'ne
   });
 });
 
-describe('workshop stock and dashboards', { skip: SKIP }, () => {
+describe('inventory stock and dashboards', { skip: SKIP }, () => {
   let token = '';
   before(async () => {
     token = await loginAs(ADMIN_USER, ADMIN_PASSWORD);
   });
 
-  test('stock cannot go below zero, and movements adjust it atomically', async () => {
-    const parts = client('workshop', 'SparePartsService');
-    const movements = client('workshop', 'SparePartTransactionsService');
-    const part = must(await call(parts, 'create', { name: `Filter ${stamp}`, partNumber: `F-${stamp}`, quantity: 5, minimumStock: 1, unitCost: '10' }, token));
-    must(await call(movements, 'create', { sparePartId: part.id, transactionType: 'OUT', quantity: 3 }, token));
-    assert.equal((await call(movements, 'create', { sparePartId: part.id, transactionType: 'OUT', quantity: 3 }, token)).err?.errorCode, 'FLEET-WKS019');
-    must(await call(movements, 'create', { sparePartId: part.id, transactionType: 'IN', quantity: 10 }, token));
-    assert.equal(must(await call(parts, 'get', { id: part.id }, token)).quantity, 12);
-    assert.equal(must(await call(movements, 'list', { filters: { sparePartId: String(part.id) } }, token)).pagination.totalItems, 2);
+  test('stock is kept per warehouse and cannot go below zero there', async () => {
+    const warehouses = client('inventory', 'WarehousesService');
+    const items = client('inventory', 'InventoryItemsService');
+    const movements = client('inventory', 'InventoryTransactionsService');
+    const main = must(await call(warehouses, 'create', { name: `Main ${stamp}` }, token));
+    const depot = must(await call(warehouses, 'create', { name: `Depot ${stamp}` }, token));
+    const first = must(await call(movements, 'stockIn', { newItem: { name: `Filter ${stamp}`, itemNumber: `F-${stamp}`, minimumStock: 1, unitCost: '10' }, warehouseId: main.id, quantity: 5 }, token));
+    must(await call(movements, 'stockIn', { itemId: first.itemId, warehouseId: depot.id, quantity: 1 }, token));
+    must(await call(movements, 'stockOut', { itemId: first.itemId, warehouseId: main.id, quantity: 3, remarks: 'used' }, token));
+    // The depot holds 1, so taking 2 there is refused although the main warehouse still has 2.
+    assert.equal((await call(movements, 'stockOut', { itemId: first.itemId, warehouseId: depot.id, quantity: 2 }, token)).err?.errorCode, 'FLEET-STK015');
+    assert.equal(must(await call(items, 'get', { id: first.itemId }, token)).totalQuantity, 3);
+    assert.equal(must(await call(movements, 'list', { filters: { itemId: String(first.itemId) } }, token)).pagination.totalItems, 3);
   });
 
   test('dashboard summaries are computed on the server', async () => {
@@ -350,5 +354,7 @@ describe('workshop stock and dashboards', { skip: SKIP }, () => {
     assert.match(workshop.expensesThisMonth, /^\d+\.\d{2}$/);
     const fleet = must(await call(dashboard, 'getFleetSummary', {}, token));
     assert.ok(fleet.fleetSize >= fleet.activeTrucks);
+    const inventory = must(await call(dashboard, 'getInventorySummary', {}, token));
+    assert.ok(inventory.lowStockItems >= inventory.lowStock.length);
   });
 });

@@ -680,6 +680,158 @@
     "function": "supplierPaymentsService.list"
   },
   {
+    "error_code": "FLEET-STK001",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Warehouse not found.",
+    "module_name": "Inventory",
+    "file": "services/inventory.service.ts",
+    "function": "takeFromStock"
+  },
+  {
+    "error_code": "FLEET-STK002",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create warehouse. Please try again.",
+    "module_name": "Inventory",
+    "file": "services/inventory.service.ts",
+    "function": "warehousesService.create"
+  },
+  {
+    "error_code": "FLEET-STK003",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to update warehouse. Please try again.",
+    "module_name": "Inventory",
+    "file": "services/inventory.service.ts",
+    "function": "warehousesService.update"
+  },
+  {
+    "error_code": "FLEET-STK004",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to delete warehouse. Please try again.",
+    "module_name": "Inventory",
+    "file": "services/inventory.service.ts",
+    "function": "warehousesService.remove"
+  },
+  {
+    "error_code": "FLEET-STK005",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve warehouses. Please try again.",
+    "module_name": "Inventory",
+    "file": "services/inventory.service.ts",
+    "function": "warehousesService.list"
+  },
+  {
+    "error_code": "FLEET-STK006",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "A warehouse with this name already exists.",
+    "module_name": "Inventory",
+    "file": "services/inventory.service.ts",
+    "function": "warehousesService.create / update"
+  },
+  {
+    "error_code": "FLEET-STK007",
+    "error_filter": "USER_END_VIOLATION",
+    "error_description": "This warehouse has stock or stock history and cannot be deleted. Set it to inactive instead.",
+    "module_name": "Inventory",
+    "file": "services/inventory.service.ts",
+    "function": "warehousesService.remove"
+  },
+  {
+    "error_code": "FLEET-STK008",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "Inventory item not found.",
+    "module_name": "Inventory",
+    "file": "services/inventory.service.ts",
+    "function": "takeFromStock"
+  },
+  {
+    "error_code": "FLEET-STK009",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to create inventory item. Please try again.",
+    "module_name": "Inventory",
+    "file": "services/inventory.service.ts",
+    "function": "inventoryItemsService.create"
+  },
+  {
+    "error_code": "FLEET-STK010",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to update inventory item. Please try again.",
+    "module_name": "Inventory",
+    "file": "services/inventory.service.ts",
+    "function": "inventoryItemsService.update"
+  },
+  {
+    "error_code": "FLEET-STK011",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to delete inventory item. Please try again.",
+    "module_name": "Inventory",
+    "file": "services/inventory.service.ts",
+    "function": "inventoryItemsService.remove"
+  },
+  {
+    "error_code": "FLEET-STK012",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve inventory items. Please try again.",
+    "module_name": "Inventory",
+    "file": "services/inventory.service.ts",
+    "function": "inventoryItemsService.list"
+  },
+  {
+    "error_code": "FLEET-STK013",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "An inventory item with this item number already exists.",
+    "module_name": "Inventory",
+    "file": "services/inventory.service.ts",
+    "function": "inventoryItemsService.create / update"
+  },
+  {
+    "error_code": "FLEET-STK014",
+    "error_filter": "USER_END_VIOLATION",
+    "error_description": "This item has stock or stock history and cannot be deleted. Set it to discontinued instead.",
+    "module_name": "Inventory",
+    "file": "services/inventory.service.ts",
+    "function": "inventoryItemsService.remove"
+  },
+  {
+    "error_code": "FLEET-STK015",
+    "error_filter": "USER_END_VIOLATION",
+    "error_description": "Not enough stock of this item in the selected warehouse.",
+    "module_name": "Inventory",
+    "file": "services/inventory.service.ts",
+    "function": "takeFromStock"
+  },
+  {
+    "error_code": "FLEET-STK016",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to record the stock movement. Please try again.",
+    "module_name": "Inventory",
+    "file": "services/inventory.service.ts",
+    "function": "moveError"
+  },
+  {
+    "error_code": "FLEET-STK017",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve stock levels. Please try again.",
+    "module_name": "Inventory",
+    "file": "services/inventory.service.ts",
+    "function": "inventoryStockService.list"
+  },
+  {
+    "error_code": "FLEET-STK018",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to retrieve stock movements. Please try again.",
+    "module_name": "Inventory",
+    "file": "services/inventory.service.ts",
+    "function": "inventoryTransactionsService.list"
+  },
+  {
+    "error_code": "FLEET-STK019",
+    "error_filter": "TECHNICAL_ISSUE",
+    "error_description": "Unable to load inventory dashboard data. Please try again.",
+    "module_name": "Inventory",
+    "file": "services/dashboard.service.ts",
+    "function": "dashboardService.getInventorySummary"
+  },
+  {
     "error_code": "FLEET-SUP001",
     "error_filter": "INVALID_REQUEST",
     "error_description": "Supplier not found.",
@@ -1120,62 +1272,6 @@
     "function": "vehicleInspectionsService.list"
   },
   {
-    "error_code": "FLEET-WKS014",
-    "error_filter": "INVALID_REQUEST",
-    "error_description": "Spare part not found.",
-    "module_name": "Workshop",
-    "file": "services/workshop.service.ts",
-    "function": "sparePartsService.findOne"
-  },
-  {
-    "error_code": "FLEET-WKS015",
-    "error_filter": "TECHNICAL_ISSUE",
-    "error_description": "Unable to create spare part. Please try again.",
-    "module_name": "Workshop",
-    "file": "services/workshop.service.ts",
-    "function": "sparePartsService.create"
-  },
-  {
-    "error_code": "FLEET-WKS016",
-    "error_filter": "TECHNICAL_ISSUE",
-    "error_description": "Unable to update spare part. Please try again.",
-    "module_name": "Workshop",
-    "file": "services/workshop.service.ts",
-    "function": "sparePartsService.update"
-  },
-  {
-    "error_code": "FLEET-WKS017",
-    "error_filter": "TECHNICAL_ISSUE",
-    "error_description": "Unable to delete spare part. Please try again.",
-    "module_name": "Workshop",
-    "file": "services/workshop.service.ts",
-    "function": "sparePartsService.remove"
-  },
-  {
-    "error_code": "FLEET-WKS018",
-    "error_filter": "TECHNICAL_ISSUE",
-    "error_description": "Unable to retrieve spare parts. Please try again.",
-    "module_name": "Workshop",
-    "file": "services/workshop.service.ts",
-    "function": "sparePartsService.list"
-  },
-  {
-    "error_code": "FLEET-WKS019",
-    "error_filter": "USER_END_VIOLATION",
-    "error_description": "Insufficient stock for this spare part.",
-    "module_name": "Workshop",
-    "file": "services/workshop.service.ts",
-    "function": "takeFromStock"
-  },
-  {
-    "error_code": "FLEET-WKS020",
-    "error_filter": "TECHNICAL_ISSUE",
-    "error_description": "Unable to create spare part transaction. Please try again.",
-    "module_name": "Workshop",
-    "file": "services/workshop.service.ts",
-    "function": "stockMovementsRepository.create"
-  },
-  {
     "error_code": "FLEET-WKS021",
     "error_filter": "TECHNICAL_ISSUE",
     "error_description": "Unable to delete inspection. Please try again.",
@@ -1208,14 +1304,6 @@
     "function": "dashboardService.getWorkshopSummary"
   },
   {
-    "error_code": "FLEET-WKS025",
-    "error_filter": "TECHNICAL_ISSUE",
-    "error_description": "Unable to retrieve spare part transactions. Please try again.",
-    "module_name": "Workshop",
-    "file": "services/workshop.service.ts",
-    "function": "stockMovementsRepository.list"
-  },
-  {
     "error_code": "FLEET-WKS026",
     "error_filter": "INVALID_REQUEST",
     "error_description": "Inspection not found.",
@@ -1230,14 +1318,6 @@
     "module_name": "Workshop",
     "file": "services/workshop.service.ts",
     "function": "vehicleInspectionsService.update"
-  },
-  {
-    "error_code": "FLEET-WKS028",
-    "error_filter": "INVALID_REQUEST",
-    "error_description": "A spare part with this part number already exists.",
-    "module_name": "Workshop",
-    "file": "services/workshop.service.ts",
-    "function": "sparePartsService.create / update"
   },
   {
     "error_code": "FLEET-WKS029",
@@ -1280,20 +1360,12 @@
     "function": "inspectionItemsService.findOne"
   },
   {
-    "error_code": "FLEET-WKS034",
-    "error_filter": "INVALID_REQUEST",
-    "error_description": "Stock movement not found.",
+    "error_code": "FLEET-WKS036",
+    "error_filter": "USER_END_VIOLATION",
+    "error_description": "This work order has inventory used on it. Remove those items first (Inventory used) so their stock goes back to the warehouse, then delete the work order.",
     "module_name": "Workshop",
     "file": "services/workshop.service.ts",
-    "function": "stockMovementsRepository.findOne"
-  },
-  {
-    "error_code": "FLEET-WKS035",
-    "error_filter": "TECHNICAL_ISSUE",
-    "error_description": "Unable to delete stock movement. Please try again.",
-    "module_name": "Workshop",
-    "file": "services/workshop.service.ts",
-    "function": "stockMovementsRepository.remove"
+    "function": "workOrdersRepository.remove"
   },
   {
     "error_code": "FLEET-ZATCA003",

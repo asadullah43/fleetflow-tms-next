@@ -38,7 +38,7 @@ const PAGE_MODULES: [prefix: string, module: string][] = [
   ['/invoices', 'invoices'],
   ['/supplier-payments', 'supplierPayments'],
   ['/workshop', 'workshop'],
-  ['/inventory', 'workshop'],
+  ['/inventory', 'inventory'],
   ['/trucks', 'trucks'],
   ['/drivers', 'drivers'],
   ['/assignments', 'assignments'],

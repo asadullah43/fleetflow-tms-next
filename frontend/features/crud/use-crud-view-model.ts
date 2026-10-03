@@ -2,9 +2,11 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { notifications } from '@mantine/notifications';
+import { useQueryClient } from '@tanstack/react-query';
 import { errorMessage } from '../../lib/api/errors';
 import { exportCsv, printTable } from '../../lib/export-table';
 import { newIdempotencyKey } from '../../lib/idempotency';
+import { queryKeys } from '../../lib/api/query-keys';
 import { useLanguage, useT } from '../../lib/language-context';
 import { useResourceMutations } from './crud.queries';
 import { emptyValues, rowToValues, validateValues, valuesToPayload } from './form-mapping';
@@ -33,6 +35,11 @@ export function useCrudViewModel<T extends { id: number }>(definition: CrudDefin
   const list = usePagedList(api);
   const { controls } = list;
   const mutations = useResourceMutations(api);
+  const queryClient = useQueryClient();
+  /** Refreshes the other resources this one's writes change (definition.invalidates). */
+  const refreshRelated = useCallback(() => {
+    for (const key of definition.invalidates ?? []) void queryClient.invalidateQueries({ queryKey: queryKeys.resource(key) });
+  }, [definition.invalidates, queryClient]);
 
   const [editor, setEditor] = useState<Editor<T> | null>(null);
   const [values, setValues] = useState<FormValues>({});
@@ -81,14 +88,19 @@ export function useCrudViewModel<T extends { id: number }>(definition: CrudDefin
     try {
       if (editor.mode === 'edit' && editor.row) await mutations.update.mutateAsync({ id: editor.row.id, values: payload });
       else await mutations.create.mutateAsync({ values: payload, idempotencyKey: editor.idempotencyKey });
+      refreshRelated();
       setEditor(null);
       notifications.show({ color: 'teal', message: t(editor.mode === 'edit' ? 'Changes saved.' : 'Record added.') });
     } catch (error) {
       setFormError(errorMessage(error, 'Save failed.'));
     }
-  }, [editor, saving, fields, values, definition, mutations.update, mutations.create, t]);
+  }, [editor, saving, fields, values, definition, mutations.update, mutations.create, refreshRelated, t]);
 
-  const removeById = useNotifiedRemove(mutations.remove.mutateAsync);
+  const removeAndRefresh = useCallback(async (id: number) => {
+    await mutations.remove.mutateAsync(id);
+    refreshRelated();
+  }, [mutations.remove, refreshRelated]);
+  const removeById = useNotifiedRemove(removeAndRefresh);
   const remove = useCallback((row: T) => removeById(row.id), [removeById]);
 
   /** Exports every row matching the current search and filters — not just the page on screen. */

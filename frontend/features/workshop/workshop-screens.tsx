@@ -1,13 +1,13 @@
 'use client';
 
+import { useState } from 'react';
+import { actions } from '../../components/action-items';
 import { CrudScreen } from '../crud/CrudScreen';
 import { lookups } from '../crud/lookups';
 import type { CrudDefinition } from '../crud/types';
 import {
   maintenanceSchedulesApi,
   MaintenanceScheduleDto,
-  sparePartsApi,
-  SparePartDto,
   vehicleInspectionsApi,
   VehicleInspectionDto,
   workOrdersApi,
@@ -16,7 +16,9 @@ import {
   WorkshopExpenseDto,
 } from '../../lib/api/workshop.api';
 import { formatDate } from '../../lib/date';
-import { localizedName } from '../../lib/localized-name';
+import { MOVEMENT_KEYS } from '../inventory/use-inventory-view-model';
+import { NewWorkOrderParts, parseStagedParts } from './NewWorkOrderParts';
+import { WorkOrderPartsModal } from './WorkOrderPartsModal';
 
 const truckFilter = { name: 'truckId', label: 'Truck', type: 'lookup', lookup: lookups.trucks } as const;
 const truckField = { name: 'truckId', label: 'Truck', type: 'lookup', lookup: lookups.trucks, required: true } as const;
@@ -60,12 +62,25 @@ const workOrders: CrudDefinition<WorkOrderDto> = {
     { name: 'priority', label: 'Priority', type: 'select', options: PRIORITIES, default: 'MEDIUM', required: true },
     { name: 'status', label: 'Status', type: 'select', options: WORK_ORDER_STATUSES, default: 'OPEN', required: true },
     { name: 'laborCost', label: 'Labor cost', type: 'decimal', default: '0' },
-    { name: 'partsCost', label: 'Parts cost', type: 'decimal', default: '0' },
+    { name: 'partsCost', label: 'Parts cost', type: 'decimal', default: '0', hint: 'Inventory used on this work order is added here automatically, on top of any other parts you enter.' },
     { name: 'otherCost', label: 'Other cost', type: 'decimal', default: '0' },
     { name: 'notes', label: 'Notes', type: 'textarea' },
+    // On a new order: inventory taken from stock as it is saved. On an existing one: row menu → Inventory used.
+    { name: 'parts', label: 'Inventory used', type: 'custom', createOnly: true, default: '[]', input: ({ value, onChange }) => <NewWorkOrderParts value={value} onChange={onChange} /> },
   ],
+  toApi: (payload, values, mode) => (mode === 'create' ? { ...payload, parts: parseStagedParts(values.parts).map(({ itemId, warehouseId, quantity }) => ({ itemId, warehouseId, quantity })) } : payload),
+  // Saving an order with inventory, or deleting one, changes stock and the ledger.
+  invalidates: MOVEMENT_KEYS,
 };
-export const WorkOrdersScreen = () => <CrudScreen definition={workOrders} />;
+export function WorkOrdersScreen() {
+  const [usedOn, setUsedOn] = useState<WorkOrderDto | null>(null);
+  return (
+    <>
+      <CrudScreen definition={workOrders} rowActions={[(row) => actions.inventoryUsed(() => setUsedOn(row))]} />
+      <WorkOrderPartsModal order={usedOn} onClose={() => setUsedOn(null)} />
+    </>
+  );
+}
 
 // ── Maintenance schedules ───────────────────────────────────────────────
 const MAINTENANCE_STATUSES = [
@@ -154,42 +169,3 @@ const expenses: CrudDefinition<WorkshopExpenseDto> = {
   ],
 };
 export const WorkshopExpensesScreen = () => <CrudScreen definition={expenses} />;
-
-// ── Inventory (spare parts) ─────────────────────────────────────────────
-const PART_STATUSES = [
-  { value: 'ACTIVE', label: 'Active' },
-  { value: 'DISCONTINUED', label: 'Discontinued' },
-];
-
-const inventory: CrudDefinition<SparePartDto> = {
-  api: sparePartsApi,
-  title: 'Inventory',
-  description: 'Spare parts stock levels, reorder thresholds, and unit cost.',
-  addLabel: 'Spare Part',
-  searchPlaceholder: 'Name, part # or category',
-  emptyLabel: 'No spare parts in inventory yet.',
-  columns: [
-    { header: 'Name', value: (r, { language }) => localizedName(r, language), sortKey: 'name' },
-    { header: 'Part #', value: (r) => r.partNumber, kind: 'mono', sortKey: 'partNumber' },
-    { header: 'Qty', value: (r) => r.quantity, kind: 'mono', align: 'right', sortKey: 'quantity' },
-    { header: 'Min stock', value: (r) => r.minimumStock, kind: 'mono', align: 'right' },
-    { header: 'Unit cost', value: (r) => r.unitCost, kind: 'mono', align: 'right', sortKey: 'unitCost' },
-    { header: 'Status', value: (r) => r.status, kind: 'status', sortKey: 'status' },
-  ],
-  filters: [
-    { name: 'status', label: 'Status', type: 'select', options: PART_STATUSES },
-    { name: 'supplierId', label: 'Supplier', type: 'lookup', lookup: lookups.suppliers },
-  ],
-  fields: [
-    { name: 'name', label: 'Name (English)', required: true },
-    { name: 'nameAr', label: 'Name (Arabic)' },
-    { name: 'partNumber', label: 'Part number' },
-    { name: 'category', label: 'Category' },
-    { name: 'quantity', label: 'Quantity in stock', type: 'integer', required: true, default: '0' },
-    { name: 'minimumStock', label: 'Minimum stock level', type: 'integer', required: true, default: '0' },
-    { name: 'unitCost', label: 'Unit cost', type: 'decimal', default: '0' },
-    { name: 'supplierId', label: 'Supplier', type: 'lookup', lookup: lookups.suppliers },
-    { name: 'status', label: 'Status', type: 'select', options: PART_STATUSES, default: 'ACTIVE', required: true },
-  ],
-};
-export const InventoryScreen = () => <CrudScreen definition={inventory} />;

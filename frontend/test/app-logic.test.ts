@@ -104,6 +104,14 @@ test('form mapping: defaults, row -> form, form -> payload', () => {
   assert.equal('customerId' in valuesToPayload(FIELDS, { customerId: '' }), false, 'a blank reference is omitted, not sent as 0');
 });
 
+test('form mapping: a custom field (work-order inventory lines) keeps its own string value and is never sent or validated as-is', () => {
+  const fields = [{ name: 'issue', label: 'Issue', required: true }, { name: 'parts', label: 'Inventory used', type: 'custom' as const, createOnly: true, default: '[]' }];
+  assert.deepEqual(emptyValues(fields), { issue: '', parts: '[]' });
+  assert.deepEqual(rowToValues(fields, { issue: 'Brakes', parts: 'anything from the row' }), { issue: 'Brakes', parts: '[]' }, 'a duplicated row starts with no lines');
+  assert.deepEqual(valuesToPayload(fields, { issue: 'Brakes', parts: '[{"itemId":1}]' }), { issue: 'Brakes' }, "the definition's toApi turns it into payload");
+  assert.deepEqual(validateValues(fields, { issue: 'x', parts: 'not json' }, 'create'), {});
+});
+
 test('form validation: required, numeric formats, and password optional when editing', () => {
   const blank = emptyValues(FIELDS);
   assert.deepEqual(Object.keys(validateValues(FIELDS, blank, 'create')).sort(), ['name', 'password', 'tripDate']);
@@ -194,6 +202,7 @@ test('every menu action carries its own label and icon, and calls exactly the ha
     view: ['View', 'eye', false],
     viewHistory: ['View history', 'eye', false],
     openPdf: ['Open PDF', 'fileText', false],
+    inventoryUsed: ['Inventory used', 'box', false],
     edit: ['Edit', 'pencil', false],
     duplicate: ['Duplicate', 'copy', false],
     markPaid: ['Mark as paid', 'check', false],

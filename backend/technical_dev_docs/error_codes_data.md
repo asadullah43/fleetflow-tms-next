@@ -15,7 +15,7 @@ codes below, `ERROR_FILTER` is its category and `ERROR_DESCRIPTION` is the user-
 | `RATE_LIMIT_EXCEEDED` | Too many requests; `RATE_LIMIT` says how long to wait | Retry after `retry_after_seconds` |
 | `TECHNICAL_ISSUE` | A server-side fault; details are in the server log only | Retry later |
 
-165 codes.
+174 codes.
 
 ## API Keys
 
@@ -101,6 +101,30 @@ codes below, `ERROR_FILTER` is its category and `ERROR_DESCRIPTION` is the user-
 | `FLEET-HR006` | `TECHNICAL_ISSUE` | Unable to retrieve records. Please try again. | `services/hr.service.ts` | `HR_ERRORS.list` |
 | `FLEET-HR007` | `USER_END_VIOLATION` | This record is referenced by other records and cannot be deleted. | `services/hr.service.ts` | `HR_ERRORS.remove` |
 | `FLEET-HR008` | `INVALID_REQUEST` | Attendance already recorded for this employee on this date. | `services/hr.service.ts` | `attendanceService.create / update` |
+
+## Inventory
+
+| error_code | error_filter | error_description | file | function |
+| --- | --- | --- | --- | --- |
+| `FLEET-STK001` | `INVALID_REQUEST` | Warehouse not found. | `services/inventory.service.ts` | `takeFromStock` |
+| `FLEET-STK002` | `TECHNICAL_ISSUE` | Unable to create warehouse. Please try again. | `services/inventory.service.ts` | `warehousesService.create` |
+| `FLEET-STK003` | `TECHNICAL_ISSUE` | Unable to update warehouse. Please try again. | `services/inventory.service.ts` | `warehousesService.update` |
+| `FLEET-STK004` | `TECHNICAL_ISSUE` | Unable to delete warehouse. Please try again. | `services/inventory.service.ts` | `warehousesService.remove` |
+| `FLEET-STK005` | `TECHNICAL_ISSUE` | Unable to retrieve warehouses. Please try again. | `services/inventory.service.ts` | `warehousesService.list` |
+| `FLEET-STK006` | `INVALID_REQUEST` | A warehouse with this name already exists. | `services/inventory.service.ts` | `warehousesService.create / update` |
+| `FLEET-STK007` | `USER_END_VIOLATION` | This warehouse has stock or stock history and cannot be deleted. Set it to inactive instead. | `services/inventory.service.ts` | `warehousesService.remove` |
+| `FLEET-STK008` | `INVALID_REQUEST` | Inventory item not found. | `services/inventory.service.ts` | `takeFromStock` |
+| `FLEET-STK009` | `TECHNICAL_ISSUE` | Unable to create inventory item. Please try again. | `services/inventory.service.ts` | `inventoryItemsService.create` |
+| `FLEET-STK010` | `TECHNICAL_ISSUE` | Unable to update inventory item. Please try again. | `services/inventory.service.ts` | `inventoryItemsService.update` |
+| `FLEET-STK011` | `TECHNICAL_ISSUE` | Unable to delete inventory item. Please try again. | `services/inventory.service.ts` | `inventoryItemsService.remove` |
+| `FLEET-STK012` | `TECHNICAL_ISSUE` | Unable to retrieve inventory items. Please try again. | `services/inventory.service.ts` | `inventoryItemsService.list` |
+| `FLEET-STK013` | `INVALID_REQUEST` | An inventory item with this item number already exists. | `services/inventory.service.ts` | `inventoryItemsService.create / update` |
+| `FLEET-STK014` | `USER_END_VIOLATION` | This item has stock or stock history and cannot be deleted. Set it to discontinued instead. | `services/inventory.service.ts` | `inventoryItemsService.remove` |
+| `FLEET-STK015` | `USER_END_VIOLATION` | Not enough stock of this item in the selected warehouse. | `services/inventory.service.ts` | `takeFromStock` |
+| `FLEET-STK016` | `TECHNICAL_ISSUE` | Unable to record the stock movement. Please try again. | `services/inventory.service.ts` | `moveError` |
+| `FLEET-STK017` | `TECHNICAL_ISSUE` | Unable to retrieve stock levels. Please try again. | `services/inventory.service.ts` | `inventoryStockService.list` |
+| `FLEET-STK018` | `TECHNICAL_ISSUE` | Unable to retrieve stock movements. Please try again. | `services/inventory.service.ts` | `inventoryTransactionsService.list` |
+| `FLEET-STK019` | `TECHNICAL_ISSUE` | Unable to load inventory dashboard data. Please try again. | `services/dashboard.service.ts` | `dashboardService.getInventorySummary` |
 
 ## Invoices
 
@@ -262,28 +286,18 @@ codes below, `ERROR_FILTER` is its category and `ERROR_DESCRIPTION` is the user-
 | `FLEET-WKS011` | `TECHNICAL_ISSUE` | Unable to retrieve maintenance schedules. Please try again. | `services/workshop.service.ts` | `maintenanceSchedulesService.list` |
 | `FLEET-WKS012` | `TECHNICAL_ISSUE` | Unable to create inspection. Please try again. | `services/workshop.service.ts` | `vehicleInspectionsService.create` |
 | `FLEET-WKS013` | `TECHNICAL_ISSUE` | Unable to retrieve inspections. Please try again. | `services/workshop.service.ts` | `vehicleInspectionsService.list` |
-| `FLEET-WKS014` | `INVALID_REQUEST` | Spare part not found. | `services/workshop.service.ts` | `sparePartsService.findOne` |
-| `FLEET-WKS015` | `TECHNICAL_ISSUE` | Unable to create spare part. Please try again. | `services/workshop.service.ts` | `sparePartsService.create` |
-| `FLEET-WKS016` | `TECHNICAL_ISSUE` | Unable to update spare part. Please try again. | `services/workshop.service.ts` | `sparePartsService.update` |
-| `FLEET-WKS017` | `TECHNICAL_ISSUE` | Unable to delete spare part. Please try again. | `services/workshop.service.ts` | `sparePartsService.remove` |
-| `FLEET-WKS018` | `TECHNICAL_ISSUE` | Unable to retrieve spare parts. Please try again. | `services/workshop.service.ts` | `sparePartsService.list` |
-| `FLEET-WKS019` | `USER_END_VIOLATION` | Insufficient stock for this spare part. | `services/workshop.service.ts` | `takeFromStock` |
-| `FLEET-WKS020` | `TECHNICAL_ISSUE` | Unable to create spare part transaction. Please try again. | `services/workshop.service.ts` | `stockMovementsRepository.create` |
 | `FLEET-WKS021` | `TECHNICAL_ISSUE` | Unable to delete inspection. Please try again. | `services/workshop.service.ts` | `vehicleInspectionsService.remove` |
 | `FLEET-WKS022` | `TECHNICAL_ISSUE` | Unable to create workshop expense. Please try again. | `services/workshop.service.ts` | `workshopExpensesService.create` |
 | `FLEET-WKS023` | `TECHNICAL_ISSUE` | Unable to retrieve workshop expenses. Please try again. | `services/workshop.service.ts` | `workshopExpensesService.list` |
 | `FLEET-WKS024` | `TECHNICAL_ISSUE` | Unable to load workshop dashboard data. Please try again. | `services/dashboard.service.ts` | `dashboardService.getWorkshopSummary` |
-| `FLEET-WKS025` | `TECHNICAL_ISSUE` | Unable to retrieve spare part transactions. Please try again. | `services/workshop.service.ts` | `stockMovementsRepository.list` |
 | `FLEET-WKS026` | `INVALID_REQUEST` | Inspection not found. | `services/workshop.service.ts` | `vehicleInspectionsService.findOne` |
 | `FLEET-WKS027` | `TECHNICAL_ISSUE` | Unable to update inspection. Please try again. | `services/workshop.service.ts` | `vehicleInspectionsService.update` |
-| `FLEET-WKS028` | `INVALID_REQUEST` | A spare part with this part number already exists. | `services/workshop.service.ts` | `sparePartsService.create / update` |
 | `FLEET-WKS029` | `INVALID_REQUEST` | Workshop expense not found. | `services/workshop.service.ts` | `workshopExpensesService.findOne` |
 | `FLEET-WKS030` | `TECHNICAL_ISSUE` | Unable to update workshop expense. Please try again. | `services/workshop.service.ts` | `workshopExpensesService.update` |
 | `FLEET-WKS031` | `TECHNICAL_ISSUE` | Unable to delete workshop expense. Please try again. | `services/workshop.service.ts` | `workshopExpensesService.remove` |
 | `FLEET-WKS032` | `INVALID_REQUEST` | Work order part not found. | `services/workshop.service.ts` | `workOrderPartsRepository.findOne` |
 | `FLEET-WKS033` | `INVALID_REQUEST` | Inspection item not found. | `services/workshop.service.ts` | `inspectionItemsService.findOne` |
-| `FLEET-WKS034` | `INVALID_REQUEST` | Stock movement not found. | `services/workshop.service.ts` | `stockMovementsRepository.findOne` |
-| `FLEET-WKS035` | `TECHNICAL_ISSUE` | Unable to delete stock movement. Please try again. | `services/workshop.service.ts` | `stockMovementsRepository.remove` |
+| `FLEET-WKS036` | `USER_END_VIOLATION` | This work order has inventory used on it. Remove those items first (Inventory used) so their stock goes back to the warehouse, then delete the work order. | `services/workshop.service.ts` | `workOrdersRepository.remove` |
 
 ## ZATCA E-Invoicing
 

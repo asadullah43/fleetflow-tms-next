@@ -28,7 +28,7 @@ export interface ColumnDef<T> {
   href?: (row: T) => string;
 }
 
-export type FieldType = 'text' | 'textarea' | 'password' | 'integer' | 'decimal' | 'date' | 'select' | 'lookup' | 'display';
+export type FieldType = 'text' | 'textarea' | 'password' | 'integer' | 'decimal' | 'date' | 'select' | 'lookup' | 'display' | 'custom';
 
 export interface FieldDef {
   name: string;
@@ -45,6 +45,13 @@ export interface FieldDef {
   render?: (values: FormValues, ctx: DisplayContext) => ReactNode;
   /** Shown under the input. */
   hint?: string;
+  /**
+   * For `custom`: renders the whole input. Its value is a string like every other (e.g. JSON);
+   * it is not sent as-is — the definition's `toApi` turns it into payload. Shown full width, below the other fields.
+   */
+  input?: (props: { value: string; onChange: (value: string) => void; ctx: DisplayContext }) => ReactNode;
+  /** Only on the "add" form (not when editing). */
+  createOnly?: boolean;
 }
 
 /** A server-side filter shown above the table. `name` is the backend filter name. */
@@ -76,6 +83,8 @@ export interface CrudDefinition<T extends { id: number }> {
   filters?: FilterDef[];
   /** Adjusts the automatically converted payload before it is sent (rarely needed). */
   toApi?: (payload: Record<string, unknown>, values: FormValues, mode: 'create' | 'edit') => Record<string, unknown>;
+  /** Other resources a save or delete changes (their cached queries are refreshed too), e.g. stock a work order used. */
+  invalidates?: string[];
   /** Adjusts the automatically derived form values when a row is opened for editing. */
   toFormValues?: (values: FormValues, row: T, ctx: DisplayContext) => FormValues;
 }

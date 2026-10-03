@@ -58,7 +58,11 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Inventory',
     icon: 'box',
-    items: [{ label: 'Inventory', href: '/inventory', icon: 'box' }],
+    items: [
+      { label: 'Stock', href: '/inventory', icon: 'box' },
+      { label: 'Items', href: '/inventory/items', icon: 'clipboard' },
+      { label: 'Warehouses', href: '/inventory/warehouses', icon: 'building' },
+    ],
   },
   {
     label: 'Master Data',

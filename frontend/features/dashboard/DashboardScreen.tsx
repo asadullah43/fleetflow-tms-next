@@ -2,12 +2,12 @@
 
 import { Avatar, Box, Group, Paper, SimpleGrid, Stack, Tabs, Text, ThemeIcon, Title } from '@mantine/core';
 import { AppShell } from '../../components/AppShell';
-import { DataTable } from '../../components/DataTable';
+import { DataTable, TableColumn } from '../../components/DataTable';
 import { DonutChart, DonutSlice } from '../../components/DonutChart';
 import { Icon } from '../../components/icons';
 import { Mono } from '../../components/Mono';
 import { StatusBadge, statusLabel } from '../../components/StatusBadge';
-import type { DashboardSummaryDto, FleetSummaryDto, HrSummaryDto, WorkshopSummaryDto } from '../../lib/api/dashboard.api';
+import type { DashboardSummaryDto, FleetSummaryDto, HrSummaryDto, InventorySummaryDto, StockLevelRowDto, WorkshopSummaryDto } from '../../lib/api/dashboard.api';
 import type { TruckDto } from '../../lib/api/trucks.api';
 import { monthStart, today } from '../../lib/date';
 import { useLanguage, useLocalizedDigits, useT } from '../../lib/language-context';
@@ -26,6 +26,8 @@ const PRIORITY_ORDER = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
 const WORKFORCE_COLOR = { ACTIVE: '#0ca678', ON_LEAVE: '#e67700', TERMINATED: '#868e96' };
 
 const to = (href: string, filters?: Record<string, string>): DrillDown => ({ href, filters });
+/** Low stock opens the Items list narrowed to exactly those items. */
+const LOW_STOCK = to('/inventory/items', { lowStock: 'LOW_STOCK' });
 
 /** Turns label/count rows into donut slices that drill into a list. */
 function useSlices() {
@@ -40,7 +42,7 @@ function useSlices() {
 function OperationsTab({ summary, fleet }: { summary: DashboardSummaryDto; fleet: FleetSummaryDto | undefined }) {
   const t = useT();
   const n = useLocalizedDigits();
-  const nothing = summary.lowStockSpareParts + summary.unpaidInvoicesCount + summary.pendingLeaveRequests + summary.openWorkOrders === 0;
+  const nothing = summary.lowStockItems + summary.unpaidInvoicesCount + summary.pendingLeaveRequests + summary.openWorkOrders === 0;
 
   return (
     <Stack gap="md">
@@ -51,16 +53,16 @@ function OperationsTab({ summary, fleet }: { summary: DashboardSummaryDto; fleet
         <StatCard icon="wrench" color="pink" label="Open work orders" value={summary.openWorkOrders} to={to('/workshop/work-orders')} />
         <StatCard icon="invoice" color="grape" label="Unpaid invoices" value={`${summary.unpaidInvoicesCount} · ${summary.unpaidInvoicesTotal} SAR`} to={to('/invoices', { status: 'UNPAID' })} />
         <StatCard icon="calendar" color="green" label="Pending leave requests" value={summary.pendingLeaveRequests} to={to('/hr/leave-requests', { status: 'PENDING' })} />
-        <StatCard icon="box" color="orange" label="Low stock spare parts" value={summary.lowStockSpareParts} to={to('/inventory')} />
+        <StatCard icon="box" color="orange" label="Low stock items" value={summary.lowStockItems} to={LOW_STOCK} />
       </SimpleGrid>
       <SimpleGrid cols={PANEL_COLS} spacing="md">
         <Panel title="Fleet availability" subtitle="Share of the fleet that is active and able to run trips.">
           {fleet ? <FleetAvailability active={fleet.activeTrucks} fleetSize={fleet.fleetSize} /> : <Quiet>{t('Loading...')}</Quiet>}
         </Panel>
         <Panel title="Needs attention" subtitle="Open items pulled from across the fleet.">
-          {summary.lowStockSpareParts > 0 && (
-            <AttentionItem icon="box" color="pink" to={to('/inventory')}>
-              {n(summary.lowStockSpareParts)} {t(summary.lowStockSpareParts === 1 ? 'spare part' : 'spare parts')} {t('at or below minimum stock')}
+          {summary.lowStockItems > 0 && (
+            <AttentionItem icon="box" color="pink" to={LOW_STOCK}>
+              {n(summary.lowStockItems)} {t(summary.lowStockItems === 1 ? 'inventory item' : 'inventory items')} {t('at or below minimum stock')}
             </AttentionItem>
           )}
           {summary.unpaidInvoicesCount > 0 && (
@@ -132,7 +134,7 @@ function WorkshopTab({ summary }: { summary: WorkshopSummaryDto }) {
   const workOrders = (filters?: Record<string, string>) => to('/workshop/work-orders', filters);
   const byPriority = [...summary.openByPriority].sort((a, b) => PRIORITY_ORDER.indexOf(a.label) - PRIORITY_ORDER.indexOf(b.label));
   const nothingOpen = byPriority.every((row) => row.count === 0);
-  const nothingToFlag = summary.overdueMaintenance + summary.lowStockSpareParts + summary.failedInspections === 0;
+  const nothingToFlag = summary.overdueMaintenance + summary.failedInspections === 0;
   const priority = slices(byPriority.map((row) => ({ key: row.label, label: t(statusLabel(row.label)), value: row.count, color: PRIORITY_COLOR[row.label] ?? '#868e96', to: workOrders({ priority: row.label }) })));
   return (
     <Stack gap="md">
@@ -142,7 +144,6 @@ function WorkshopTab({ summary }: { summary: WorkshopSummaryDto }) {
         <StatCard icon="fileCheck" color="green" label="Completed this month" value={summary.completedThisMonth} to={workOrders({ status: 'COMPLETED' })} />
         <StatCard icon="alert" color="pink" label="Overdue maintenance" value={summary.overdueMaintenance} to={to('/workshop/maintenance')} />
         <StatCard icon="clipboard" color="grape" label="Failed inspections" value={summary.failedInspections} to={to('/workshop/inspections', { result: 'FAIL' })} />
-        <StatCard icon="box" color="orange" label="Low stock spare parts" value={summary.lowStockSpareParts} to={to('/inventory')} />
         <StatCard icon="invoice" color="teal" label="Expenses this month" value={`${summary.expensesThisMonth} SAR`} to={to('/workshop/expenses', { fromDate: monthStart() })} />
       </SimpleGrid>
       <SimpleGrid cols={PANEL_COLS} spacing="md">
@@ -155,11 +156,6 @@ function WorkshopTab({ summary }: { summary: WorkshopSummaryDto }) {
               {n(summary.overdueMaintenance)} {t(summary.overdueMaintenance === 1 ? 'maintenance schedule' : 'maintenance schedules')} {t('past due')}
             </AttentionItem>
           )}
-          {summary.lowStockSpareParts > 0 && (
-            <AttentionItem icon="box" color="orange" to={to('/inventory')}>
-              {n(summary.lowStockSpareParts)} {t(summary.lowStockSpareParts === 1 ? 'spare part' : 'spare parts')} {t('at or below minimum stock')}
-            </AttentionItem>
-          )}
           {summary.failedInspections > 0 && (
             <AttentionItem icon="clipboard" color="grape" to={to('/workshop/inspections', { result: 'FAIL' })}>
               {n(summary.failedInspections)} {t(summary.failedInspections === 1 ? 'failed inspection' : 'failed inspections')} {t('on record')}
@@ -168,6 +164,70 @@ function WorkshopTab({ summary }: { summary: WorkshopSummaryDto }) {
           {nothingToFlag && <Quiet>{t('Nothing outstanding right now.')}</Quiet>}
         </Panel>
       </SimpleGrid>
+    </Stack>
+  );
+}
+
+function InventoryTab({ summary }: { summary: InventorySummaryDto }) {
+  const t = useT();
+  const n = useLocalizedDigits();
+  const { language } = useLanguage();
+  const unitsMax = Math.max(1, ...summary.byWarehouse.map((row) => row.units));
+  const levels: TableColumn<StockLevelRowDto>[] = [
+    { id: 'warehouse', header: 'Warehouse', cell: (row) => localizedJoinedName(row.warehouseName, row.warehouseNameAr, language) },
+    { id: 'item', header: 'Item', cell: (row) => localizedJoinedName(row.itemName, row.itemNameAr, language) },
+    { id: 'number', header: 'Item #', cell: (row) => <Mono>{row.itemNumber || '—'}</Mono> },
+    { id: 'qty', header: 'Qty', align: 'right', cell: (row) => <Mono fw={600}>{n(row.quantity)}</Mono> },
+  ];
+  return (
+    <Stack gap="md">
+      <SimpleGrid cols={STAT_COLS} spacing="md">
+        <StatCard icon="box" color="orange" label="Active items" value={summary.activeItems} to={to('/inventory/items', { status: 'ACTIVE' })} />
+        <StatCard icon="building" color="blue" label="Active warehouses" value={summary.activeWarehouses} to={to('/inventory/warehouses', { status: 'ACTIVE' })} />
+        <StatCard icon="gauge" color="teal" label="Units in stock" value={summary.totalUnits} to={to('/inventory', { inStock: 'IN_STOCK' })} />
+        <StatCard icon="alert" color="pink" label="Low stock items" value={summary.lowStockItems} to={LOW_STOCK} />
+      </SimpleGrid>
+      <SimpleGrid cols={PANEL_COLS} spacing="md">
+        <Panel title="Stock by warehouse" subtitle="Units on hand in each warehouse, and how many different items.">
+          {summary.byWarehouse.length === 0 ? (
+            <Quiet>{t('No warehouses yet.')}</Quiet>
+          ) : (
+            summary.byWarehouse.map((row) => (
+              <BarRow key={row.warehouseId} text={`${localizedJoinedName(row.name, row.nameAr, language)} · ${n(row.items)} ${t(row.items === 1 ? 'item' : 'items')}`} value={row.units} max={unitsMax} color="teal" />
+            ))
+          )}
+        </Panel>
+        <Panel title="Low stock" subtitle="Active items at or below their minimum, counted across all warehouses.">
+          {summary.lowStock.length === 0 ? (
+            <Quiet>{t('No items are low on stock.')}</Quiet>
+          ) : (
+            <Stack gap="xs">
+              {summary.lowStock.map((row) => (
+                <BarRow
+                  key={row.itemId}
+                  text={`${localizedJoinedName(row.name, row.nameAr, language)}${row.itemNumber ? ` (${row.itemNumber})` : ''} · ${t('min')} ${n(row.minimumStock)}`}
+                  value={row.totalQuantity}
+                  max={Math.max(1, row.minimumStock)}
+                  color="red"
+                />
+              ))}
+              {summary.lowStockItems > summary.lowStock.length && (
+                <AttentionItem icon="box" color="pink" to={LOW_STOCK}>
+                  {t('See all')} {n(summary.lowStockItems)} {t('low-stock items')}
+                </AttentionItem>
+              )}
+            </Stack>
+          )}
+        </Panel>
+      </SimpleGrid>
+      <Panel title="Stock per warehouse" subtitle="What each warehouse holds, item by item.">
+        <DataTable columns={levels} rows={summary.stockLevels} rowKey={(row) => `${row.warehouseId}:${row.itemId}`} loading={false} emptyLabel="No stock yet — receive stock on the Inventory page." />
+        {summary.stockLevelsTotal > summary.stockLevels.length && (
+          <AttentionItem icon="box" color="teal" to={to('/inventory', { inStock: 'IN_STOCK' })}>
+            {t('Showing')} {n(summary.stockLevels.length)} {t('of')} {n(summary.stockLevelsTotal)} — {t('see all on the Inventory page')}
+          </AttentionItem>
+        )}
+      </Panel>
     </Stack>
   );
 }
@@ -270,6 +330,11 @@ function DashboardBody() {
         <Tabs.Panel value="workshop">
           <SummaryState data={vm.workshop.data} error={vm.workshop.error}>
             {(summary) => <WorkshopTab summary={summary} />}
+          </SummaryState>
+        </Tabs.Panel>
+        <Tabs.Panel value="inventory">
+          <SummaryState data={vm.inventory.data} error={vm.inventory.error}>
+            {(summary) => <InventoryTab summary={summary} />}
           </SummaryState>
         </Tabs.Panel>
         <Tabs.Panel value="map">

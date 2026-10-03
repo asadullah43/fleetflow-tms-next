@@ -16,6 +16,9 @@ export function rowToValues(fields: FieldDef[], row: Record<string, unknown>): F
       case 'display':
         values[field.name] = '';
         break;
+      case 'custom':
+        values[field.name] = field.default ?? '';
+        break;
       case 'date':
         values[field.name] = toDateInput(raw as string | undefined);
         break;
@@ -40,6 +43,7 @@ export function valuesToPayload(fields: FieldDef[], values: FormValues): Record<
     const value = values[field.name] ?? '';
     switch (field.type) {
       case 'display':
+      case 'custom':
         break;
       case 'lookup':
       case 'integer':
@@ -62,7 +66,7 @@ export function valuesToPayload(fields: FieldDef[], values: FormValues): Record<
 export function validateValues(fields: FieldDef[], values: FormValues, mode: 'create' | 'edit'): Record<string, string> {
   const errors: Record<string, string> = {};
   for (const field of fields) {
-    if (field.type === 'display') continue;
+    if (field.type === 'display' || field.type === 'custom') continue;
     const value = (values[field.name] ?? '').trim();
     const requiredNow = field.required && !(field.type === 'password' && mode === 'edit');
     if (requiredNow && value === '') errors[field.name] = 'This field is required.';

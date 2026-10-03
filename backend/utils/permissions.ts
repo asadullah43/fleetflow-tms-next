@@ -22,6 +22,7 @@ export const PERMISSION_MODULES = [
   'supplierPayments',
   'invoices',
   'workshop',
+  'inventory',
   'hr',
   'users',
   'roles',
