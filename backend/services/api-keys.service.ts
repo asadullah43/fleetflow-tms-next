@@ -1,7 +1,9 @@
+import { cachedRead } from '../_core_app_connectivities/cache.js';
 import { prisma } from '../_core_app_connectivities/prisma.js';
 import { currentCompanyId } from '../_core_app_connectivities/tenant-context.js';
 import { AppError } from '../classes/app-error.js';
 import { ErrorCode } from '../global_config/error-codes.js';
+import { config } from '../global_config/index.js';
 import type { ListQuery } from '../models/api-response.js';
 import type { Principal } from '../models/auth-context.js';
 import { generateApiKey } from '../utils/api-key.js';
@@ -67,8 +69,10 @@ function normalizeScopes(scopes: ScopeInput[], creator: Principal): ScopeInput[]
 export const apiKeysService = {
   async list(query: ListQuery) {
     try {
-      const page = await paginate(prisma.apiKey, query, LIST, { extra: { select: SAFE_FIELDS } });
-      return { items: await withCreatorNames(page.items), pagination: page.pagination };
+      return await cachedRead('ApiKey.list', { query }, config.cache.listTtlSeconds, async () => {
+        const page = await paginate(prisma.apiKey, query, LIST, { extra: { select: SAFE_FIELDS } });
+        return { items: await withCreatorNames(page.items), pagination: page.pagination };
+      });
     } catch (error) {
       if (error instanceof AppError) throw error;
       throw AppError.from(ErrorCode.APK_FETCH_FAILED, 500, error);

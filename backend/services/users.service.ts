@@ -1,3 +1,4 @@
+import { cachedRead } from '../_core_app_connectivities/cache.js';
 import * as bcrypt from 'bcrypt';
 import { prisma } from '../_core_app_connectivities/prisma.js';
 import { currentCompanyId, runUnscoped } from '../_core_app_connectivities/tenant-context.js';
@@ -59,14 +60,15 @@ interface UserInput {
  */
 async function assertLoginNamesFree(input: UserInput, exceptUserId?: number): Promise<void> {
   const not = exceptUserId ? { NOT: { id: exceptUserId } } : {};
-  if (input.email) {
-    const taken = await runUnscoped(() => prisma.user.count({ where: { email: input.email, ...not } }));
-    if (taken) throw AppError.from(ErrorCode.USR_DUPLICATE_EMAIL, 400);
-  }
-  if (input.username) {
-    const taken = await runUnscoped(() => prisma.user.count({ where: { username: input.username, ...not } }));
-    if (taken) throw AppError.from(ErrorCode.USR_DUPLICATE_USERNAME, 400);
-  }
+  // Both lookups at once, judged in the original order (email first), so the outcome is the same as one after the other.
+  const [email, username] = await Promise.allSettled([
+    input.email ? runUnscoped(() => prisma.user.count({ where: { email: input.email, ...not } })) : 0,
+    input.username ? runUnscoped(() => prisma.user.count({ where: { username: input.username, ...not } })) : 0,
+  ]);
+  if (email.status === 'rejected') throw email.reason;
+  if (email.value) throw AppError.from(ErrorCode.USR_DUPLICATE_EMAIL, 400);
+  if (username.status === 'rejected') throw username.reason;
+  if (username.value) throw AppError.from(ErrorCode.USR_DUPLICATE_USERNAME, 400);
 }
 
 function assertPasswordLength(password: string | undefined): void {
@@ -80,7 +82,7 @@ const hashPassword = (password: string) => bcrypt.hash(password, config.auth.bcr
 export const usersService = {
   async list(query: ListQuery) {
     try {
-      return await paginate(prisma.user, query, LIST, { extra: { select: SAFE_FIELDS }, map: mapUser });
+      return await cachedRead('User.list', { query }, config.cache.listTtlSeconds, () => paginate(prisma.user, query, LIST, { extra: { select: SAFE_FIELDS }, map: mapUser }));
     } catch (error) {
       if (error instanceof AppError) throw error;
       throw AppError.from(ErrorCode.USR_FETCH_FAILED, 500, error);

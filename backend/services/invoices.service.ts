@@ -1,8 +1,10 @@
+import { cachedRead } from '../_core_app_connectivities/cache.js';
 import crypto from 'node:crypto';
 import { prisma } from '../_core_app_connectivities/prisma.js';
 import { currentCompanyId } from '../_core_app_connectivities/tenant-context.js';
 import { AppError } from '../classes/app-error.js';
 import { ErrorCode } from '../global_config/error-codes.js';
+import { config } from '../global_config/index.js';
 import type { ListQuery } from '../models/api-response.js';
 import { computeInvoice, InvoiceInputError, LineItemInput } from '../utils/invoice-math.js';
 import { filter, ListConfig, paginate } from '../utils/pagination.js';
@@ -67,7 +69,7 @@ interface InvoiceInput {
 export const invoicesService = {
   async list(query: ListQuery) {
     try {
-      return await paginate(prisma.invoice, query, LIST, { extra: { include: INVOICE_INCLUDE }, map: mapOut });
+      return await cachedRead('Invoice.list', { query }, config.cache.listTtlSeconds, () => paginate(prisma.invoice, query, LIST, { extra: { include: INVOICE_INCLUDE }, map: mapOut }));
     } catch (error) {
       if (error instanceof AppError) throw error;
       throw AppError.from(ErrorCode.INV_FETCH_FAILED, 500, error);

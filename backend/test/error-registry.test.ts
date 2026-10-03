@@ -36,8 +36,10 @@ test('descriptions are user-safe: no stack traces, SQL, file paths or internals'
 test('error_codes_data.json and .md are in sync with the code (run `npm run docs:errors`)', () => {
   const registry = buildRegistry();
   assert.equal(registry.length, entries.length);
-  assert.equal(fs.readFileSync(REGISTRY_JSON, 'utf8'), renderJson(registry));
-  assert.equal(fs.readFileSync(REGISTRY_MD, 'utf8'), renderMarkdown(registry));
+  // Compared with LF line endings: a Windows checkout (core.autocrlf) stores the files with CRLF.
+  const lf = (file: string) => fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
+  assert.equal(lf(REGISTRY_JSON), renderJson(registry));
+  assert.equal(lf(REGISTRY_MD), renderMarkdown(registry));
 });
 
 test('every registry row has all six documented fields filled in', () => {

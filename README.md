@@ -11,6 +11,7 @@ several companies from one installation, each seeing only its own data.
 | Backend | Node.js (TypeScript), native gRPC |
 | Browser ↔ backend | grpc-web, bridged to gRPC by Envoy; nginx puts both behind one origin |
 | Database | PostgreSQL + Prisma (with migration history) |
+| Read cache | Redis (optional): lists, dropdown options and dashboard figures, per company; every write invalidates at once, and the API reads PostgreSQL whenever Redis is unset or down. See `backend/_core_app_connectivities/cache.ts` |
 | Auth | 12-hour JWT sessions for people, API keys for integrations |
 
 ## Modules

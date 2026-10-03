@@ -1,7 +1,9 @@
+import { cachedRead } from '../_core_app_connectivities/cache.js';
 import { prisma } from '../_core_app_connectivities/prisma.js';
 import { currentCompanyId } from '../_core_app_connectivities/tenant-context.js';
 import { AppError } from '../classes/app-error.js';
 import { ErrorCode } from '../global_config/error-codes.js';
+import { config } from '../global_config/index.js';
 import type { ListQuery } from '../models/api-response.js';
 import { ListConfig, paginate } from '../utils/pagination.js';
 import { PERMISSION_MODULES, isAdminRole, isPermissionModule } from '../utils/permissions.js';
@@ -56,7 +58,7 @@ function mapOut(row: any) {
 export const rolesService = {
   async list(query: ListQuery) {
     try {
-      return await paginate(prisma.role, query, LIST, { extra: { include: INCLUDE }, map: mapOut });
+      return await cachedRead('Role.list', { query }, config.cache.listTtlSeconds, () => paginate(prisma.role, query, LIST, { extra: { include: INCLUDE }, map: mapOut }));
     } catch (error) {
       if (error instanceof AppError) throw error;
       throw AppError.from(ErrorCode.ROL_FETCH_FAILED, 500, error);
@@ -101,13 +103,18 @@ export const rolesService = {
       // Name and matrix change together or not at all.
       await prisma.$transaction(async (tx) => {
         await tx.role.update({ where: { id }, data: { name: input.name || undefined, description: input.description } });
-        for (const p of input.permissions ?? []) {
-          await tx.permission.upsert({
-            where: { roleId_module: { roleId: id, module: p.module } },
-            create: { roleId: id, module: p.module, ...flags(p) },
-            update: flags(p),
-          });
-        }
+        // One row per module, independent of each other: sent together rather than awaited one by one.
+        // A module listed twice keeps its last entry, as when they were written in order.
+        const byModule = new Map((input.permissions ?? []).map((p) => [p.module, p]));
+        await Promise.all(
+          [...byModule.values()].map((p) =>
+            tx.permission.upsert({
+              where: { roleId_module: { roleId: id, module: p.module } },
+              create: { roleId: id, module: p.module, ...flags(p) },
+              update: flags(p),
+            }),
+          ),
+        );
       });
     } catch (error) {
       if ((error as { code?: string })?.code === 'P2002') throw AppError.from(ErrorCode.ROL_DUPLICATE_NAME, 409, error);

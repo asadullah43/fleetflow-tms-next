@@ -29,6 +29,27 @@ services:
     networks:
       - fleetflow-net
 
+  # ── Redis: read cache for the backend ───────────────────
+  # Purely a cache (lists, dropdown options, dashboard figures): nothing in
+  # it is the only copy of anything, so no persistence. If it is down the
+  # backend reads PostgreSQL instead. Only cached entries carry a TTL, and
+  # only keys with a TTL may be evicted (volatile-lru) — the per-company
+  # version tokens that invalidation relies on are never evicted.
+  redis:
+    image: redis:7-alpine
+    container_name: fleetflow-next-redis
+    restart: unless-stopped
+    command: ["redis-server", "--maxmemory", "${REDIS_MAXMEMORY:-256mb}", "--maxmemory-policy", "volatile-lru", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    expose:
+      - "6379"
+    networks:
+      - fleetflow-net
+
   # ── Backend gRPC service (Node/TS) ───────────────────────
   # On start it applies pending database migrations, then serves the API.
   backend:
@@ -40,8 +61,13 @@ services:
     depends_on:
       database:
         condition: service_healthy
+      # Started, not "healthy": the API runs (uncached) without Redis.
+      redis:
+        condition: service_started
     environment:
       NODE_ENV: ${NODE_ENV:-production}
+      # Read cache. Remove to run without caching.
+      REDIS_URL: redis://redis:6379
       GRPC_PORT: 50051
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme_use_strong_password}@database:5432/${POSTGRES_DB:-fleetflow}?schema=public
       # Required, no default: a default secret is public (it's in this file),
