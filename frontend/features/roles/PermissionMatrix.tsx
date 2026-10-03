@@ -25,13 +25,23 @@ export function fillPermissions(modules: string[], existing: PermissionDto[]): P
   return emptyPermissions(modules).map((blank) => ({ ...blank, ...byModule.get(blank.module) }));
 }
 
-/** The module × view/add/edit/delete grid, used for roles and for API keys. */
+const MIN_HEIGHT = 180;
+
+/**
+ * The module × view/add/edit/delete grid, used for roles and for API keys.
+ * It takes its full height when there is room and scrolls (header row
+ * pinned) when its parent column is shorter — see PermissionsFormModal.
+ * Never below MIN_HEIGHT: on a tiny screen the whole modal scrolls instead.
+ */
 export function PermissionMatrix({ value, onChange }: { value: PermissionDto[]; onChange: (next: PermissionDto[]) => void }) {
   const t = useT();
   const toggle = (module: string, flag: Flag) => onChange(value.map((row) => (row.module === module ? { ...row, [flag]: !row[flag] } : row)));
 
   return (
-    <Table.ScrollContainer minWidth={420} mah={360}>
+    // type="native": the container itself is the scroll box, so shrinking it (flex) is enough to make it scroll.
+    // (The default ScrollArea sizes its viewport as height: 100%, which a parent with only a max-height can't resolve —
+    // the rows were clipped with nothing to scroll; the old `mah` cap had the same defect.)
+    <Table.ScrollContainer type="native" minWidth={420} style={{ flex: '0 1 auto', minHeight: MIN_HEIGHT }}>
       <Table withTableBorder verticalSpacing={6} stickyHeader>
         <Table.Thead>
           <Table.Tr>

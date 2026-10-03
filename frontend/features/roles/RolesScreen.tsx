@@ -1,17 +1,16 @@
 'use client';
 
-import { Alert, Box, Modal, Stack, Text, Textarea, TextInput } from '@mantine/core';
+import { Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { actions } from '../../components/action-items';
 import { ActionMenu } from '../../components/ActionMenu';
 import { AppShell } from '../../components/AppShell';
 import { useConfirmDanger } from '../../components/confirm';
 import { DataTable, TableColumn } from '../../components/DataTable';
-import { FormActions } from '../../components/FormActions';
 import { ListToolbar } from '../../components/ListToolbar';
 import { PageHeader } from '../../components/PageHeader';
 import type { RoleDto } from '../../lib/api/roles.api';
 import { useLocalizedDigits, useT } from '../../lib/language-context';
-import { PermissionMatrix } from './PermissionMatrix';
+import { PermissionsFormModal } from './PermissionsFormModal';
 import { useRolesViewModel } from './use-roles-view-model';
 
 function RolesBody() {
@@ -70,30 +69,24 @@ function RolesBody() {
         />
       </Stack>
 
-      <Modal opened={vm.editor !== null} onClose={vm.close} title={vm.editor?.role ? `${t('Edit')} ${vm.editor.role.name}` : t('Add role')} size="lg" closeOnClickOutside={false}>
-        {vm.editor && (
-          <form
-            noValidate
-            onSubmit={(event) => {
-              event.preventDefault();
-              void vm.save();
-            }}
-          >
-            <Stack gap="md">
-              {vm.formError && <Alert color="red">{t(vm.formError)}</Alert>}
+      <PermissionsFormModal
+        opened={vm.editor !== null}
+        onClose={vm.close}
+        title={vm.editor?.role ? `${t('Edit')} ${vm.editor.role.name}` : t('Add role')}
+        onSubmit={() => void vm.save()}
+        error={vm.formError}
+        fields={
+          vm.editor && (
+            <>
               <TextInput label={t('Role name')} required value={vm.editor.name} onChange={(event) => vm.patch({ name: event.currentTarget.value })} />
               <Textarea label={t('Description')} autosize minRows={2} value={vm.editor.description} onChange={(event) => vm.patch({ description: event.currentTarget.value })} />
-              <Box>
-                <Text size="sm" fw={500} mb={6}>
-                  {t('Permissions')}
-                </Text>
-                <PermissionMatrix value={vm.editor.permissions} onChange={(permissions) => vm.patch({ permissions })} />
-              </Box>
-              <FormActions onCancel={vm.close} saving={vm.saving} />
-            </Stack>
-          </form>
-        )}
-      </Modal>
+            </>
+          )
+        }
+        permissions={vm.editor?.permissions ?? []}
+        onPermissionsChange={(permissions) => vm.patch({ permissions })}
+        saving={vm.saving}
+      />
     </>
   );
 }

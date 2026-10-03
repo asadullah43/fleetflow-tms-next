@@ -1,12 +1,11 @@
 'use client';
 
-import { Alert, Box, Button, Code, CopyButton, Group, Modal, Stack, Text, TextInput } from '@mantine/core';
+import { Alert, Button, Code, CopyButton, Group, Modal, Stack, Text, TextInput } from '@mantine/core';
 import { actions } from '../../components/action-items';
 import { ActionMenu } from '../../components/ActionMenu';
 import { AppShell } from '../../components/AppShell';
 import { useConfirmDanger } from '../../components/confirm';
 import { DataTable, TableColumn } from '../../components/DataTable';
-import { FormActions } from '../../components/FormActions';
 import { ListToolbar } from '../../components/ListToolbar';
 import { Mono } from '../../components/Mono';
 import { PageHeader } from '../../components/PageHeader';
@@ -16,7 +15,8 @@ import { formatDateTime } from '../../lib/date';
 import { useT } from '../../lib/language-context';
 import { tone } from '../../theme/theme';
 import type { FilterDef } from '../crud/types';
-import { formatModule, PermissionMatrix } from '../roles/PermissionMatrix';
+import { formatModule } from '../roles/PermissionMatrix';
+import { PermissionsFormModal } from '../roles/PermissionsFormModal';
 import { useApiKeysViewModel } from './use-api-keys-view-model';
 
 const FILTERS: FilterDef[] = [
@@ -100,32 +100,23 @@ function ApiKeysBody() {
         />
       </Stack>
 
-      <Modal opened={vm.draft !== null} onClose={vm.closeCreate} title={t('New API key')} size="lg" closeOnClickOutside={false}>
-        {vm.draft && (
-          <form
-            noValidate
-            onSubmit={(event) => {
-              event.preventDefault();
-              vm.save();
-            }}
-          >
-            <Stack gap="md">
-              {vm.formError && <Alert color="red">{t(vm.formError)}</Alert>}
-              <TextInput label={t('Name')} description={t('What will use this key, e.g. "Accounting sync".')} required value={vm.draft.name} onChange={(event) => vm.patch({ name: event.currentTarget.value })} />
-              <Box>
-                <Text size="sm" fw={500}>
-                  {t('Permissions')}
-                </Text>
-                <Text size="xs" c="dimmed" mb={6}>
-                  {t('Grant only what the integration needs. You can only grant permissions you have yourself.')}
-                </Text>
-                <PermissionMatrix value={vm.draft.scopes} onChange={(scopes) => vm.patch({ scopes })} />
-              </Box>
-              <FormActions onCancel={vm.closeCreate} saving={vm.saving} submitLabel="Create key" />
-            </Stack>
-          </form>
-        )}
-      </Modal>
+      <PermissionsFormModal
+        opened={vm.draft !== null}
+        onClose={vm.closeCreate}
+        title={t('New API key')}
+        onSubmit={() => vm.save()}
+        error={vm.formError}
+        fields={
+          vm.draft && (
+            <TextInput label={t('Name')} description={t('What will use this key, e.g. "Accounting sync".')} required value={vm.draft.name} onChange={(event) => vm.patch({ name: event.currentTarget.value })} />
+          )
+        }
+        hint="Grant only what the integration needs. You can only grant permissions you have yourself."
+        permissions={vm.draft?.scopes ?? []}
+        onPermissionsChange={(scopes) => vm.patch({ scopes })}
+        saving={vm.saving}
+        submitLabel="Create key"
+      />
 
       <Modal opened={vm.created !== null} onClose={vm.dismissCreated} title={t('Copy your new API key')} size="lg" closeOnClickOutside={false}>
         {vm.created && (
