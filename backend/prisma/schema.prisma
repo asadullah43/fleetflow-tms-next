@@ -157,6 +157,7 @@ model Location {
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
 
+  @@index([status])
   @@index([companyId])
 }
 
@@ -179,6 +180,7 @@ model CargoType {
   company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
 
   @@unique([companyId, name])
+  @@index([status])
   @@index([companyId])
 }
 
@@ -249,6 +251,9 @@ model RateContract {
   company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
 
   @@unique([companyId, customerId, pickupLocationId, deliveryLocationId, cargoTypeId])
+  @@index([cargoTypeId])
+  @@index([pickupLocationId])
+  @@index([deliveryLocationId])
   @@index([companyId])
 }
 
@@ -451,6 +456,10 @@ model LoadingOrder {
   @@unique([companyId, serialNumber])
   @@index([customerId])
   @@index([batchId])
+  @@index([cargoTypeId])
+  @@index([pickupLocationId])
+  @@index([deliveryLocationId])
+  @@index([createdAt])
   @@index([companyId])
 }
 
@@ -470,7 +479,9 @@ model User {
 
   roleRef Role? @relation(fields: [roleId], references: [id], onDelete: Restrict)
 
-  inspections VehicleInspection[]
+  inspections    VehicleInspection[]
+  createdApiKeys ApiKey[]            @relation("ApiKeyCreator")
+  uploadedFiles  StoredFile[]        @relation("StoredFileUploader")
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
 
@@ -691,6 +702,7 @@ model Department {
   name        String
   nameAr      String?
   description String?
+  /// The employee who heads the department.
   managerId   Int?
   status      String   @default("ACTIVE")
   createdAt   DateTime @default(now())
@@ -699,9 +711,12 @@ model Department {
   designations Designation[]
   employees    Employee[]
 
+  manager Employee? @relation("DepartmentManager", fields: [managerId], references: [id], onDelete: SetNull)
+
   company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
 
   @@index([status])
+  @@index([managerId])
   @@index([companyId])
 }
 
@@ -741,6 +756,7 @@ model Employee {
   employmentStatus String   @default("ACTIVE")
   departmentId     Int
   designationId    Int?
+  /// The employee this one reports to.
   managerId        Int?
   salary           Decimal? @db.Decimal(12, 2)
   address          String?
@@ -752,13 +768,16 @@ model Employee {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  department    Department           @relation(fields: [departmentId], references: [id], onDelete: Restrict)
-  designation   Designation?         @relation(fields: [designationId], references: [id], onDelete: SetNull)
-  driver        Driver?              @relation(fields: [driverId], references: [id], onDelete: SetNull)
-  attendance    Attendance[]
-  leaveRequests LeaveRequest[]
-  documents     EmployeeDocument[]
-  contracts     EmploymentContract[]
+  department         Department           @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  designation        Designation?         @relation(fields: [designationId], references: [id], onDelete: SetNull)
+  driver             Driver?              @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  manager            Employee?            @relation("EmployeeManager", fields: [managerId], references: [id], onDelete: SetNull)
+  reports            Employee[]           @relation("EmployeeManager")
+  managedDepartments Department[]         @relation("DepartmentManager")
+  attendance         Attendance[]
+  leaveRequests      LeaveRequest[]
+  documents          EmployeeDocument[]
+  contracts          EmploymentContract[]
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
 
@@ -766,6 +785,7 @@ model Employee {
   @@unique([companyId, email])
   @@index([departmentId])
   @@index([designationId])
+  @@index([managerId])
   @@index([employmentStatus])
   @@index([joiningDate])
   @@index([companyId])
@@ -951,9 +971,12 @@ model ApiKey {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
+  createdBy User? @relation("ApiKeyCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
   company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
 
   @@index([companyId])
+  @@index([createdById])
 }
 
 /// An uploaded file (employee document scan, contract PDF). The bytes are
@@ -980,10 +1003,13 @@ model StoredFile {
   employeeDocument   EmployeeDocument?   @relation("EmployeeDocumentFile")
   employmentContract EmploymentContract? @relation("EmploymentContractDocument")
 
+  uploadedBy User? @relation("StoredFileUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+
   company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
 
   @@index([companyId])
   @@index([createdAt])
+  @@index([uploadedById])
 }
 
 /// One row per (tenant, operation, Idempotency-Key): a retried create

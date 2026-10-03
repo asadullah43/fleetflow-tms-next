@@ -30,6 +30,10 @@ frontend/tsconfig.tsbuildinfo
 proto/**/*.js
 proto/**/*.d.ts
 
+# TLS certificates and keys (scripts/dev-cert.sh, or a real one for docker-compose.prod.yml) and the ACME webroot
+/certs/
+/acme/
+
 # Uploaded files from running the backend locally (UPLOADS_DIR)
 backend/uploads/
 

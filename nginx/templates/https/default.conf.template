@@ -1,0 +1,53 @@
+# ═══════════════════════════════════════════════════════════
+# FleetFlow reverse proxy — PRODUCTION (TLS)
+# Used with docker-compose.prod.yml. ${VARIABLES} are filled in from the
+# container's environment when it starts (nginx image templates).
+#   :80  -> permanent redirect to https (ACME http-01 challenges excepted)
+#   :443 -> TLS with the certificate in /etc/nginx/certs (TLS_CERTS_DIR)
+# ═══════════════════════════════════════════════════════════
+
+upstream nextjs_app {
+    server frontend:3000;
+}
+
+upstream envoy_grpc_web {
+    server envoy:8080;
+}
+
+# Browsers remember to use HTTPS only for this long (seconds). Set
+# HSTS_MAX_AGE=0 when trying this with a self-signed certificate locally.
+map $host $fleetflow_hsts {
+    default "max-age=${HSTS_MAX_AGE}";
+}
+
+server {
+    listen 80;
+    server_name ${SERVER_NAME};
+    server_tokens off;
+
+    # Let's Encrypt (or any ACME client) can answer http-01 challenges from this folder.
+    location /.well-known/acme-challenge/ {
+        root /var/www/acme;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name ${SERVER_NAME};
+    server_tokens off;
+
+    ssl_certificate     /etc/nginx/certs/${TLS_CERT_FILE};
+    ssl_certificate_key /etc/nginx/certs/${TLS_KEY_FILE};
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:FleetFlowTLS:10m;
+    ssl_session_tickets off;
+
+    include /etc/nginx/snippets/fleetflow-locations.conf;
+}

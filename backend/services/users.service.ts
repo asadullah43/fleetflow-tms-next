@@ -7,6 +7,7 @@ import { config } from '../global_config/index.js';
 import { ErrorCode } from '../global_config/error-codes.js';
 import type { ListQuery } from '../models/api-response.js';
 import { filter, ListConfig, paginate } from '../utils/pagination.js';
+import { isAdminRole } from '../utils/permissions.js';
 
 /** Never includes passwordHash. */
 const SAFE_FIELDS = {
@@ -71,6 +72,24 @@ async function assertLoginNamesFree(input: UserInput, exceptUserId?: number): Pr
   if (username.value) throw AppError.from(ErrorCode.USR_DUPLICATE_USERNAME, 400);
 }
 
+/** Whether a user (as stored) is an administrator: through their role, or — with no role — the legacy `role` text (as sign-in decides). */
+const isAdminUser = (user: { roleId?: number | null; roleName?: string | null; role?: string | null }) => (user.roleId ? isAdminRole(user.roleName) : isAdminRole(user.role));
+
+/**
+ * ADMIN bypasses the whole permission matrix, so administrator accounts
+ * are for administrators to manage: someone who may only manage users
+ * must not be able to create one, promote anyone (themselves included)
+ * to it, or change an administrator's account — resetting an admin's
+ * password would be taking it over.
+ */
+async function assertMayManage(input: Pick<UserInput, 'role' | 'roleId'>, actingIsAdmin: boolean, current?: { roleId?: number | null; roleName?: string | null; role?: string | null }): Promise<void> {
+  if (actingIsAdmin) return;
+  if (current && isAdminUser(current)) throw AppError.from(ErrorCode.USR_ADMIN_ONLY, 403);
+  const roleId = input.roleId !== undefined ? input.roleId : (current?.roleId ?? null);
+  const roleName = roleId ? (await prisma.role.findUnique({ where: { id: roleId }, select: { name: true } }))?.name : null;
+  if (isAdminUser({ roleId, roleName, role: input.role || current?.role })) throw AppError.from(ErrorCode.USR_ADMIN_ONLY, 403);
+}
+
 function assertPasswordLength(password: string | undefined): void {
   if (password !== undefined && password !== '' && password.length < config.auth.minPasswordLength) {
     throw AppError.from(ErrorCode.USR_PASSWORD_TOO_SHORT, 400);
@@ -95,8 +114,9 @@ export const usersService = {
     return mapUser(row);
   },
 
-  async create(input: UserInput & { name: string; email: string; password: string }) {
+  async create(input: UserInput & { name: string; email: string; password: string }, actingIsAdmin = false) {
     if (input.password.length < config.auth.minPasswordLength) throw AppError.from(ErrorCode.USR_PASSWORD_TOO_SHORT, 400);
+    await assertMayManage(input, actingIsAdmin);
     await assertLoginNamesFree(input);
     try {
       const row = await prisma.user.create({
@@ -121,8 +141,9 @@ export const usersService = {
   },
 
   /** `actingUserId`: the caller — an account can't deactivate itself (avoids locking the last admin out). */
-  async update(id: number, input: UserInput, actingUserId: number | null) {
-    await this.findOne(id);
+  async update(id: number, input: UserInput, actingUserId: number | null, actingIsAdmin = false) {
+    const current = await this.findOne(id);
+    await assertMayManage(input, actingIsAdmin, current);
     if (actingUserId === id && input.status && input.status !== 'ACTIVE') throw AppError.from(ErrorCode.USR_CANNOT_REMOVE_SELF, 400);
     assertPasswordLength(input.password);
     await assertLoginNamesFree(input, id);
@@ -148,9 +169,10 @@ export const usersService = {
     }
   },
 
-  async remove(id: number, actingUserId: number | null) {
+  async remove(id: number, actingUserId: number | null, actingIsAdmin = false) {
     if (actingUserId === id) throw AppError.from(ErrorCode.USR_CANNOT_REMOVE_SELF, 400);
-    await this.findOne(id);
+    const current = await this.findOne(id);
+    if (!actingIsAdmin && isAdminUser(current)) throw AppError.from(ErrorCode.USR_ADMIN_ONLY, 403);
     try {
       await prisma.user.delete({ where: { id } });
     } catch (error) {

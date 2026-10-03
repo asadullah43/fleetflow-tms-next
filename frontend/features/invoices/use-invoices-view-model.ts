@@ -16,12 +16,14 @@ interface Draft {
   toDate: string;
   dueDate: string;
   vatEnabled: boolean;
+  /** Optional: the trip this invoice is for. */
+  tripId: string;
   lines: DraftLine[];
   idempotencyKey: string;
 }
 
 const emptyLine = (): DraftLine => ({ description: '', quantity: '1', rate: '0' });
-const newDraft = (): Draft => ({ customerId: '', fromDate: '', toDate: '', dueDate: '', vatEnabled: true, lines: [emptyLine()], idempotencyKey: newIdempotencyKey() });
+const newDraft = (): Draft => ({ customerId: '', fromDate: '', toDate: '', dueDate: '', vatEnabled: true, tripId: '', lines: [emptyLine()], idempotencyKey: newIdempotencyKey() });
 
 /** State and actions of the Invoices screen: the paged list, the new-invoice draft, and the open invoice's actions. */
 export function useInvoicesViewModel() {
@@ -67,7 +69,15 @@ export function useInvoicesViewModel() {
     setFormError(null);
     try {
       await createInvoice({
-        values: { customerId: Number(draft.customerId), fromDate: draft.fromDate, toDate: draft.toDate, dueDate: draft.dueDate, vatEnabled: draft.vatEnabled, lineItems: lines.map((line) => ({ description: line.description.trim(), quantity: line.quantity.trim(), rate: line.rate.trim() })) },
+        values: {
+          customerId: Number(draft.customerId),
+          fromDate: draft.fromDate,
+          toDate: draft.toDate,
+          dueDate: draft.dueDate,
+          vatEnabled: draft.vatEnabled,
+          tripId: draft.tripId ? Number(draft.tripId) : undefined,
+          lineItems: lines.map((line) => ({ description: line.description.trim(), quantity: line.quantity.trim(), rate: line.rate.trim() })),
+        },
         idempotencyKey: draft.idempotencyKey,
       });
       setDraft(null);
@@ -101,6 +111,22 @@ export function useInvoicesViewModel() {
     [viewing],
   );
   const markPaid = useCallback(() => runOnViewing(markPaidAsync, 'Failed to mark as paid.'), [runOnViewing, markPaidAsync]);
+
+  /** Links the open invoice to a trip ('' unlinks). Only the link changes — nothing else on the invoice or the trip. */
+  const { mutateAsync: updateAsync, isPending: linkingTrip } = mutations.update;
+  const linkTrip = useCallback(
+    async (tripId: string) => {
+      if (!viewing) return;
+      setActionError(null);
+      try {
+        setViewing(await updateAsync({ id: viewing.id, values: { tripId: tripId ? Number(tripId) : 0 } }));
+        notifications.show({ color: 'teal', message: t(tripId ? 'Trip linked.' : 'Trip unlinked.') });
+      } catch (error) {
+        setActionError(errorMessage(error, 'Failed to change the linked trip.'));
+      }
+    },
+    [viewing, updateAsync, t],
+  );
   const submitToZatca = useCallback(() => runOnViewing(submitAsync, 'ZATCA submission failed.'), [runOnViewing, submitAsync]);
 
   /** The same status actions, straight from a list row's menu; the outcome is reported as a notice. */
@@ -145,6 +171,8 @@ export function useInvoicesViewModel() {
     closeView,
     markPaid,
     submitToZatca,
+    linkTrip,
+    linkingTrip,
     markRowPaid,
     submitRowToZatca,
     /** Row whose status action or delete is running (its menu shows a spinner). */

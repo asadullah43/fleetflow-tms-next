@@ -1,0 +1,39 @@
+# ═══════════════════════════════════════════════════════════
+# FleetFlow TMS - production override: HTTPS at nginx
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Adds TLS termination (with HSTS) to the nginx service from
+# docker-compose.yml; every other service is unchanged. Needs in .env:
+#   SERVER_NAME    the public host name, e.g. tms.example.com
+#   TLS_CERTS_DIR  a folder holding the certificate chain and private key
+#                  (fullchain.pem / privkey.pem by default — the Let's
+#                  Encrypt names; override with TLS_CERT_FILE / TLS_KEY_FILE)
+# See README "Production: HTTPS".
+# ═══════════════════════════════════════════════════════════
+
+services:
+  envoy:
+    environment:
+      # The app is served from https://SERVER_NAME, so that is the only origin allowed by default.
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://${SERVER_NAME:?Set SERVER_NAME in .env (see .env.example)}}
+
+  nginx:
+    environment:
+      SERVER_NAME: ${SERVER_NAME:?Set SERVER_NAME in .env (see .env.example)}
+      TLS_CERT_FILE: ${TLS_CERT_FILE:-fullchain.pem}
+      TLS_KEY_FILE: ${TLS_KEY_FILE:-privkey.pem}
+      # One year. Browsers then refuse plain HTTP to this host for that long — set 0 while testing.
+      HSTS_MAX_AGE: ${HSTS_MAX_AGE:-31536000}
+      # Only these are substituted in the templates, so nginx's own $variables are left alone.
+      NGINX_ENVSUBST_FILTER: ^(SERVER_NAME|TLS_CERT_FILE|TLS_KEY_FILE|HSTS_MAX_AGE)$$
+    # Replaces (not adds to) the base file's port list: 80 for the redirect / ACME challenges, 443 for the app.
+    ports: !override
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes: !override
+      - ./nginx/templates/https:/etc/nginx/templates:ro
+      - ./nginx/snippets:/etc/nginx/snippets:ro
+      - ${TLS_CERTS_DIR:?Set TLS_CERTS_DIR in .env to the folder holding the TLS certificate and key}:/etc/nginx/certs:ro
+      # Webroot for an ACME client's http-01 challenges (e.g. certbot --webroot -w ./acme). Created on first start.
+      - ${ACME_WEBROOT:-./acme}:/var/www/acme:ro

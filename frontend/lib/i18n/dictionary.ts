@@ -377,6 +377,11 @@ export const AR_STRINGS: Record<string, string> = {
   'Customer:': 'العميل:',
   'Due:': 'الاستحقاق:',
   'Status:': 'الحالة:',
+  'Trip:': 'الرحلة:',
+  'The trip this invoice is for (optional)': 'الرحلة التي تخصها هذه الفاتورة (اختياري)',
+  'Trip linked.': 'تم ربط الرحلة.',
+  'Trip unlinked.': 'تم إلغاء ربط الرحلة.',
+  'Failed to change the linked trip.': 'تعذر تغيير الرحلة المرتبطة.',
   'ZATCA:': 'هيئة الزكاة والضريبة:',
   'ZATCA QR (base64 TLV):': 'رمز الاستجابة السريعة لهيئة الزكاة (TLV بترميز base64):',
 

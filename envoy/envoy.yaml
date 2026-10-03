@@ -4,6 +4,15 @@
 #
 # Frontend calls http://localhost:8080 (this proxy) instead of the
 # backend's gRPC port directly.
+#
+# CORS: only the origins in CORS_ALLOWED_ORIGINS (comma-separated, e.g.
+# "https://fleet.example.com") may call this from a browser page on
+# another origin. envoy/render-config.sh writes them in at start-up, in
+# place of the #@CORS_ALLOWED_ORIGINS@ line below; started without it,
+# no other origin is allowed at all. In production the browser reaches
+# Envoy through nginx on the app's own origin, so CORS is not even
+# involved there; the list matters for local development, where the
+# Next.js dev server (http://localhost:3000) calls Envoy directly.
 static_resources:
   listeners:
     - name: listener_grpc_web
@@ -35,13 +44,15 @@ static_resources:
                           route:
                             cluster: grpc_backend
                             timeout: 60s
-                      cors:
-                        allow_origin_string_match:
-                          - prefix: "*"
-                        allow_methods: GET, PUT, DELETE, POST, OPTIONS
-                        allow_headers: keep-alive,user-agent,cache-control,content-type,content-transfer-encoding,custom-header-1,x-accept-content-transfer-encoding,x-accept-response-streaming,x-user-agent,x-grpc-web,grpc-timeout,authorization,x-api-key,idempotency-key,x-request-id
-                        max_age: "1728000"
-                        expose_headers: grpc-status,grpc-message,custom-header-1
+                      typed_per_filter_config:
+                        envoy.filters.http.cors:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
+                          #@CORS_ALLOWED_ORIGINS@
+                          # grpc-web is POST; files are GET (download) and POST (upload, link).
+                          allow_methods: GET, POST, OPTIONS
+                          allow_headers: keep-alive,user-agent,cache-control,content-type,content-transfer-encoding,x-accept-content-transfer-encoding,x-accept-response-streaming,x-user-agent,x-grpc-web,grpc-timeout,authorization,x-api-key,idempotency-key,x-request-id
+                          max_age: "86400"
+                          expose_headers: grpc-status,grpc-message
                 http_filters:
                   - name: envoy.filters.http.grpc_web
                     typed_config:

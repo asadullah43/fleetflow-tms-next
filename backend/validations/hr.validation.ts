@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { dateString, fileReference, id, language, optionalDateString, optionalDecimalString, optionalId, optionalText, requiredText } from './common.validation.js';
+import { dateString, endOnOrAfterStart, fileReference, id, language, optionalDateString, optionalDecimalString, optionalId, optionalText, requiredText } from './common.validation.js';
 
 export const createAttendanceRequest = z.object({
   employeeId: id,
@@ -62,7 +62,8 @@ export const createEmployeeRequest = z.object({
   nameAr: optionalText,
 });
 
-export const createEmploymentContractRequest = z.object({
+export const createEmploymentContractRequest = endOnOrAfterStart(
+  z.object({
   employeeId: id,
   contractNumber: requiredText,
   contractType: optionalText,
@@ -76,17 +77,24 @@ export const createEmploymentContractRequest = z.object({
   notes: optionalText,
   /** An upload (POST /files?purpose=CONTRACT_DOCUMENT) to attach. documentUrl / documentUploadedAt / documentUploadedBy follow from it. */
   documentFileId: optionalId,
-});
+  }),
+  'startDate',
+  'endDate',
+);
 
-export const createLeaveRequestRequest = z.object({
-  employeeId: id,
-  leaveType: requiredText,
-  startDate: dateString,
-  endDate: dateString,
-  days: z.number().int(),
-  reason: optionalText,
-  status: optionalText,
-});
+export const createLeaveRequestRequest = endOnOrAfterStart(
+  z.object({
+    employeeId: id,
+    leaveType: requiredText,
+    startDate: dateString,
+    endDate: dateString,
+    days: z.number().int(),
+    reason: optionalText,
+    status: optionalText,
+  }),
+  'startDate',
+  'endDate',
+);
 
 export const updateAttendanceRequest = z.object({
   id: id,
@@ -153,7 +161,8 @@ export const updateEmployeeRequest = z.object({
   nameAr: optionalText,
 });
 
-export const updateEmploymentContractRequest = z.object({
+export const updateEmploymentContractRequest = endOnOrAfterStart(
+  z.object({
   id: id,
   employeeId: optionalId,
   contractNumber: optionalText,
@@ -167,9 +176,13 @@ export const updateEmploymentContractRequest = z.object({
   title: optionalText,
   notes: optionalText,
   documentFileId: fileReference,
-});
+  }),
+  'startDate',
+  'endDate',
+);
 
-export const updateLeaveRequestRequest = z.object({
+export const updateLeaveRequestRequest = endOnOrAfterStart(
+  z.object({
   id: id,
   employeeId: optionalId,
   leaveType: optionalText,
@@ -180,4 +193,7 @@ export const updateLeaveRequestRequest = z.object({
   status: optionalText,
   approverId: optionalId,
   comments: optionalText,
-});
+  }),
+  'startDate',
+  'endDate',
+);

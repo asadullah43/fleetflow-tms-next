@@ -74,6 +74,10 @@ message Invoice {
   optional string zatca_status = 30;
   optional string qr_code = 31;
   optional string invoice_uuid = 32;
+
+  // The trip this invoice is for, if one was linked (a reference: neither record changes the other).
+  optional int32 trip_id = 40;
+  optional string trip_transaction_number = 41;
 }
 
 message InvoiceList {
@@ -90,8 +94,9 @@ message CreateInvoiceRequest {
   optional string invoice_type = 6;
   optional string payment_means = 7;
   optional bool vat_enabled = 8;
-  optional string vat_percent = 9;
+  optional string vat_percent = 9;             // 0 to 100
   repeated InvoiceLineItemInput line_items = 10;
+  optional int32 trip_id = 11;                 // link the trip this invoice is for (it must not be on another invoice)
 }
 
 message UpdateInvoiceRequest {
@@ -104,7 +109,8 @@ message UpdateInvoiceRequest {
   optional string invoice_type = 7;
   optional string payment_means = 8;
   optional bool vat_enabled = 9;
-  optional string vat_percent = 10;
+  optional string vat_percent = 10;            // 0 to 100
   optional string status = 11;
   repeated InvoiceLineItemInput line_items = 12;
+  optional int32 trip_id = 13;                 // link a trip (replacing the linked one); 0 unlinks; absent leaves it
 }

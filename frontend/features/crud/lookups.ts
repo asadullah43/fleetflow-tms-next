@@ -7,6 +7,7 @@ import { InventoryItemDto, inventoryItemsApi, warehousesApi } from '../../lib/ap
 import { locationsApi } from '../../lib/api/locations.api';
 import { rolesApi } from '../../lib/api/roles.api';
 import { suppliersApi } from '../../lib/api/suppliers.api';
+import { tripsApi } from '../../lib/api/trips.api';
 import { trucksApi } from '../../lib/api/trucks.api';
 import type { Language } from '../../lib/language-context';
 import { localizedName } from '../../lib/localized-name';
@@ -30,6 +31,7 @@ export const lookups = {
   designations: defineLookup({ api: designationsApi, label: localizedName }),
   employees: defineLookup({ api: employeesApi, label: (row, language) => `${localizedName(row, language)} (${row.employeeNumber})` }),
   roles: defineLookup({ api: rolesApi, label: (row) => row.name }),
+  trips: defineLookup({ api: tripsApi, label: (row) => row.transactionNumber }),
   warehouses: defineLookup({ api: warehousesApi, label: localizedName }),
   inventoryItems: defineLookup({ api: inventoryItemsApi, label: inventoryItemLabel }),
 };

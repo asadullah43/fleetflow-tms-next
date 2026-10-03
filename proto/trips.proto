@@ -34,7 +34,8 @@ message Trip {
   string trip_date = 9;
   int32 truck_id = 10;
   optional int32 driver_id = 11;
-  optional int32 invoice_id = 12;
+  optional int32 invoice_id = 12;   // set from the invoice side (Invoices: trip); never written through the trips API
+  optional string invoice_number = 13;
 
   // Denormalized for display, resolved server-side via Prisma include.
   optional string supplier_name = 20;

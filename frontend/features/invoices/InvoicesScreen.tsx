@@ -72,6 +72,7 @@ function NewInvoiceModal({ vm }: { vm: ViewModel }) {
               {date('toDate', 'To date')}
               {date('dueDate', 'Due date')}
             </SimpleGrid>
+            <AsyncSelect label={t('Trip')} lookup={lookups.trips} value={draft.tripId} onChange={(tripId) => vm.patchDraft({ tripId })} placeholder={t('The trip this invoice is for (optional)')} />
             <Checkbox label={t('Apply 15% VAT')} checked={draft.vatEnabled} onChange={(event) => vm.patchDraft({ vatEnabled: event.currentTarget.checked })} />
 
             <Box>
@@ -148,7 +149,22 @@ function InvoiceModal({ vm }: { vm: ViewModel }) {
               <Text size="sm">{t('ZATCA:')}</Text>
               <StatusBadge status={invoice.zatcaStatus ?? 'PENDING_SIGN'} />
             </Group>
+            {!vm.allowed.edit && (
+              <Text size="sm">
+                {t('Trip:')} <Mono>{invoice.tripTransactionNumber ?? '—'}</Mono>
+              </Text>
+            )}
           </SimpleGrid>
+          {vm.allowed.edit && (
+            <AsyncSelect
+              label={t('Trip')}
+              lookup={lookups.trips}
+              value={invoice.tripId ? String(invoice.tripId) : ''}
+              onChange={(tripId) => void vm.linkTrip(tripId)}
+              disabled={vm.linkingTrip}
+              placeholder={t('The trip this invoice is for (optional)')}
+            />
+          )}
 
           <Table.ScrollContainer minWidth={420}>
             <Table withTableBorder>
@@ -236,6 +252,7 @@ function InvoicesBody() {
       ),
     },
     { id: 'customer', header: 'Customer', cell: (invoice) => localizedJoinedName(invoice.customerName, invoice.customerNameAr, language) ?? invoice.customerId },
+    { id: 'trip', header: 'Trip', cell: (invoice) => (invoice.tripTransactionNumber ? <Mono>{invoice.tripTransactionNumber}</Mono> : null) },
     { id: 'due', header: 'Due', sortKey: 'dueDate', cell: (invoice) => <Mono>{formatDate(invoice.dueDate)}</Mono> },
     { id: 'total', header: 'Total', sortKey: 'total', align: 'right', cell: (invoice) => <Mono>{invoice.total} {invoice.currency}</Mono> },
     { id: 'status', header: 'Status', sortKey: 'status', cell: (invoice) => <StatusBadge status={invoice.status} /> },

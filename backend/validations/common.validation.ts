@@ -34,6 +34,24 @@ export const optionalDecimalString = z
   .trim()
   .regex(/^(\d+(\.\d+)?)?$/, 'must be a non-negative number')
   .optional();
+/** A percentage from 0 to 100 as a string ("15", "12.5"); blank = not given. */
+export const optionalPercentString = optionalDecimalString.refine((value) => value === undefined || value === '' || Number(value) <= 100, 'must be between 0 and 100');
+
+/**
+ * Adds "end on or after start" to a schema with two date strings. Only
+ * checked when both are in the request; an update that sends one of them
+ * is checked against the stored other one by the service.
+ */
+export function endOnOrAfterStart<T extends z.ZodTypeAny>(schema: T, start: string, end: string) {
+  return schema.superRefine((value: Record<string, unknown>, ctx) => {
+    const from = value[start];
+    const to = value[end];
+    if (typeof from === 'string' && typeof to === 'string' && from.trim() && to.trim() && new Date(to) < new Date(from)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: [end], message: `must be on or after ${start}` });
+    }
+  });
+}
+
 export const language = z.enum(['en', 'ar']);
 
 export const idRequest = z.object({ id });

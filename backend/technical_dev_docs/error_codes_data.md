@@ -15,7 +15,7 @@ codes below, `ERROR_FILTER` is its category and `ERROR_DESCRIPTION` is the user-
 | `RATE_LIMIT_EXCEEDED` | Too many requests; `RATE_LIMIT` says how long to wait | Retry after `retry_after_seconds` |
 | `TECHNICAL_ISSUE` | A server-side fault; details are in the server log only | Retry later |
 
-188 codes.
+193 codes.
 
 ## API Keys
 
@@ -120,6 +120,7 @@ codes below, `ERROR_FILTER` is its category and `ERROR_DESCRIPTION` is the user-
 | `FLEET-HR008` | `INVALID_REQUEST` | Attendance already recorded for this employee on this date. | `services/hr.service.ts` | `attendanceService.create / update` |
 | `FLEET-HR009` | `USER_NOT_AUTHORIZED` | New leave requests start as Pending. Only a role allowed to approve leave (Leave requests: Edit) can set Approved or Rejected. | `services/hr.service.ts` | `leaveRequestsService.create` |
 | `FLEET-HR010` | `INVALID_REQUEST` | Time out must be after time in, and within 24 hours of it. | `services/hr.service.ts` | `withAttendanceHours` |
+| `FLEET-HR011` | `INVALID_REQUEST` | The end date must be on or after the start date. | `services/hr.service.ts` | `assertPeriodOrder` |
 
 ## Inventory
 
@@ -158,6 +159,8 @@ codes below, `ERROR_FILTER` is its category and `ERROR_DESCRIPTION` is the user-
 | `FLEET-INV007` | `INVALID_REQUEST` | Each line item needs a description, a quantity above zero and a valid rate. | `services/invoices.service.ts` | `computeOrFail` |
 | `FLEET-INV008` | `INVALID_REQUEST` | An invoice needs at least one line item. | `services/invoices.service.ts` | `invoicesService.create` |
 | `FLEET-INV010` | `USER_END_VIOLATION` | This invoice has been submitted to ZATCA and its amounts can no longer be changed. | `services/invoices.service.ts` | `invoicesService.update` |
+| `FLEET-INV011` | `INVALID_REQUEST` | The invoice period's end date must be on or after its start date. | `services/invoices.service.ts` | `invoicesService.update` |
+| `FLEET-INV012` | `USER_END_VIOLATION` | This trip is already linked to another invoice. Unlink it there first. | `services/invoices.service.ts` | `linkTrip` |
 
 ## Loading Orders
 
@@ -210,6 +213,7 @@ codes below, `ERROR_FILTER` is its category and `ERROR_DESCRIPTION` is the user-
 | `FLEET-ROL008` | `USER_END_VIOLATION` | The ADMIN role is built in and cannot be renamed or deleted. | `services/roles.service.ts` | `rolesService.update` |
 | `FLEET-ROL009` | `INVALID_REQUEST` | The permission matrix contains an unknown module. | `services/roles.service.ts` | `assertKnownModules` |
 | `FLEET-ROL010` | `INVALID_REQUEST` | A role with this name already exists. | `services/roles.service.ts` | `rolesService.create` |
+| `FLEET-ROL011` | `INVALID_REQUEST` | ADMIN is the name of the built-in administrator role. Choose another name. | `services/roles.service.ts` | `rolesService.create` |
 
 ## Supplier Payments
 
@@ -249,7 +253,7 @@ codes below, `ERROR_FILTER` is its category and `ERROR_DESCRIPTION` is the user-
 
 | error_code | error_filter | error_description | file | function |
 | --- | --- | --- | --- | --- |
-| `FLEET-TRP001` | `INVALID_REQUEST` | Trip not found. | `services/trips.service.ts` | `tripsService.findOne` |
+| `FLEET-TRP001` | `INVALID_REQUEST` | Trip not found. | `services/invoices.service.ts` | `linkTrip` |
 | `FLEET-TRP003` | `TECHNICAL_ISSUE` | Unable to create trip. Please try again. | `services/trips.service.ts` | `tripsService.create` |
 | `FLEET-TRP004` | `TECHNICAL_ISSUE` | Unable to update trip. Please try again. | `services/trips.service.ts` | `tripsService.update` |
 | `FLEET-TRP005` | `TECHNICAL_ISSUE` | Unable to delete trip. Please try again. | `services/trips.service.ts` | `tripsService.remove` |
@@ -288,6 +292,7 @@ codes below, `ERROR_FILTER` is its category and `ERROR_DESCRIPTION` is the user-
 | `FLEET-USR008` | `TECHNICAL_ISSUE` | Unable to update language preference. Please try again. | `services/auth.service.ts` | `authService.updateLanguage` |
 | `FLEET-USR009` | `USER_END_VIOLATION` | You cannot delete or deactivate your own account. | `services/users.service.ts` | `usersService.update` |
 | `FLEET-USR010` | `INVALID_REQUEST` | Password must be at least 8 characters long. | `services/users.service.ts` | `assertPasswordLength` |
+| `FLEET-USR011` | `USER_NOT_AUTHORIZED` | Only an administrator can create, change or remove administrator accounts, or give someone the administrator role. | `services/users.service.ts` | `assertMayManage` |
 
 ## Workshop
 

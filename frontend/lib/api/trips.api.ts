@@ -13,7 +13,9 @@ export interface TripDto {
   tripDate: string;
   truckId: number;
   driverId?: number;
+  /** The invoice that links this trip (set from the invoice side). */
   invoiceId?: number;
+  invoiceNumber?: string;
   supplierName?: string;
   customerName?: string;
   pickupLocationName?: string;

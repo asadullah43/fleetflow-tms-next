@@ -17,6 +17,7 @@ export const ErrorCode = {
   USR_UPDATE_FAILED: { code: 'FLEET-USR005', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Unable to update user. Please try again.' },
   USR_DELETE_FAILED: { code: 'FLEET-USR006', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Unable to delete user. Please try again.' },
   USR_FETCH_FAILED: { code: 'FLEET-USR007', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Unable to retrieve users. Please try again.' },
+  USR_ADMIN_ONLY: { code: 'FLEET-USR011', filter: ErrorFilter.USER_NOT_AUTHORIZED, description: 'Only an administrator can create, change or remove administrator accounts, or give someone the administrator role.' },
   USR_CANNOT_REMOVE_SELF: { code: 'FLEET-USR009', filter: ErrorFilter.USER_END_VIOLATION, description: 'You cannot delete or deactivate your own account.' },
   USR_PASSWORD_TOO_SHORT: { code: 'FLEET-USR010', filter: ErrorFilter.INVALID_REQUEST, description: 'Password must be at least 8 characters long.' },
   USR_LANGUAGE_UPDATE_FAILED: { code: 'FLEET-USR008', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Unable to update language preference. Please try again.' },
@@ -84,6 +85,8 @@ export const ErrorCode = {
   INV_DELETE_FAILED: { code: 'FLEET-INV005', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Unable to delete invoice. Please try again.' },
   INV_INVALID_LINES: { code: 'FLEET-INV007', filter: ErrorFilter.INVALID_REQUEST, description: 'Each line item needs a description, a quantity above zero and a valid rate.' },
   INV_NO_LINES: { code: 'FLEET-INV008', filter: ErrorFilter.INVALID_REQUEST, description: 'An invoice needs at least one line item.' },
+  INV_PERIOD_ORDER: { code: 'FLEET-INV011', filter: ErrorFilter.INVALID_REQUEST, description: "The invoice period's end date must be on or after its start date." },
+  INV_TRIP_ALREADY_INVOICED: { code: 'FLEET-INV012', filter: ErrorFilter.USER_END_VIOLATION, description: 'This trip is already linked to another invoice. Unlink it there first.' },
   INV_LOCKED: { code: 'FLEET-INV010', filter: ErrorFilter.USER_END_VIOLATION, description: 'This invoice has been submitted to ZATCA and its amounts can no longer be changed.' },
   INV_FETCH_FAILED: { code: 'FLEET-INV006', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Unable to retrieve invoices. Please try again.' },
 
@@ -112,6 +115,7 @@ export const ErrorCode = {
   ROL_UPDATE_FAILED: { code: 'FLEET-ROL005', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Unable to update role. Please try again.' },
   ROL_DELETE_FAILED: { code: 'FLEET-ROL006', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Unable to delete role. Please try again.' },
   ROL_PROTECTED: { code: 'FLEET-ROL008', filter: ErrorFilter.USER_END_VIOLATION, description: 'The ADMIN role is built in and cannot be renamed or deleted.' },
+  ROL_RESERVED_NAME: { code: 'FLEET-ROL011', filter: ErrorFilter.INVALID_REQUEST, description: 'ADMIN is the name of the built-in administrator role. Choose another name.' },
   ROL_UNKNOWN_MODULE: { code: 'FLEET-ROL009', filter: ErrorFilter.INVALID_REQUEST, description: 'The permission matrix contains an unknown module.' },
   ROL_DUPLICATE_NAME: { code: 'FLEET-ROL010', filter: ErrorFilter.INVALID_REQUEST, description: 'A role with this name already exists.' },
   ROL_FETCH_FAILED: { code: 'FLEET-ROL007', filter: ErrorFilter.TECHNICAL_ISSUE, description: 'Unable to retrieve roles. Please try again.' },
@@ -180,6 +184,7 @@ export const ErrorCode = {
     filter: ErrorFilter.USER_NOT_AUTHORIZED,
     description: 'New leave requests start as Pending. Only a role allowed to approve leave (Leave requests: Edit) can set Approved or Rejected.',
   },
+  HR_DATE_ORDER: { code: 'FLEET-HR011', filter: ErrorFilter.INVALID_REQUEST, description: 'The end date must be on or after the start date.' },
   HR_ATTENDANCE_TIMES: { code: 'FLEET-HR010', filter: ErrorFilter.INVALID_REQUEST, description: 'Time out must be after time in, and within 24 hours of it.' },
 
   FIL_MISSING: { code: 'FLEET-FIL001', filter: ErrorFilter.INVALID_REQUEST, description: 'Choose a file to upload.' },

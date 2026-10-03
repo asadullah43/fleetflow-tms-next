@@ -11,7 +11,12 @@ import { filter, ListConfig, paginate } from '../utils/pagination.js';
 import { createWithSequence } from '../utils/sequence.js';
 import { buildZatcaQrTlv, zatcaTimestamp } from '../utils/zatca-qr.js';
 
-const INVOICE_INCLUDE = { customer: { select: { name: true, nameAr: true } }, lineItems: true } as const;
+const INVOICE_INCLUDE = {
+  customer: { select: { name: true, nameAr: true } },
+  lineItems: true,
+  // The linked trip (Trip.invoiceId). Linked from here one at a time, so at most one.
+  trips: { select: { id: true, transactionNumber: true }, orderBy: { id: 'asc' }, take: 1 },
+} as const;
 
 const LIST: ListConfig = {
   searchFields: ['invoiceNumber', 'customer.name', 'customer.nameAr'],
@@ -32,7 +37,35 @@ const LOCKED_ZATCA_STATUSES = new Set(['SIGNED', 'REPORTED', 'CLEARED']);
 const DEFAULT_VAT_PERCENT = '15';
 
 function mapOut(row: any) {
-  return { ...row, customerName: row.customer?.name, customerNameAr: row.customer?.nameAr };
+  const { trips, ...rest } = row;
+  return { ...rest, customerName: row.customer?.name, customerNameAr: row.customer?.nameAr, tripId: trips?.[0]?.id, tripTransactionNumber: trips?.[0]?.transactionNumber };
+}
+
+type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+/**
+ * Links `tripId` to invoice `invoiceId` (Trip.invoiceId), unlinking any
+ * other trip this invoice had; 0 only unlinks. A reference and nothing
+ * more: no other column of the trip or the invoice changes. The link
+ * only happens while the trip is on no other invoice — checked in the
+ * same UPDATE, so two invoices cannot both claim one trip.
+ */
+async function linkTrip(tx: Tx, invoiceId: number, tripId: number): Promise<void> {
+  await tx.trip.updateMany({ where: { invoiceId, ...(tripId ? { id: { not: tripId } } : {}) }, data: { invoiceId: null } });
+  if (!tripId) return;
+  const trip = await tx.trip.findUnique({ where: { id: tripId }, select: { invoiceId: true } });
+  if (!trip) throw AppError.from(ErrorCode.TRP_NOT_FOUND, 400);
+  if (trip.invoiceId === invoiceId) return;
+  // Connected through the relation (not the invoiceId column) so the brand-new invoice, not yet committed, can be referenced.
+  const linked = await tx.trip.update({ where: { id: tripId, invoiceId: null }, data: { invoice: { connect: { id: invoiceId } } } }).then(
+    () => true,
+    (error: unknown) => {
+      // P2025: no trip matched — it is on another invoice by now.
+      if ((error as { code?: string })?.code === 'P2025') return false;
+      throw error;
+    },
+  );
+  if (!linked) throw AppError.from(ErrorCode.INV_TRIP_ALREADY_INVOICED, 409);
 }
 
 function computeOrFail(items: LineItemInput[], vatEnabled: boolean, vatPercent: string | number) {
@@ -58,6 +91,8 @@ interface InvoiceInput {
   vatPercent?: string;
   status?: string;
   lineItems?: LineItemInput[];
+  /** create: a trip to link; update: a trip to link, 0 to unlink, absent to leave it. */
+  tripId?: number;
 }
 
 /**
@@ -94,7 +129,8 @@ export const invoicesService = {
         async () => (await prisma.invoice.findFirst({ orderBy: { id: 'desc' }, select: { invoiceNumber: true } }))?.invoiceNumber,
         (n) => `INV-${new Date().getFullYear()}-${String(n).padStart(5, '0')}`,
         (invoiceNumber) =>
-          prisma.invoice.create({
+          prisma.$transaction(async (tx) => {
+            const created = await tx.invoice.create({
             data: {
               companyId: currentCompanyId(),
               invoiceNumber,
@@ -115,6 +151,11 @@ export const invoicesService = {
               lineItems: { create: rows },
             },
             include: INVOICE_INCLUDE,
+            });
+            if (!input.tripId) return created;
+            // In the same transaction: a trip already on another invoice means no invoice at all.
+            await linkTrip(tx, created.id, input.tripId);
+            return tx.invoice.findUniqueOrThrow({ where: { id: created.id }, include: INVOICE_INCLUDE });
           }),
       );
       return mapOut(row);
@@ -126,6 +167,10 @@ export const invoicesService = {
 
   async update(id: number, input: InvoiceInput) {
     const existing = await this.findOne(id);
+    // The period may be changed one end at a time: checked against the stored other end.
+    const fromDate = optionalDate(input.fromDate) ?? existing.fromDate;
+    const toDate = optionalDate(input.toDate) ?? existing.toDate;
+    if (toDate < fromDate) throw AppError.from(ErrorCode.INV_PERIOD_ORDER, 400);
     // proto3 repeated fields decode as [] when absent, so an empty list means "leave the lines alone".
     const newLines = input.lineItems?.length ? input.lineItems : undefined;
     const newVatPercent = input.vatPercent?.trim() || undefined;
@@ -166,7 +211,12 @@ export const invoicesService = {
     }
 
     try {
-      const row = await prisma.invoice.update({ where: { id }, data, include: INVOICE_INCLUDE });
+      const row = await prisma.$transaction(async (tx) => {
+        if (input.tripId !== undefined) await linkTrip(tx, id, input.tripId);
+        // Only (un)linking a trip writes nothing to the invoice row itself (not even its updatedAt).
+        if (Object.values(data).every((value) => value === undefined)) return tx.invoice.findUniqueOrThrow({ where: { id }, include: INVOICE_INCLUDE });
+        return tx.invoice.update({ where: { id }, data, include: INVOICE_INCLUDE });
+      });
       return mapOut(row);
     } catch (error) {
       if (error instanceof AppError) throw error;

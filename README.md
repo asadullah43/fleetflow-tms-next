@@ -55,7 +55,9 @@ frontend/
   components/             Shared presentational components
   lib/api/                API client, one module per domain, query keys
   theme/ providers/       Mantine theme; app-wide providers
-envoy/ nginx.conf docker-compose.yml
+envoy/                    Envoy config (template) + render-config.sh (CORS allow-list from env)
+nginx/                    templates/http (dev), templates/https (production TLS), shared snippets/
+docker-compose.yml        the stack (plain HTTP); docker-compose.prod.yml adds HTTPS
 ```
 
 Request flow in the backend:
@@ -86,7 +88,7 @@ Full details: [`backend/technical_dev_docs/api_reference.md`](backend/technical_
 ## Running with Docker
 
 ```bash
-cp .env.example .env        # once: set JWT_SECRET (required) and POSTGRES_PASSWORD
+cp .env.example .env        # once: set JWT_SECRET and POSTGRES_PASSWORD (both required)
 npm install                 # once
 npm run proto:gen           # after every pull that changes proto/ — the frontend image needs the generated client
 docker compose up -d --build
@@ -100,9 +102,47 @@ creates a first `admin` user. Its password is `SEED_ADMIN_PASSWORD` from
 `.env` if you set one; otherwise a random password is printed once in the
 backend log (`docker compose logs backend`). Change it after signing in.
 
-`JWT_SECRET` has no default: `docker compose` refuses to start without
-it. It signs every session token — generate one with
+`JWT_SECRET` and `POSTGRES_PASSWORD` have no defaults: `docker compose`
+refuses to start (`required variable … is missing a value`) until both are
+set in `.env`. `JWT_SECRET` signs every session token — generate one with
 `openssl rand -base64 48` and keep it out of version control.
+
+`POSTGRES_PASSWORD` is only applied when the database volume is first
+created. An existing installation keeps the password it was created with,
+so set `POSTGRES_PASSWORD` to that password — if it never set one, that is
+the old built-in default `changeme_use_strong_password`; change it with
+`docker compose exec database psql -U postgres -c "ALTER USER postgres PASSWORD '<new>'"`
+and then put the new value in `.env`.
+
+`CORS_ALLOWED_ORIGINS` (comma-separated, exact origins such as
+`http://localhost:3000`; no wildcards) lists the web pages on *other*
+origins that may call the API. The app itself is same-origin behind nginx
+and needs no entry. Default: `http://localhost:3000,http://localhost:8889`
+(`npm run dev` and the stack itself); with `docker-compose.prod.yml` the
+default is `https://SERVER_NAME`. Envoy refuses to start on a malformed entry.
+
+### Production: HTTPS
+
+`docker-compose.yml` alone serves plain HTTP on `HTTP_PORT` — for local
+use, or behind a load balancer that terminates TLS. To terminate TLS in
+nginx, add the production override:
+
+```bash
+# .env: SERVER_NAME=tms.example.com  TLS_CERTS_DIR=/etc/letsencrypt/live/tms.example.com
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+- Port 80 redirects to HTTPS (and serves ACME http-01 challenges from `./acme`, e.g. `certbot certonly --webroot -w ./acme -d tms.example.com`); port 443 serves the app (`HTTP_PORT` / `HTTPS_PORT` change them).
+- The certificate folder must hold `fullchain.pem` and `privkey.pem` (or set `TLS_CERT_FILE` / `TLS_KEY_FILE`). Reload after renewing: `docker compose exec nginx nginx -s reload`.
+- HTTPS responses carry `Strict-Transport-Security: max-age=31536000` (`HSTS_MAX_AGE`); browsers then refuse plain HTTP to that host for a year.
+- Every response carries `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy` and `Permissions-Policy`; pages also carry a Content-Security-Policy (same-origin only). Both setups share `nginx/snippets/`, so the routes and headers can't drift apart.
+
+To try HTTPS locally: `sh scripts/dev-cert.sh` (writes a self-signed
+certificate to `./certs`), set `SERVER_NAME=localhost`,
+`TLS_CERTS_DIR=./certs`, `HSTS_MAX_AGE=0`, `HTTP_PORT=8889`,
+`HTTPS_PORT=8443`, and open `https://localhost:8443` (accept the
+warning). Keep `HSTS_MAX_AGE=0` for that: HSTS on `localhost` would make
+the browser refuse plain HTTP to every localhost port.
 
 ### Upgrading an existing installation
 

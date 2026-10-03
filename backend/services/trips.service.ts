@@ -43,6 +43,7 @@ export const tripsService = createCrudRepository({
     cargoType: NAME,
     truck: { select: { truckNumber: true } },
     driver: NAME,
+    invoice: { select: { invoiceNumber: true } },
   },
   list: {
     searchFields: [
@@ -83,6 +84,7 @@ export const tripsService = createCrudRepository({
     truckId: row.truckId,
     driverId: row.driverId,
     invoiceId: row.invoiceId,
+    invoiceNumber: row.invoice?.invoiceNumber,
     supplierName: row.supplier?.name,
     customerName: row.customer?.name,
     pickupLocationName: row.pickupLocation?.name,

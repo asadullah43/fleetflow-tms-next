@@ -76,6 +76,8 @@ export const rolesService = {
   },
 
   async create(input: RoleInput & { name: string }) {
+    // ADMIN rights are keyed on the name: "admin" or " Admin " would be a second, unprotected administrator role.
+    if (isAdminRole(input.name)) throw AppError.from(ErrorCode.ROL_RESERVED_NAME, 400);
     assertKnownModules(input.permissions);
     try {
       const row = await prisma.role.create({
@@ -98,6 +100,7 @@ export const rolesService = {
     const existing = await this.findOne(id);
     // ADMIN's full access is keyed on its name — renaming it would silently strip every admin's rights.
     if (isAdminRole(existing.name) && input.name && !isAdminRole(input.name)) throw AppError.from(ErrorCode.ROL_PROTECTED, 400);
+    if (!isAdminRole(existing.name) && input.name && isAdminRole(input.name)) throw AppError.from(ErrorCode.ROL_RESERVED_NAME, 400);
     assertKnownModules(input.permissions);
     try {
       // Name and matrix change together or not at all.

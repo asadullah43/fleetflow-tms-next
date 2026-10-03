@@ -40,6 +40,9 @@ export interface InvoiceDto {
   zatcaStatus?: string;
   qrCode?: string;
   invoiceUuid?: string;
+  /** The trip this invoice is for, if one is linked (a reference only). */
+  tripId?: number;
+  tripTransactionNumber?: string;
 }
 
 export const invoicesApi = {

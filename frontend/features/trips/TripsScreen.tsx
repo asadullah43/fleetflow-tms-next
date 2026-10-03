@@ -41,6 +41,7 @@ const definition: CrudDefinition<TripDto> = {
     { header: 'Truck', value: (r) => r.truckNumber, kind: 'mono' },
     { header: 'Driver', value: (r, { language }) => localizedJoinedName(r.driverName, r.driverNameAr, language) },
     { header: 'Date', value: (r) => formatDate(r.tripDate), kind: 'mono', sortKey: 'tripDate' },
+    { header: 'Invoice #', value: (r) => r.invoiceNumber, kind: 'mono' },
   ],
   filters: [
     { name: 'fromDate', label: 'From Date', type: 'date' },

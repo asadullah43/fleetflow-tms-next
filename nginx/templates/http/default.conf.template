@@ -1,0 +1,28 @@
+# ═══════════════════════════════════════════════════════════
+# FleetFlow reverse proxy — DEVELOPMENT / local (plain HTTP)
+# Used by docker-compose.yml on its own. Production uses
+# nginx/templates/https/ (docker-compose.prod.yml). Same routes and
+# headers (nginx/snippets/), minus TLS and HSTS: HSTS on localhost would
+# make the browser refuse plain HTTP on every localhost port for a year.
+# ═══════════════════════════════════════════════════════════
+
+upstream nextjs_app {
+    server frontend:3000;
+}
+
+upstream envoy_grpc_web {
+    server envoy:8080;
+}
+
+# No HSTS over plain HTTP.
+map $host $fleetflow_hsts {
+    default "";
+}
+
+server {
+    listen 80;
+    server_name _;
+    server_tokens off;
+
+    include /etc/nginx/snippets/fleetflow-locations.conf;
+}

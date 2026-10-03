@@ -164,6 +164,18 @@ export const attendanceService = createCrudRepository({
   toUpdate: (input, existing) => blankToUndefined(withAttendanceHours(clearedTimes(input, withDates(input, ['attendDate', 'checkIn', 'checkOut'])), existing), ['hoursWorked', 'status']),
 });
 
+/**
+ * A period whose end comes before its start is refused. The request
+ * schema checks it when both dates are sent; this covers an update that
+ * sends one of them, against the date already stored.
+ */
+export function assertPeriodOrder(data: { startDate?: Date | null; endDate?: Date | null }, existing?: { startDate?: Date | null; endDate?: Date | null }) {
+  const start = data.startDate !== undefined ? data.startDate : existing?.startDate;
+  const end = data.endDate !== undefined ? data.endDate : existing?.endDate;
+  if (start && end && new Date(end) < new Date(start)) throw AppError.from(ErrorCode.HR_DATE_ORDER, 400);
+  return data;
+}
+
 const leaveRequestsRepository = createCrudRepository({
   model: 'leaveRequest',
   errors: HR_ERRORS,
@@ -176,7 +188,7 @@ const leaveRequestsRepository = createCrudRepository({
   },
   map: withEmployeeName,
   toCreate: (input) => ({ ...withDates(input, ['startDate', 'endDate']), status: input.status || 'PENDING' }),
-  toUpdate: (input) => blankToUndefined(withDates(input, ['startDate', 'endDate']), ['status', 'leaveType']),
+  toUpdate: (input, existing: any) => assertPeriodOrder(blankToUndefined(withDates(input, ['startDate', 'endDate']), ['status', 'leaveType']), existing),
 });
 
 /**
@@ -283,7 +295,7 @@ const employmentContractsRepository = createCrudRepository({
     ...(await fileChange(input.documentFileId, 'CONTRACT_DOCUMENT', null, contractFileColumns)),
   }),
   toUpdate: async (input, existing: any) => ({
-    ...blankToUndefined(withDates(omit(input, 'documentFileId'), ['startDate', 'endDate']), ['salary', 'status', 'contractType']),
+    ...assertPeriodOrder(blankToUndefined(withDates(omit(input, 'documentFileId'), ['startDate', 'endDate']), ['salary', 'status', 'contractType']), existing),
     ...(await fileChange(input.documentFileId, 'CONTRACT_DOCUMENT', existing.documentFileId ?? null, contractFileColumns)),
   }),
 });

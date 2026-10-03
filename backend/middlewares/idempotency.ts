@@ -15,6 +15,7 @@ import { currentCompanyId } from '../_core_app_connectivities/tenant-context.js'
 import { AppError } from '../classes/app-error.js';
 import { config } from '../global_config/index.js';
 import { ErrorCode } from '../global_config/error-codes.js';
+import { logger } from '../utils/logger.js';
 import { serialize } from '../utils/serialize.js';
 import { header, Middleware } from './request-context.js';
 
@@ -55,13 +56,21 @@ export const idempotency: Middleware = async (ctx, next) => {
     }
   }
 
+  let result: unknown;
   try {
-    const result = serialize(await next());
-    await prisma.idempotencyRecord.update({ where, data: { status: 'COMPLETED', response: (result ?? {}) as object } });
-    return result;
+    result = serialize(await next());
   } catch (error) {
     // The operation did not happen: release the key so the caller can retry.
     await prisma.idempotencyRecord.deleteMany({ where: { companyId, operation, key } }).catch(() => undefined);
     throw error;
   }
+
+  // The operation DID happen. If its result cannot be stored, the key must still not be released — a retry would
+  // then run it a second time. Left IN_PROGRESS, a retry is refused (409) until the record expires: never a duplicate.
+  try {
+    await prisma.idempotencyRecord.update({ where, data: { status: 'COMPLETED', response: (result ?? {}) as object } });
+  } catch (error) {
+    logger.error('idempotency: operation succeeded but its result could not be stored; retries with this key are refused until it expires', { operation, error });
+  }
+  return result;
 };

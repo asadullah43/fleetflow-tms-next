@@ -112,7 +112,7 @@ export const config = {
     httpPort: int('FILES_HTTP_PORT', 8081),
     /** Defaults to ./uploads next to where the backend is started (backend/uploads in development). */
     dir: path.resolve(process.env.UPLOADS_DIR || 'uploads'),
-    /** Largest file accepted, in bytes. nginx's body limit for /grpc/files/ must stay above it (nginx.conf). */
+    /** Largest file accepted, in bytes. nginx's body limit for /grpc/files/ must stay above it (nginx/snippets/fleetflow-locations.conf). */
     maxBytes: int('FILE_UPLOAD_MAX_BYTES', 10 * 1024 * 1024),
     /** How long an "open / download" link stays valid. Opening the file again issues a new one. */
     linkTtlSeconds: int('FILE_LINK_TTL_SECONDS', 300),

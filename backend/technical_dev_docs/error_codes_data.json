@@ -456,6 +456,14 @@
     "function": "withAttendanceHours"
   },
   {
+    "error_code": "FLEET-HR011",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "The end date must be on or after the start date.",
+    "module_name": "Human Resources",
+    "file": "services/hr.service.ts",
+    "function": "assertPeriodOrder"
+  },
+  {
     "error_code": "FLEET-INV001",
     "error_filter": "INVALID_REQUEST",
     "error_description": "Invoice not found.",
@@ -526,6 +534,22 @@
     "module_name": "Invoices",
     "file": "services/invoices.service.ts",
     "function": "invoicesService.update"
+  },
+  {
+    "error_code": "FLEET-INV011",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "The invoice period's end date must be on or after its start date.",
+    "module_name": "Invoices",
+    "file": "services/invoices.service.ts",
+    "function": "invoicesService.update"
+  },
+  {
+    "error_code": "FLEET-INV012",
+    "error_filter": "USER_END_VIOLATION",
+    "error_description": "This trip is already linked to another invoice. Unlink it there first.",
+    "module_name": "Invoices",
+    "file": "services/invoices.service.ts",
+    "function": "linkTrip"
   },
   {
     "error_code": "FLEET-LDO002",
@@ -731,6 +755,14 @@
     "error_code": "FLEET-ROL010",
     "error_filter": "INVALID_REQUEST",
     "error_description": "A role with this name already exists.",
+    "module_name": "Roles & Permissions",
+    "file": "services/roles.service.ts",
+    "function": "rolesService.create"
+  },
+  {
+    "error_code": "FLEET-ROL011",
+    "error_filter": "INVALID_REQUEST",
+    "error_description": "ADMIN is the name of the built-in administrator role. Choose another name.",
     "module_name": "Roles & Permissions",
     "file": "services/roles.service.ts",
     "function": "rolesService.create"
@@ -1164,8 +1196,8 @@
     "error_filter": "INVALID_REQUEST",
     "error_description": "Trip not found.",
     "module_name": "Trips",
-    "file": "services/trips.service.ts",
-    "function": "tripsService.findOne"
+    "file": "services/invoices.service.ts",
+    "function": "linkTrip"
   },
   {
     "error_code": "FLEET-TRP003",
@@ -1286,6 +1318,14 @@
     "module_name": "Users",
     "file": "services/users.service.ts",
     "function": "assertPasswordLength"
+  },
+  {
+    "error_code": "FLEET-USR011",
+    "error_filter": "USER_NOT_AUTHORIZED",
+    "error_description": "Only an administrator can create, change or remove administrator accounts, or give someone the administrator role.",
+    "module_name": "Users",
+    "file": "services/users.service.ts",
+    "function": "assertMayManage"
   },
   {
     "error_code": "FLEET-WKS001",
