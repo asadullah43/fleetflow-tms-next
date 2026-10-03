@@ -12,6 +12,7 @@ import { FormField } from '../../components/FormField';
 import { ListToolbar } from '../../components/ListToolbar';
 import { Mono } from '../../components/Mono';
 import { StatusBadge } from '../../components/StatusBadge';
+import { fieldsFor } from './form-mapping';
 import { crudRowActions } from './row-actions';
 import type { ColumnDef, CrudDefinition, DisplayContext, RowAction } from './types';
 import type { CrudViewModel } from './use-crud-view-model';
@@ -56,7 +57,7 @@ export function CrudView<T extends { id: number }>({ definition, vm, rowActions 
   const rowMenu = (row: T) => {
     const { primary, items } = crudRowActions({
       allowed,
-      custom: rowActions.map((action) => action(row)),
+      custom: rowActions.map((action) => action(row, { allowed })),
       onEdit: () => vm.openEdit(row),
       onDuplicate: () => vm.openDuplicate(row),
       onDelete: () => confirmDanger({ title: t('Delete this record?'), onConfirm: () => void vm.remove(row) }),
@@ -67,7 +68,9 @@ export function CrudView<T extends { id: number }>({ definition, vm, rowActions 
 
   const hasRowActions = rowActions.length > 0 || allowed.edit || allowed.add || allowed.delete;
   const mode = vm.editor?.mode ?? 'create';
-  const formFields = definition.fields.filter((field) => !(field.createOnly && mode === 'edit'));
+  const formFields = fieldsFor(definition.fields, mode);
+  /** Full-width sections below the grid of ordinary inputs. */
+  const wide = (field: { type?: string }) => field.type === 'custom' || field.type === 'file';
 
   return (
     <Stack gap="md">
@@ -111,11 +114,11 @@ export function CrudView<T extends { id: number }>({ definition, vm, rowActions 
           <Stack gap="md">
             {vm.formError && <Alert color="red">{t(vm.formError)}</Alert>}
             <SimpleGrid cols={{ base: 1, sm: definition.fields.length > 4 ? 2 : 1 }} spacing="md">
-              {formFields.filter((field) => field.type !== 'custom').map((field) => (
+              {formFields.filter((field) => !wide(field)).map((field) => (
                 <FormField key={field.name} field={field} values={vm.values} error={vm.fieldErrors[field.name]} ctx={ctx} onChange={vm.setValue} mode={mode} />
               ))}
             </SimpleGrid>
-            {formFields.filter((field) => field.type === 'custom').map((field) => (
+            {formFields.filter(wide).map((field) => (
               <FormField key={field.name} field={field} values={vm.values} error={vm.fieldErrors[field.name]} ctx={ctx} onChange={vm.setValue} mode={mode} />
             ))}
             <FormActions onCancel={vm.closeEditor} saving={vm.saving} />

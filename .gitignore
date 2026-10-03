@@ -30,6 +30,9 @@ frontend/tsconfig.tsbuildinfo
 proto/**/*.js
 proto/**/*.d.ts
 
+# Uploaded files from running the backend locally (UPLOADS_DIR)
+backend/uploads/
+
 # Logs
 *.log
 npm-debug.log*

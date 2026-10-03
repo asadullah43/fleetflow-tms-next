@@ -87,6 +87,10 @@ export const Icon = {
     svg(size, <><path d="M12 3.5v12" /><path d="M7 11l5 5 5-5" /><path d="M4 20.5h16" /></>),
   check: ({ size = 18 }: IconProps) =>
     svg(size, <path d="M4.5 12.5l5 5 10-11" />),
+  x: ({ size = 18 }: IconProps) =>
+    svg(size, <path d="M6 6l12 12M18 6 6 18" />),
+  upload: ({ size = 18 }: IconProps) =>
+    svg(size, <><path d="M12 16V4.5" /><path d="M7 9l5-5 5 5" /><path d="M4 20.5h16" /></>),
   send: ({ size = 18 }: IconProps) =>
     svg(size, <><path d="M21 3 10 14" /><path d="M21 3l-7 18-4-7-7-4 18-7z" /></>),
   chevronStart: ({ size = 18 }: IconProps) =>

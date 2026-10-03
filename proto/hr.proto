@@ -288,9 +288,11 @@ message EmployeeDocument {
   optional string document_number = 4;
   optional string issue_date = 5;
   optional string expiry_date = 6;
-  optional string file_url = 7;
+  optional string file_url = 7; // /files/{file_id} for an uploaded file (older records may hold a typed-in link)
   optional string notes = 8;
   optional string employee_name = 9;
+  optional int32 file_id = 10;
+  optional fleetflow.common.FileInfo file = 11;
 }
 message EmployeeDocumentList {
   repeated EmployeeDocument items = 1;
@@ -302,8 +304,9 @@ message CreateEmployeeDocumentRequest {
   optional string document_number = 3;
   optional string issue_date = 4;
   optional string expiry_date = 5;
-  optional string file_url = 6;
+  reserved 6; // was file_url: the file is now uploaded (POST /files) and attached by file_id
   optional string notes = 7;
+  optional int32 file_id = 8; // from POST /files?purpose=EMPLOYEE_DOCUMENT
 }
 message UpdateEmployeeDocumentRequest {
   int32 id = 1;
@@ -312,8 +315,9 @@ message UpdateEmployeeDocumentRequest {
   optional string document_number = 4;
   optional string issue_date = 5;
   optional string expiry_date = 6;
-  optional string file_url = 7;
+  reserved 7; // was file_url
   optional string notes = 8;
+  optional int32 file_id = 9; // a new upload replaces the current file; 0 removes it
 }
 
 // ---- Employment contracts ----
@@ -336,10 +340,14 @@ message EmploymentContract {
   optional string currency = 8;
   optional string terms = 9;
   string status = 10;
-  optional string document_url = 11;
+  optional string document_url = 11; // /files/{document_file_id}, set by the server
   optional string title = 12;
   optional string notes = 13;
   optional string employee_name = 14;
+  optional int32 document_file_id = 15;
+  optional fleetflow.common.FileInfo document_file = 16;
+  optional string document_uploaded_at = 17; // set by the server from the upload
+  optional string document_uploaded_by = 18;
 }
 message EmploymentContractList {
   repeated EmploymentContract items = 1;
@@ -355,9 +363,10 @@ message CreateEmploymentContractRequest {
   optional string currency = 7;
   optional string terms = 8;
   optional string status = 9;
-  optional string document_url = 10;
+  reserved 10; // was document_url: set by the server from document_file_id
   optional string title = 11;
   optional string notes = 12;
+  optional int32 document_file_id = 13; // from POST /files?purpose=CONTRACT_DOCUMENT
 }
 message UpdateEmploymentContractRequest {
   int32 id = 1;
@@ -370,7 +379,8 @@ message UpdateEmploymentContractRequest {
   optional string currency = 8;
   optional string terms = 9;
   optional string status = 10;
-  optional string document_url = 11;
+  reserved 11; // was document_url
   optional string title = 12;
   optional string notes = 13;
+  optional int32 document_file_id = 14; // a new upload replaces the current document; 0 removes it
 }

@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import type { Lookup } from '../../components/AsyncSelect';
 import type { CrudApi } from '../../lib/api/crud-api';
 import type { ActionItem } from '../../components/action-items';
+import type { FilePurpose } from '../../lib/api/files.api';
+import type { PermissionAction } from '../../lib/permissions';
 import type { Language } from '../../lib/language-context';
 
 /** What a column / field definition may use to produce display text. */
@@ -28,7 +30,7 @@ export interface ColumnDef<T> {
   href?: (row: T) => string;
 }
 
-export type FieldType = 'text' | 'textarea' | 'password' | 'integer' | 'decimal' | 'date' | 'select' | 'lookup' | 'display' | 'custom';
+export type FieldType = 'text' | 'textarea' | 'password' | 'integer' | 'decimal' | 'date' | 'time' | 'select' | 'lookup' | 'display' | 'custom' | 'file';
 
 export interface FieldDef {
   name: string;
@@ -52,6 +54,14 @@ export interface FieldDef {
   input?: (props: { value: string; onChange: (value: string) => void; ctx: DisplayContext }) => ReactNode;
   /** Only on the "add" form (not when editing). */
   createOnly?: boolean;
+  /** Only when editing (not on the "add" form, where the default is used). */
+  editOnly?: boolean;
+  /**
+   * For `file`: an uploaded file (PDF / image). `name` is the id sent to the API (e.g. fileId) — only when it changes,
+   * 0 to remove — and `fileFrom` the row property holding the attached file's details (e.g. file). Shown full width.
+   */
+  purpose?: FilePurpose;
+  fileFrom?: string;
 }
 
 /** A server-side filter shown above the table. `name` is the backend filter name. */
@@ -66,8 +76,13 @@ export interface FilterDef {
 /** All form values are strings while editing; they are converted for the API on save. */
 export type FormValues = Record<string, string>;
 
+/** What a row action may need to know besides its row: the caller's permissions on the page. */
+export interface RowActionContext {
+  allowed: Record<PermissionAction, boolean>;
+}
+
 /** A screen's own action for one row, built with `actions` from components/action-items (e.g. `(row) => actions.viewHistory(() => open(row))`). */
-export type RowAction<T> = (row: T) => ActionItem;
+export type RowAction<T> = (row: T, context: RowActionContext) => ActionItem;
 
 /** Everything that makes one list/create/edit/delete screen: declared once, rendered by CrudScreen. */
 export interface CrudDefinition<T extends { id: number }> {
@@ -85,6 +100,11 @@ export interface CrudDefinition<T extends { id: number }> {
   toApi?: (payload: Record<string, unknown>, values: FormValues, mode: 'create' | 'edit') => Record<string, unknown>;
   /** Other resources a save or delete changes (their cached queries are refreshed too), e.g. stock a work order used. */
   invalidates?: string[];
+  /**
+   * Keeps values that follow from others up to date as the user types (e.g. hours worked from time in / out):
+   * gets the values after a change, the values before it and the changed field's name; returns the values to use.
+   */
+  derive?: (next: FormValues, previous: FormValues, changed: string) => FormValues;
   /** Adjusts the automatically derived form values when a row is opened for editing. */
   toFormValues?: (values: FormValues, row: T, ctx: DisplayContext) => FormValues;
 }

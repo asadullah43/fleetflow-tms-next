@@ -22,6 +22,15 @@ static_resources:
                     - name: backend
                       domains: ["*"]
                       routes:
+                        # File upload / download is plain HTTP, served by the backend on its own port.
+                        - match: { prefix: "/files/" }
+                          route:
+                            cluster: files_backend
+                            timeout: 300s
+                        - match: { path: "/files" }
+                          route:
+                            cluster: files_backend
+                            timeout: 300s
                         - match: { prefix: "/" }
                           route:
                             cluster: grpc_backend
@@ -63,6 +72,20 @@ static_resources:
                       # "backend" = the docker-compose service name
                       address: backend
                       port_value: 50051
+
+    - name: files_backend
+      connect_timeout: 5s
+      type: LOGICAL_DNS
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: files_backend
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: backend
+                      port_value: 8081
 
 # Admin interface (config dump, /quitquitquit, ...) is reachable from inside the container only.
 admin:

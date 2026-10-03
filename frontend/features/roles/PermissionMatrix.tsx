@@ -1,6 +1,6 @@
 'use client';
 
-import { Checkbox, Table } from '@mantine/core';
+import { Checkbox, Table, Text } from '@mantine/core';
 import type { PermissionDto } from '../../lib/api/roles.api';
 import { useT } from '../../lib/language-context';
 import { formatModule } from '../../lib/permissions';
@@ -26,6 +26,11 @@ export function fillPermissions(modules: string[], existing: PermissionDto[]): P
 }
 
 const MIN_HEIGHT = 180;
+
+/** What the flags mean where it isn't the usual view / add / edit / delete of records. */
+const MODULE_NOTES: Record<string, string> = {
+  leaveRequests: 'Add = apply for leave · Edit = approve or reject',
+};
 
 /**
  * The module × view/add/edit/delete grid, used for roles and for API keys.
@@ -56,7 +61,14 @@ export function PermissionMatrix({ value, onChange }: { value: PermissionDto[]; 
         <Table.Tbody>
           {value.map((row) => (
             <Table.Tr key={row.module}>
-              <Table.Td>{t(formatModule(row.module))}</Table.Td>
+              <Table.Td>
+                {t(formatModule(row.module))}
+                {MODULE_NOTES[row.module] && (
+                  <Text size="xs" c="dimmed">
+                    {t(MODULE_NOTES[row.module])}
+                  </Text>
+                )}
+              </Table.Td>
               {FLAGS.map(({ flag, label }) => (
                 <Table.Td key={flag}>
                   <Checkbox

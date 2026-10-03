@@ -1,5 +1,6 @@
 'use client';
 
+import { actions } from '../../components/action-items';
 import { CrudScreen } from '../crud/CrudScreen';
 import { ACTIVE_INACTIVE, lookups } from '../crud/lookups';
 import type { CrudDefinition } from '../crud/types';
@@ -19,8 +20,13 @@ import {
   leaveRequestsApi,
   LeaveRequestDto,
 } from '../../lib/api/hr.api';
-import { formatDate } from '../../lib/date';
+import type { FileInfoDto } from '../../lib/api/files.api';
+import { formatDate, toTimeInput } from '../../lib/date';
 import { localizedName } from '../../lib/localized-name';
+import type { RowAction } from '../crud/types';
+import { useFileOpener } from '../files/use-files';
+import { attendanceTimes, deriveAttendance } from './attendance-times';
+import { useLeaveDecisions } from './use-leave-decisions';
 
 const employeeFilter = { name: 'employeeId', label: 'Employee', type: 'lookup', lookup: lookups.employees } as const;
 const employeeField = { name: 'employeeId', label: 'Employee', type: 'lookup', lookup: lookups.employees, required: true } as const;
@@ -138,6 +144,9 @@ const attendance: CrudDefinition<AttendanceDto> = {
   columns: [
     { header: 'Employee', value: (r) => r.employeeName, sortKey: 'employeeName' },
     { header: 'Date', value: (r) => formatDate(r.attendDate), kind: 'mono', sortKey: 'attendDate' },
+    { header: 'Time in', value: (r) => toTimeInput(r.checkIn), kind: 'mono' },
+    { header: 'Time out', value: (r) => toTimeInput(r.checkOut), kind: 'mono' },
+    { header: 'Hours', value: (r) => r.hoursWorked, kind: 'mono', align: 'right' },
     { header: 'Status', value: (r) => r.status, kind: 'status', sortKey: 'status' },
     { header: 'Notes', value: (r) => r.notes },
   ],
@@ -146,8 +155,14 @@ const attendance: CrudDefinition<AttendanceDto> = {
     employeeField,
     { name: 'attendDate', label: 'Date', type: 'date', required: true },
     { name: 'status', label: 'Status', type: 'select', options: ATTENDANCE_STATUSES, default: 'PRESENT', required: true },
+    { name: 'checkIn', label: 'Time in', type: 'time' },
+    { name: 'checkOut', label: 'Time out', type: 'time', hint: 'Earlier than time in = the next morning (night shift).' },
+    { name: 'hoursWorked', label: 'Hours worked', type: 'decimal', hint: 'Worked out from time in and time out; you can type a different number.' },
     { name: 'notes', label: 'Notes', type: 'textarea' },
   ],
+  // Times of day on the attendance date -> timestamps. '' clears a time when editing.
+  toApi: (payload, values) => ({ ...payload, ...attendanceTimes(values.attendDate, values.checkIn, values.checkOut) }),
+  derive: deriveAttendance,
 };
 export const AttendanceScreen = () => <CrudScreen definition={attendance} />;
 
@@ -161,7 +176,7 @@ const LEAVE_STATUSES = [
 const leaveRequests: CrudDefinition<LeaveRequestDto> = {
   api: leaveRequestsApi,
   title: 'Leave Requests',
-  description: 'Employee leave requests and their approval status.',
+  description: 'Employee leave requests and their approval status. Filing a request and approving it are separate permissions (Roles → Leave requests: Add / Edit).',
   addLabel: 'Leave Request',
   searchPlaceholder: 'Employee or leave type',
   emptyLabel: 'No leave requests yet.',
@@ -180,10 +195,43 @@ const leaveRequests: CrudDefinition<LeaveRequestDto> = {
     { name: 'endDate', label: 'End date', type: 'date', required: true },
     { name: 'days', label: 'Number of days', type: 'integer', required: true },
     { name: 'reason', label: 'Reason', type: 'textarea' },
-    { name: 'status', label: 'Status', type: 'select', options: LEAVE_STATUSES, default: 'PENDING', required: true },
+    // A new request is always Pending; deciding it is an edit (Approve / Reject in the row menu, or here).
+    { name: 'status', label: 'Status', type: 'select', options: LEAVE_STATUSES, default: 'PENDING', required: true, editOnly: true },
   ],
 };
-export const LeaveRequestsScreen = () => <CrudScreen definition={leaveRequests} />;
+export function LeaveRequestsScreen() {
+  const { decide, decidingId } = useLeaveDecisions();
+  const decision =
+    (status: 'APPROVED' | 'REJECTED'): RowAction<LeaveRequestDto> =>
+    (row, { allowed }) =>
+      (status === 'APPROVED' ? actions.approve : actions.reject)(() => void decide(row, status), { hidden: !allowed.edit || row.status !== 'PENDING', loading: decidingId === row.id });
+  return <CrudScreen definition={leaveRequests} rowActions={[decision('APPROVED'), decision('REJECTED')]} />;
+}
+
+// ── Attached files: open / download from the row ────────────────────────
+/** "Open file" (kept visible on the row) and "Download file", for a row's attached file; a legacy typed-in link opens as it is. */
+function fileRowActions<T>(fileOf: (row: T) => FileInfoDto | undefined, legacyUrlOf: (row: T) => string | undefined, opener: ReturnType<typeof useFileOpener>): RowAction<T>[] {
+  const legacy = (row: T) => {
+    const url = legacyUrlOf(row);
+    return !fileOf(row) && url && /^https?:\/\//i.test(url) ? url : undefined;
+  };
+  return [
+    (row) => {
+      const file = fileOf(row);
+      const link = legacy(row);
+      return actions.openFile(() => (file ? opener.open(file.id) : link && window.open(link, '_blank', 'noopener')), { hidden: !file && !link });
+    },
+    (row) => {
+      const file = fileOf(row);
+      return actions.downloadFile(() => file && opener.download(file.id), { hidden: !file });
+    },
+  ];
+}
+
+const fileColumn = <T,>(fileOf: (row: T) => FileInfoDto | undefined, legacyUrlOf: (row: T) => string | undefined) => ({
+  header: 'File',
+  value: (row: T, { t }: { t: (text: string) => string }) => fileOf(row)?.name ?? (legacyUrlOf(row) ? t('Link') : ''),
+});
 
 // ── Employee documents ──────────────────────────────────────────────────
 const documents: CrudDefinition<EmployeeDocumentDto> = {
@@ -198,6 +246,7 @@ const documents: CrudDefinition<EmployeeDocumentDto> = {
     { header: 'Type', value: (r) => r.documentType, sortKey: 'documentType' },
     { header: 'Document number', value: (r) => r.documentNumber, kind: 'mono' },
     { header: 'Expiry', value: (r) => formatDate(r.expiryDate), kind: 'mono', sortKey: 'expiryDate' },
+    fileColumn<EmployeeDocumentDto>((r) => r.file, (r) => r.fileUrl),
   ],
   filters: [employeeFilter],
   fields: [
@@ -206,11 +255,14 @@ const documents: CrudDefinition<EmployeeDocumentDto> = {
     { name: 'documentNumber', label: 'Document number' },
     { name: 'issueDate', label: 'Issue date', type: 'date' },
     { name: 'expiryDate', label: 'Expiry date', type: 'date' },
-    { name: 'fileUrl', label: 'File URL' },
     { name: 'notes', label: 'Notes', type: 'textarea' },
+    { name: 'fileId', label: 'File', type: 'file', purpose: 'EMPLOYEE_DOCUMENT', fileFrom: 'file', hint: 'The scan or PDF of the document.' },
   ],
 };
-export const EmployeeDocumentsScreen = () => <CrudScreen definition={documents} />;
+export function EmployeeDocumentsScreen() {
+  const opener = useFileOpener();
+  return <CrudScreen definition={documents} rowActions={fileRowActions<EmployeeDocumentDto>((r) => r.file, (r) => r.fileUrl, opener)} />;
+}
 
 // ── Employment contracts ────────────────────────────────────────────────
 const CONTRACT_TYPES = [
@@ -236,6 +288,7 @@ const contracts: CrudDefinition<EmploymentContractDto> = {
     { header: 'Type', value: (r, { t }) => t(CONTRACT_TYPES.find((type) => type.value === r.contractType)?.label ?? r.contractType) },
     { header: 'End date', value: (r) => formatDate(r.endDate), kind: 'mono', sortKey: 'endDate' },
     { header: 'Status', value: (r) => r.status, kind: 'status', sortKey: 'status' },
+    fileColumn<EmploymentContractDto>((r) => r.documentFile, (r) => r.documentUrl),
   ],
   filters: [employeeFilter, { name: 'status', label: 'Status', type: 'select', options: CONTRACT_STATUSES }],
   fields: [
@@ -246,6 +299,10 @@ const contracts: CrudDefinition<EmploymentContractDto> = {
     { name: 'endDate', label: 'End date', type: 'date' },
     { name: 'salary', label: 'Salary', type: 'decimal' },
     { name: 'status', label: 'Status', type: 'select', options: CONTRACT_STATUSES, default: 'ACTIVE', required: true },
+    { name: 'documentFileId', label: 'Contract document', type: 'file', purpose: 'CONTRACT_DOCUMENT', fileFrom: 'documentFile', hint: 'The signed contract (PDF or a scan).' },
   ],
 };
-export const EmploymentContractsScreen = () => <CrudScreen definition={contracts} />;
+export function EmploymentContractsScreen() {
+  const opener = useFileOpener();
+  return <CrudScreen definition={contracts} rowActions={fileRowActions<EmploymentContractDto>((r) => r.documentFile, (r) => r.documentUrl, opener)} />;
+}

@@ -8,6 +8,8 @@ import { config } from '../global_config/index.js';
 
 export const id = z.number().int().positive();
 export const optionalId = z.number().int().positive().optional();
+/** An attached file on update: a file id to attach (replacing the current one), 0 to remove it, absent to keep it. */
+export const fileReference = z.number().int().nonnegative().optional();
 /** An optional reference that may be cleared by sending 0. */
 export const requiredText = z.string().trim().min(1);
 export const optionalText = z.string().optional();

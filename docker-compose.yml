@@ -77,8 +77,16 @@ services:
       SESSION_DURATION: ${SESSION_DURATION:-12h}
       # Only used when the database has no users yet (first start). Without it a random password is printed once in the backend log.
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+      # Uploaded files (employee documents, contracts): served over plain HTTP on this port, routed by Envoy under /files/,
+      # and stored on the uploads_data volume so they survive rebuilding this container.
+      FILES_HTTP_PORT: 8081
+      UPLOADS_DIR: /app/uploads
+      FILE_UPLOAD_MAX_BYTES: ${FILE_UPLOAD_MAX_BYTES:-10485760}
+    volumes:
+      - uploads_data:/app/uploads
     expose:
       - "50051"
+      - "8081"
     networks:
       - fleetflow-net
 
@@ -136,6 +144,10 @@ services:
 
 volumes:
   database_data:
+    driver: local
+  # Uploaded files. Back it up together with the database: a record's file
+  # lives here, the record that points to it lives in PostgreSQL.
+  uploads_data:
     driver: local
 
 networks:

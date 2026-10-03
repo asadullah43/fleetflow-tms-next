@@ -33,11 +33,15 @@ export const actions = {
   viewHistory: make('View history', 'eye'),
   openPdf: make('Open PDF', 'fileText'),
   inventoryUsed: make('Inventory used', 'box'),
+  openFile: make('Open file', 'eye'),
+  downloadFile: make('Download file', 'download'),
   // Changing a record
   edit: make('Edit', 'pencil'),
   duplicate: make('Duplicate', 'copy'),
   markPaid: make('Mark as paid', 'check'),
   submitToZatca: make('Submit to ZATCA', 'send'),
+  approve: make('Approve', 'check'),
+  reject: make('Reject', 'x'),
   // Removing a record (each resource's own word for it)
   delete: make('Delete', 'trash', true),
   deleteBatch: make('Delete batch', 'trash', true),

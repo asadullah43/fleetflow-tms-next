@@ -40,7 +40,7 @@ export function route(data: string, op: OperationKind, ...chain: [...Middleware[
 /** Middleware every route gets, in front of its own. */
 const GLOBAL_MIDDLEWARES: Middleware[] = [rateLimitByIp];
 
-function logRequest(ctx: RequestContext, outcome: { status: 'SUCCESSFUL' | 'ERROR'; errorCode?: string; statusCode?: number; cause?: unknown }): void {
+export function logRequest(ctx: RequestContext, outcome: { status: 'SUCCESSFUL' | 'ERROR'; errorCode?: string; statusCode?: number; cause?: unknown }): void {
   const fields = {
     requestId: ctx.requestId,
     rpc: ctx.rpc,

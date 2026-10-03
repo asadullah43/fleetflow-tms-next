@@ -50,6 +50,7 @@ const MODULES: Record<string, string> = {
   WKS: 'Workshop',
   STK: 'Inventory',
   HR: 'Human Resources',
+  FIL: 'File Uploads',
   DSH: 'Dashboard',
   SET: 'Company Settings',
   SYS: 'System',

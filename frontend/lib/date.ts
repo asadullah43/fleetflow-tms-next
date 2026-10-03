@@ -34,6 +34,20 @@ export function formatDateTime(value: string | null | undefined, fallback = '—
   return parsed.isValid() ? parsed.format('YYYY-MM-DD HH:mm') : fallback;
 }
 
+/** An API timestamp -> the time of day in the viewer's time zone (HH:mm), or '' when absent/invalid. */
+export function toTimeInput(value: string | null | undefined): string {
+  if (!value) return '';
+  const parsed = dayjs(value);
+  return parsed.isValid() ? parsed.format('HH:mm') : '';
+}
+
+/** A calendar date (YYYY-MM-DD) and a time of day (HH:mm) in the viewer's time zone -> the API timestamp, or '' when either is missing. */
+export function combineDateTime(date: string, time: string, addDays = 0): string {
+  if (!date || !time) return '';
+  const parsed = dayjs(`${date}T${time}`);
+  return parsed.isValid() ? parsed.add(addDays, 'day').toISOString() : '';
+}
+
 /** For printed documents: 05-Oct-2026. */
 export function formatDocumentDate(value: string): string {
   const parsed = dayjs(value);

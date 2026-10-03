@@ -829,12 +829,16 @@ model EmployeeDocument {
   documentNumber String?
   issueDate      DateTime?
   expiryDate     DateTime?
+  /// The uploaded file's API path (/files/<fileId>), set by the server from fileId. Rows from before uploads may hold a typed URL instead.
   fileUrl        String?
+  /// The uploaded scan/PDF. A file belongs to at most one record.
+  fileId         Int?      @unique
   notes          String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  employee Employee    @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  file     StoredFile? @relation("EmployeeDocumentFile", fields: [fileId], references: [id], onDelete: Restrict)
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
 
@@ -856,15 +860,18 @@ model EmploymentContract {
   currency           String?
   terms              String?
   status             String    @default("ACTIVE")
+  /// documentUrl / documentUploadedAt / documentUploadedBy are set by the server from documentFileId (the upload), never by the client.
   documentUrl        String?
   title              String?
   documentUploadedAt DateTime?
   documentUploadedBy String?
+  documentFileId     Int?      @unique
   notes              String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  employee     Employee    @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  documentFile StoredFile? @relation("EmploymentContractDocument", fields: [documentFileId], references: [id], onDelete: Restrict)
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
 
@@ -918,6 +925,7 @@ model Company {
   leaveRequests          LeaveRequest[]
   employeeDocuments      EmployeeDocument[]
   employmentContracts    EmploymentContract[]
+  storedFiles            StoredFile[]
   apiKeys                ApiKey[]
   warehouses             Warehouse[]
   inventoryItems         InventoryItem[]
@@ -946,6 +954,36 @@ model ApiKey {
   company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
 
   @@index([companyId])
+}
+
+/// An uploaded file (employee document scan, contract PDF). The bytes are
+/// on disk under the uploads directory at `storageKey`; this row is the
+/// only way to reach them. Uploaded first, then attached to a record by
+/// its fileId; one never attached is deleted after a day.
+model StoredFile {
+  id             Int      @id @default(autoincrement())
+  companyId      Int
+  /// What it was uploaded for (EMPLOYEE_DOCUMENT | CONTRACT_DOCUMENT): decides who may upload and read it.
+  purpose        String
+  /// The name the user's file had, for display and downloads only — never used as a path.
+  originalName   String
+  /// Detected from the file's content, not taken from the browser.
+  contentType    String
+  size           Int
+  sha256         String
+  /// Path relative to the uploads directory: <companyId>/<random>.
+  storageKey     String   @unique
+  uploadedById   Int?
+  uploadedByName String
+  createdAt      DateTime @default(now())
+
+  employeeDocument   EmployeeDocument?   @relation("EmployeeDocumentFile")
+  employmentContract EmploymentContract? @relation("EmploymentContractDocument")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@index([companyId])
+  @@index([createdAt])
 }
 
 /// One row per (tenant, operation, Idempotency-Key): a retried create

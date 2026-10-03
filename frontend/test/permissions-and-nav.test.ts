@@ -15,6 +15,7 @@ test('moduleForPath matches whole path segments and nested pages', () => {
   assert.equal(moduleForPath('/trucks'), 'trucks');
   assert.equal(moduleForPath('/trucks/12'), 'trucks');
   assert.equal(moduleForPath('/hr/employees'), 'hr');
+  assert.equal(moduleForPath('/hr/leave-requests'), 'leaveRequests'); // apply / approve, granted apart from the rest of HR
   assert.equal(moduleForPath('/inventory'), 'inventory'); // its own module, no longer part of the workshop
   assert.equal(moduleForPath('/inventory/warehouses'), 'inventory');
   assert.equal(moduleForPath('/settings/zatca'), 'settings');

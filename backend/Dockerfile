@@ -27,8 +27,11 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/generated/prisma ./generated/prisma
 COPY backend/prisma ./prisma
 COPY proto /proto
+# Mount point of the uploads volume (docker-compose.yml); created here so a new volume starts with the right path.
+RUN mkdir -p /app/uploads
 
-EXPOSE 50051
+# 50051: gRPC API. 8081: file upload / download (plain HTTP).
+EXPOSE 50051 8081
 # 1. db:prepare — records the baseline on a pre-migrations database, applies
 #    pending migrations (never drops or resets anything), and creates the
 #    first admin user only if the database has no users at all.

@@ -48,6 +48,8 @@ const PAGE_MODULES: [prefix: string, module: string][] = [
   ['/cargo-types', 'cargoTypes'],
   ['/rate-contracts', 'rateContracts'],
   ['/hr', 'hr'],
+  // Its own module (apply = add, approve = edit), so it can be granted without the rest of HR.
+  ['/hr/leave-requests', 'leaveRequests'],
   ['/users', 'users'],
   ['/roles', 'roles'],
   ['/settings', 'settings'],

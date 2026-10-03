@@ -9,11 +9,15 @@ import { formatDate, formatDocumentDate, periodState, toDateInput, today } from 
 import { AR_STRINGS } from '../lib/i18n/dictionary';
 import { formatModule, moduleForPath } from '../lib/permissions';
 import { STATUS_COLOR, statusLabel } from '../lib/status';
-import { emptyValues, rowToValues, validateValues, valuesToPayload } from '../features/crud/form-mapping';
+import { emptyValues, fieldsFor, rowToValues, validateValues, valuesToPayload } from '../features/crud/form-mapping';
 import type { FieldDef } from '../features/crud/types';
 import { filledLines, lineProblems, previewTotals } from '../features/invoices/invoice-totals';
 import { actions } from '../components/action-items';
 import { crudRowActions } from '../features/crud/row-actions';
+import { fileChange, fileValueOf, withChosenFile } from '../features/files/file-value';
+import { attendanceTimes, deriveAttendance, hoursBetween } from '../features/hr/attendance-times';
+import { formatFileSize, uploadProblem } from '../lib/api/files.api';
+import { combineDateTime, toTimeInput } from '../lib/date';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 /** Repo-relative path with forward slashes on every OS, so the guards below match on Windows too. */
@@ -112,6 +116,81 @@ test('form mapping: a custom field (work-order inventory lines) keeps its own st
   assert.deepEqual(validateValues(fields, { issue: 'x', parts: 'not json' }, 'create'), {});
 });
 
+test('form mapping: a file field sends only a change — the new upload, or 0 to remove — and duplicates never copy it', () => {
+  const fields: FieldDef[] = [
+    { name: 'documentType', label: 'Document type', required: true },
+    { name: 'fileId', label: 'File', type: 'file', purpose: 'EMPLOYEE_DOCUMENT', fileFrom: 'file' },
+  ];
+  const attached = { id: 7, name: 'passport.pdf', contentType: 'application/pdf', size: 1000 };
+  const uploaded = { id: 9, name: 'new.pdf', contentType: 'application/pdf', size: 2000 };
+
+  // A new record: nothing chosen, nothing sent; a chosen upload is sent by id; chosen then removed is nothing again.
+  assert.deepEqual(valuesToPayload(fields, emptyValues(fields)), { documentType: '' });
+  assert.deepEqual(valuesToPayload(fields, { documentType: 'ID', fileId: withChosenFile('', uploaded) }), { documentType: 'ID', fileId: 9 });
+  assert.equal(withChosenFile(withChosenFile('', uploaded), null), '', 'picked and removed before saving: as if never picked');
+
+  // Editing: the attached file is shown and not re-sent; replacing sends the new id; removing sends 0.
+  const opened = rowToValues(fields, { documentType: 'ID', fileId: 7, file: attached });
+  assert.equal(opened.fileId, fileValueOf(attached));
+  assert.equal('fileId' in valuesToPayload(fields, opened), false, 'unchanged: not sent');
+  assert.equal(fileChange(withChosenFile(opened.fileId, uploaded)), 9);
+  assert.equal(fileChange(withChosenFile(opened.fileId, null)), 0);
+  assert.equal(fileChange(withChosenFile(withChosenFile(opened.fileId, null), attached)), undefined, 'removed then put back: unchanged');
+  assert.deepEqual(rowToValues(fields, { documentType: 'ID' }), { documentType: 'ID', fileId: '' }, 'a record without a file');
+  assert.deepEqual(validateValues(fields, { documentType: 'ID', fileId: 'not json' }, 'edit'), {});
+});
+
+test('form mapping: an edit-only field (leave status) is neither shown, checked nor sent with a new record — even a duplicate', () => {
+  const fields: FieldDef[] = [
+    { name: 'leaveType', label: 'Leave type', required: true },
+    { name: 'status', label: 'Status', type: 'select', required: true, default: 'PENDING', editOnly: true },
+    { name: 'parts', label: 'Inventory used', type: 'custom', createOnly: true },
+  ];
+  assert.deepEqual(fieldsFor(fields, 'create').map((field) => field.name), ['leaveType', 'parts']);
+  assert.deepEqual(fieldsFor(fields, 'edit').map((field) => field.name), ['leaveType', 'status']);
+  const duplicated = rowToValues(fields, { leaveType: 'ANNUAL', status: 'APPROVED' });
+  assert.deepEqual(valuesToPayload(fieldsFor(fields, 'create'), duplicated), { leaveType: 'ANNUAL' }, 'a duplicate of an approved request is filed as a new (pending) one');
+  assert.deepEqual(valuesToPayload(fieldsFor(fields, 'edit'), duplicated), { leaveType: 'ANNUAL', status: 'APPROVED' });
+  assert.deepEqual(validateValues(fieldsFor(fields, 'create'), { leaveType: 'X', status: '' }, 'create'), {});
+});
+
+test('uploads: the browser refuses what the server would, before sending it', () => {
+  const pdf = { name: 'scan.PDF', size: 5000, type: 'application/pdf' };
+  assert.equal(uploadProblem(pdf), null);
+  assert.equal(uploadProblem({ name: 'photo.jpeg', size: 5000, type: '' }), null, 'no type from the browser: the extension decides here (the server checks the content)');
+  assert.equal(uploadProblem({ ...pdf, size: 10 * 1024 * 1024 }), null, 'exactly 10 MB is allowed');
+  assert.match(uploadProblem({ ...pdf, size: 10 * 1024 * 1024 + 1 }) ?? '', /too large/);
+  assert.match(uploadProblem({ name: 'contract.docx', size: 5000, type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }) ?? '', /Only PDF files and images/);
+  assert.match(uploadProblem({ ...pdf, size: 0 }) ?? '', /empty/);
+  for (const file of [{ ...pdf, size: 0 }, { ...pdf, size: 11e6 }, { name: 'a.exe', size: 1, type: 'x' }]) assert.ok(uploadProblem(file)! in AR_STRINGS);
+  assert.deepEqual([formatFileSize(300), formatFileSize(850 * 1024), formatFileSize(2.5 * 1024 * 1024)], ['1 KB', '850 KB', '2.5 MB']);
+});
+
+test('attendance: time in / out are times of day on the attendance date; a time out before the time in is the next morning', () => {
+  assert.equal(toTimeInput(combineDateTime('2026-10-03', '08:15')), '08:15', 'round-trips in the viewer\'s time zone');
+  assert.equal(toTimeInput(undefined), '');
+  assert.equal(combineDateTime('', '08:00'), '');
+  const day = attendanceTimes('2026-10-03', '08:00', '16:30');
+  assert.equal(new Date(day.checkOut).getTime() - new Date(day.checkIn).getTime(), 8.5 * 3600e3);
+  const night = attendanceTimes('2026-10-03', '22:00', '06:00');
+  assert.equal(new Date(night.checkOut).getTime() - new Date(night.checkIn).getTime(), 8 * 3600e3, 'overnight shift ends the next day');
+  assert.deepEqual(attendanceTimes('2026-10-03', '', ''), { checkIn: '', checkOut: '' }, "'' clears a time when editing");
+
+  assert.deepEqual([hoursBetween('08:00', '16:30'), hoursBetween('22:00', '06:15'), hoursBetween('09:00', '09:20'), hoursBetween('08:00', ''), hoursBetween('08:00', '08:00')], ['8.5', '8.25', '0.33', '', '']);
+});
+
+test('attendance: hours worked follows the times until someone types their own number', () => {
+  const start = { checkIn: '08:00', checkOut: '', hoursWorked: '' };
+  const afterOut = deriveAttendance({ ...start, checkOut: '16:00' }, start, 'checkOut');
+  assert.equal(afterOut.hoursWorked, '8');
+  const later = deriveAttendance({ ...afterOut, checkOut: '17:30' }, afterOut, 'checkOut');
+  assert.equal(later.hoursWorked, '9.5', 'still the worked-out value: follows the change');
+  const typed = { ...later, hoursWorked: '9' };
+  assert.equal(deriveAttendance({ ...typed, checkOut: '18:00' }, typed, 'checkOut').hoursWorked, '9', 'typed by hand: left alone');
+  assert.equal(deriveAttendance({ ...later, checkIn: '' }, later, 'checkIn').hoursWorked, '', 'a time cleared: nothing to work out');
+  assert.equal(deriveAttendance({ ...later, notes: 'x' }, later, 'notes').hoursWorked, '9.5', 'other fields do not touch it');
+});
+
 test('form validation: required, numeric formats, and password optional when editing', () => {
   const blank = emptyValues(FIELDS);
   assert.deepEqual(Object.keys(validateValues(FIELDS, blank, 'create')).sort(), ['name', 'password', 'tripDate']);
@@ -119,6 +198,10 @@ test('form validation: required, numeric formats, and password optional when edi
   const typed = { ...blank, name: 'A', tripDate: '2026-01-01', password: 'x', quantity: '1.5', rate: 'abc' };
   assert.deepEqual(Object.keys(validateValues(FIELDS, typed, 'create')).sort(), ['quantity', 'rate']);
   for (const message of Object.values(validateValues(FIELDS, typed, 'create'))) assert.ok(message in AR_STRINGS, message);
+  const time: FieldDef[] = [{ name: 'checkIn', label: 'Time in', type: 'time' }];
+  assert.deepEqual(validateValues(time, { checkIn: '08:30' }, 'create'), {});
+  assert.deepEqual(validateValues(time, { checkIn: '' }, 'create'), {});
+  assert.equal(validateValues(time, { checkIn: '25:00' }, 'create').checkIn, 'Enter a time, e.g. 08:30.');
 });
 
 // ── Invoices ────────────────────────────────────────────────────────────
@@ -203,10 +286,14 @@ test('every menu action carries its own label and icon, and calls exactly the ha
     viewHistory: ['View history', 'eye', false],
     openPdf: ['Open PDF', 'fileText', false],
     inventoryUsed: ['Inventory used', 'box', false],
+    openFile: ['Open file', 'eye', false],
+    downloadFile: ['Download file', 'download', false],
     edit: ['Edit', 'pencil', false],
     duplicate: ['Duplicate', 'copy', false],
     markPaid: ['Mark as paid', 'check', false],
     submitToZatca: ['Submit to ZATCA', 'send', false],
+    approve: ['Approve', 'check', false],
+    reject: ['Reject', 'x', false],
     delete: ['Delete', 'trash', true],
     deleteBatch: ['Delete batch', 'trash', true],
     remove: ['Remove', 'trash', true],

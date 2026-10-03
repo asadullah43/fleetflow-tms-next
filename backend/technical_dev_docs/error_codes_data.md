@@ -15,7 +15,7 @@ codes below, `ERROR_FILTER` is its category and `ERROR_DESCRIPTION` is the user-
 | `RATE_LIMIT_EXCEEDED` | Too many requests; `RATE_LIMIT` says how long to wait | Retry after `retry_after_seconds` |
 | `TECHNICAL_ISSUE` | A server-side fault; details are in the server log only | Retry later |
 
-174 codes.
+188 codes.
 
 ## API Keys
 
@@ -37,7 +37,7 @@ codes below, `ERROR_FILTER` is its category and `ERROR_DESCRIPTION` is the user-
 | `FLEET-AUTH002` | `USER_NOT_AUTHENTICATED` | Your account has been deactivated. Please contact an administrator. | `services/auth.service.ts` | `authService.login` |
 | `FLEET-AUTH003` | `USER_NOT_AUTHENTICATED` | Authentication required. Please log in. | `middlewares/authentication.ts` | `resolvePrincipal` |
 | `FLEET-AUTH004` | `USER_NOT_AUTHENTICATED` | Your session has expired. Please log in again. | `middlewares/authentication.ts` | `principalFromJwt` |
-| `FLEET-AUTH005` | `USER_NOT_AUTHORIZED` | You do not have permission to perform this action. | `middlewares/authorization.ts` | `authorize` |
+| `FLEET-AUTH005` | `USER_NOT_AUTHORIZED` | You do not have permission to perform this action. | `services/files.service.ts` | `requireView` |
 | `FLEET-AUTH006` | `RATE_LIMIT_EXCEEDED` | Too many failed sign-in attempts. Please wait a few minutes and try again. | `services/auth.service.ts` | `authService.login` |
 | `FLEET-AUTH007` | `USER_NOT_AUTHENTICATED` | The API key is invalid or has been revoked. | `middlewares/authentication.ts` | `principalFromApiKey` |
 | `FLEET-AUTH008` | `USER_NOT_AUTHENTICATED` | This company account is not active. Please contact support. | `services/auth.service.ts` | `authService.login` |
@@ -89,6 +89,23 @@ codes below, `ERROR_FILTER` is its category and `ERROR_DESCRIPTION` is the user-
 | `FLEET-DRV005` | `TECHNICAL_ISSUE` | Unable to delete driver. Please try again. | `services/drivers.service.ts` | `driversService.remove` |
 | `FLEET-DRV006` | `TECHNICAL_ISSUE` | Unable to retrieve drivers. Please try again. | `services/drivers.service.ts` | `driversService.list` |
 
+## File Uploads
+
+| error_code | error_filter | error_description | file | function |
+| --- | --- | --- | --- | --- |
+| `FLEET-FIL001` | `INVALID_REQUEST` | Choose a file to upload. | `services/files.service.ts` | `filesService.upload` |
+| `FLEET-FIL002` | `INVALID_REQUEST` | The file is too large. | `services/files.service.ts` | `tooLarge` |
+| `FLEET-FIL003` | `INVALID_REQUEST` | Only PDF files and images (JPEG, PNG or WebP) can be uploaded. | `services/files.service.ts` | `filesService.upload` |
+| `FLEET-FIL004` | `INVALID_REQUEST` | File not found. | `services/files.service.ts` | `filesService.link` |
+| `FLEET-FIL005` | `USER_NOT_AUTHORIZED` | This file link has expired. Open the file again from its record. | `services/files.service.ts` | `filesService.forLink` |
+| `FLEET-FIL006` | `TECHNICAL_ISSUE` | Unable to upload the file. Please try again. | `services/files.service.ts` | `filesService.upload` |
+| `FLEET-FIL007` | `TECHNICAL_ISSUE` | Unable to open the file. Please try again. | `routes/files.http.ts` | `streamFile` |
+| `FLEET-FIL008` | `USER_END_VIOLATION` | This file is already attached to another record. Upload it again for this one. | `services/files.service.ts` | `filesService.claim` |
+| `FLEET-FIL009` | `INVALID_REQUEST` | This file was uploaded for a different kind of record. | `services/files.service.ts` | `filesService.claim` |
+| `FLEET-FIL010` | `INVALID_REQUEST` | Unknown upload type. | `middlewares/upload.ts` | `authorizeUpload` |
+| `FLEET-FIL011` | `INVALID_REQUEST` | Send the file as multipart/form-data, in a field named "file". | `middlewares/upload.ts` | `readUpload` |
+| `FLEET-FIL012` | `INVALID_REQUEST` | There is no such file operation. | `routes/files.http.ts` | `handle` |
+
 ## Human Resources
 
 | error_code | error_filter | error_description | file | function |
@@ -101,6 +118,8 @@ codes below, `ERROR_FILTER` is its category and `ERROR_DESCRIPTION` is the user-
 | `FLEET-HR006` | `TECHNICAL_ISSUE` | Unable to retrieve records. Please try again. | `services/hr.service.ts` | `HR_ERRORS.list` |
 | `FLEET-HR007` | `USER_END_VIOLATION` | This record is referenced by other records and cannot be deleted. | `services/hr.service.ts` | `HR_ERRORS.remove` |
 | `FLEET-HR008` | `INVALID_REQUEST` | Attendance already recorded for this employee on this date. | `services/hr.service.ts` | `attendanceService.create / update` |
+| `FLEET-HR009` | `USER_NOT_AUTHORIZED` | New leave requests start as Pending. Only a role allowed to approve leave (Leave requests: Edit) can set Approved or Rejected. | `services/hr.service.ts` | `leaveRequestsService.create` |
+| `FLEET-HR010` | `INVALID_REQUEST` | Time out must be after time in, and within 24 hours of it. | `services/hr.service.ts` | `withAttendanceHours` |
 
 ## Inventory
 

@@ -9,7 +9,7 @@ import { newIdempotencyKey } from '../../lib/idempotency';
 import { queryKeys } from '../../lib/api/query-keys';
 import { useLanguage, useT } from '../../lib/language-context';
 import { useResourceMutations } from './crud.queries';
-import { emptyValues, rowToValues, validateValues, valuesToPayload } from './form-mapping';
+import { emptyValues, fieldsFor, rowToValues, validateValues, valuesToPayload } from './form-mapping';
 import type { CrudDefinition, DisplayContext, FormValues } from './types';
 import { useNotifiedRemove, usePagedList } from './use-paged-list';
 
@@ -69,20 +69,26 @@ export function useCrudViewModel<T extends { id: number }>(definition: CrudDefin
 
   const closeEditor = useCallback(() => setEditor(null), []);
 
+  const { derive } = definition;
   const setValue = useCallback((name: string, value: string) => {
-    setValues((current) => ({ ...current, [name]: value }));
+    setValues((current) => {
+      const next = { ...current, [name]: value };
+      return derive ? derive(next, current, name) : next;
+    });
     setFieldErrors((current) => (current[name] ? { ...current, [name]: '' } : current));
-  }, []);
+  }, [derive]);
 
   const saving = mutations.create.isPending || mutations.update.isPending;
 
   const save = useCallback(async () => {
     if (!editor || saving) return;
-    const errors = validateValues(fields, values, editor.mode);
+    // Only what the form shows is checked and sent (an edit-only field never goes out with a new record).
+    const shown = fieldsFor(fields, editor.mode);
+    const errors = validateValues(shown, values, editor.mode);
     setFieldErrors(errors);
     if (Object.values(errors).some(Boolean)) return;
 
-    const base = valuesToPayload(fields, values);
+    const base = valuesToPayload(shown, values);
     const payload = definition.toApi ? definition.toApi(base, values, editor.mode) : base;
     setFormError(null);
     try {
